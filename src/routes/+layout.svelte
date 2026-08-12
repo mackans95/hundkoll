@@ -10,6 +10,7 @@
 	const tabs = [
 		{ href: '/', label: 'Logga', icon: '🐾' },
 		{ href: '/status', label: 'Status', icon: '⏱️' },
+		{ href: '/stats', label: 'Statistik', icon: '📊' },
 		{ href: '/settings', label: 'Inställningar', icon: '⚙️' }
 	];
 </script>
