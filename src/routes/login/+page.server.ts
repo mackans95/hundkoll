@@ -21,7 +21,15 @@ export const actions: Actions = {
 		});
 
 		if (error) {
-			return fail(400, { email, message: 'Kunde inte skicka länken. Kontrollera adressen.' });
+			// Surface the real cause in Vercel logs; the UI stays in Swedish.
+			console.error('signInWithOtp failed:', error.code, error.status, error.message);
+			const message =
+				error.code === 'otp_disabled'
+					? 'Ingen användare med den adressen.'
+					: error.code === 'over_email_send_rate_limit'
+						? 'För många mejl på kort tid – vänta en stund och försök igen.'
+						: 'Kunde inte skicka länken. Försök igen.';
+			return fail(400, { email, message });
 		}
 
 		return { sent: true, email };
