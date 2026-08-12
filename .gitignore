@@ -21,3 +21,6 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Neutralise the global Python packaging ignore — src/lib is $lib in SvelteKit
+!src/lib/
