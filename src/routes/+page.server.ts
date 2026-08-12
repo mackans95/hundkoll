@@ -1,45 +1,115 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { DETAIL_FIELDS } from '$lib/events';
+import { stockholmInputToUtc, stockholmNowForInput } from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
 // Without generated database types, PostgREST embeds are typed as arrays;
 // a to-one FK embed actually returns a single object.
 type EventRow = {
 	id: string;
+	type_id: string;
 	occurred_at: string;
 	note: string | null;
-	type: { label: string } | null;
+	details: Record<string, unknown>;
+	type: { label: string; icon: string | null } | null;
 };
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [dogResult, eventsResult] = await Promise.all([
+type EventType = {
+	id: string;
+	label: string;
+	category: 'routine' | 'care' | 'health';
+	icon: string | null;
+};
+
+export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+	const [dogResult, typesResult, eventsResult] = await Promise.all([
 		supabase.from('dogs').select('id, name').limit(1).maybeSingle(),
 		supabase
+			.from('event_types')
+			.select('id, label, category, icon')
+			.order('sort_order')
+			.overrideTypes<EventType[]>(),
+		supabase
 			.from('events')
-			.select('id, occurred_at, note, type:event_types(label)')
+			.select('id, type_id, occurred_at, note, details, type:event_types(label, icon)')
 			.order('occurred_at', { ascending: false })
 			.limit(10)
-			.returns<EventRow[]>()
+			.overrideTypes<EventRow[]>()
 	]);
+
+	const types = typesResult.data ?? [];
+	// ?detail=<type_id> renders the backdating dialog server-side, so it
+	// opens (and closes, via a plain link to "/") without JavaScript.
+	const detailParam = url.searchParams.get('detail');
 
 	return {
 		dog: dogResult.data,
-		events: eventsResult.data ?? []
+		types,
+		events: eventsResult.data ?? [],
+		detailType: types.find((t) => t.id === detailParam) ?? null,
+		nowLocal: stockholmNowForInput()
 	};
 };
 
 export const actions: Actions = {
-	logWalk: async ({ locals: { supabase } }) => {
+	log: async ({ request, locals: { supabase } }) => {
+		const form = await request.formData();
+		const typeId = String(form.get('type_id') ?? '');
+
 		const { data: dog } = await supabase.from('dogs').select('id').limit(1).maybeSingle();
 		if (!dog) {
 			return fail(400, { message: 'Ingen hund hittades. Har seed-SQL:en körts?' });
 		}
 
-		const { error } = await supabase.from('events').insert({ dog_id: dog.id, type_id: 'walk' });
-		if (error) {
-			return fail(500, { message: 'Kunde inte logga promenaden.' });
+		const row: Record<string, unknown> = { dog_id: dog.id, type_id: typeId };
+
+		const occurredRaw = String(form.get('occurred_at') ?? '').trim();
+		if (occurredRaw) {
+			const occurred = stockholmInputToUtc(occurredRaw);
+			if (!occurred) {
+				return fail(400, { message: 'Ogiltig tidpunkt.' });
+			}
+			row.occurred_at = occurred.toISOString();
 		}
 
-		return { logged: true };
+		// Dialog submissions carry all their fields (marked by `detailed`);
+		// quick taps carry only type_id. Checkboxes are only trustworthy as
+		// true/false when we know the form actually rendered them.
+		if (form.has('detailed')) {
+			const details: Record<string, unknown> = {};
+			for (const field of DETAIL_FIELDS[typeId] ?? []) {
+				if (field.input === 'checkbox') {
+					details[field.name] = form.get(field.name) === 'on';
+				} else {
+					const raw = String(form.get(field.name) ?? '')
+						.trim()
+						.replace(',', '.');
+					if (raw) {
+						const value = Number(raw);
+						if (!Number.isFinite(value)) {
+							return fail(400, { message: `Ogiltigt värde för ${field.label.toLowerCase()}.` });
+						}
+						details[field.name] = value;
+					}
+				}
+			}
+			if (Object.keys(details).length > 0) {
+				row.details = details;
+			}
+			const note = String(form.get('note') ?? '').trim();
+			if (note) {
+				row.note = note;
+			}
+		}
+
+		const { error } = await supabase.from('events').insert(row);
+		if (error) {
+			console.error('event insert failed:', error.code, error.message);
+			return fail(500, { message: 'Kunde inte logga händelsen.' });
+		}
+
+		// Also clears any ?detail= param, closing the dialog.
+		redirect(303, '/');
 	},
 	logout: async ({ locals: { supabase } }) => {
 		await supabase.auth.signOut();
