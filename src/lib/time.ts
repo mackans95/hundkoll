@@ -40,6 +40,50 @@ export function stockholmInputToUtc(input: string): Date | null {
 	return new Date(guess.getTime() - offsetMs(once));
 }
 
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+	['year', 365 * 86_400_000],
+	['month', 30 * 86_400_000],
+	['week', 7 * 86_400_000],
+	['day', 86_400_000],
+	['hour', 3_600_000],
+	['minute', 60_000]
+];
+
+const relativeFormat = new Intl.RelativeTimeFormat('sv', { numeric: 'auto' });
+
+/** "för 5 veckor sedan", "igår", "om 8 dagar". */
+export function svRelative(target: Date, base = new Date()): string {
+	const diff = target.getTime() - base.getTime();
+	for (const [unit, unitMs] of RELATIVE_UNITS) {
+		if (Math.abs(diff) >= unitMs) {
+			return relativeFormat.format(Math.round(diff / unitMs), unit);
+		}
+	}
+	return 'nyss';
+}
+
+const DURATION_NAMES: Record<string, [singular: string, plural: string]> = {
+	year: ['år', 'år'],
+	month: ['månad', 'månader'],
+	week: ['vecka', 'veckor'],
+	day: ['dag', 'dagar'],
+	hour: ['timme', 'timmar'],
+	minute: ['minut', 'minuter']
+};
+
+/** "3 dagar", "5 veckor" — for composing texts like "3 dagar försenat". */
+export function svDuration(ms: number): string {
+	const abs = Math.abs(ms);
+	for (const [unit, unitMs] of RELATIVE_UNITS) {
+		if (abs >= unitMs || unit === 'minute') {
+			const n = Math.max(1, Math.round(abs / unitMs));
+			const [singular, plural] = DURATION_NAMES[unit];
+			return `${n} ${n === 1 ? singular : plural}`;
+		}
+	}
+	return '';
+}
+
 /** Current Stockholm time formatted for a datetime-local input value. */
 export function stockholmNowForInput(): string {
 	const s = new Intl.DateTimeFormat('sv-SE', {

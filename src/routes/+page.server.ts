@@ -119,9 +119,5 @@ export const actions: Actions = {
 
 		// Also clears any ?detail= param, closing the dialog.
 		redirect(303, '/');
-	},
-	logout: async ({ locals: { supabase } }) => {
-		await supabase.auth.signOut();
-		redirect(303, '/login');
 	}
 };

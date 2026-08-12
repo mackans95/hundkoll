@@ -25,7 +25,7 @@
 
 <!-- Server-rendered dialog: opened by ?detail=<id>, closed by a plain link
      back to "/", so it works without JavaScript. -->
-<div class="fixed inset-0 z-10 flex items-end justify-center bg-black/40 sm:items-center">
+<div class="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center">
 	<div
 		role="dialog"
 		aria-modal="true"
