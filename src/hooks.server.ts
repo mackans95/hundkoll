@@ -24,14 +24,25 @@ const supabase: Handle = async ({ event, resolve }) => {
 			return { session: null, user: null };
 		}
 
-		// getSession() reads the cookie without verifying it; getClaims()
-		// validates the JWT signature before we trust the session.
-		const { error } = await event.locals.supabase.auth.getClaims();
-		if (error) {
+		// getSession() reads the cookie without verifying it; getUser()
+		// authenticates against the Auth server before we trust anything.
+		const {
+			data: { user },
+			error
+		} = await event.locals.supabase.auth.getUser();
+		if (error || !user) {
 			return { session: null, user: null };
 		}
 
-		return { session, user: session.user };
+		// Rebuild the session around the verified user. Reading session.user
+		// from the getSession() result — even implicitly, when SvelteKit
+		// serializes page data — is what triggers the "could be insecure"
+		// console warning.
+		const { access_token, refresh_token, expires_at, expires_in, token_type } = session;
+		return {
+			session: { access_token, refresh_token, expires_at, expires_in, token_type, user },
+			user
+		};
 	};
 
 	return resolve(event, {
