@@ -23,10 +23,9 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 		{ name: 'pee', label: 'Kiss', input: 'count' },
 		{ name: 'poop', label: 'Bajs', input: 'count' }
 	],
-	meal: [
-		{ name: 'portion_g', label: 'Portion (gram)', input: 'number' },
-		{ name: 'finished', label: 'Åt upp', input: 'checkbox' }
-	],
+	// Portion size is always the same, so meals only track whether she
+	// finished; legacy portion_g rows still render in summaries.
+	meal: [{ name: 'finished', label: 'Åt upp', input: 'checkbox' }],
 	weight: [{ name: 'kg', label: 'Vikt (kg)', input: 'number', step: '0.1', required: true }]
 };
 

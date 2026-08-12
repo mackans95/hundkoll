@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import LogDialog from '$lib/LogDialog.svelte';
 	import { detailSummary } from '$lib/events';
 	import type { ActionData, PageData } from './$types';
@@ -33,11 +32,8 @@
 <svelte:head><title>Hundkoll</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4 pb-10">
-	<header class="flex items-center justify-between px-1">
+	<header class="px-1">
 		<h1 class="text-3xl font-bold">{data.dog?.name ?? 'Hundkoll'}</h1>
-		<form method="POST" action="?/logout" use:enhance>
-			<button type="submit" class="text-sm text-gray-500 underline">Logga ut</button>
-		</form>
 	</header>
 
 	{#if form?.message && !data.detailType}
