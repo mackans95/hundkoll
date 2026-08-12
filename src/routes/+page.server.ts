@@ -80,6 +80,15 @@ export const actions: Actions = {
 			for (const field of DETAIL_FIELDS[typeId] ?? []) {
 				if (field.input === 'checkbox') {
 					details[field.name] = form.get(field.name) === 'on';
+				} else if (field.input === 'count') {
+					// Checkbox + stepper; without JS only the checkbox
+					// submits, which counts as one.
+					if (form.get(field.name) === 'on') {
+						const count = parseInt(String(form.get(`${field.name}_count`) ?? '1'), 10);
+						details[field.name] = Number.isFinite(count) && count > 0 ? count : 1;
+					} else {
+						details[field.name] = 0;
+					}
 				} else {
 					const raw = String(form.get(field.name) ?? '')
 						.trim()
