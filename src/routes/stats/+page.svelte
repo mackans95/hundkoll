@@ -192,14 +192,18 @@
 	);
 
 	const accidentTiles = $derived([
-		{ label: 'per dag', value: s?.accidents_per_day != null ? svNum(s.accidents_per_day) : '–' },
+		{
+			label: 'per dag',
+			value: s?.accidents_per_day != null ? `~${svNum(s.accidents_per_day)}` : '–'
+		},
 		{
 			label: 'per vecka',
-			value: s?.accidents_per_week != null && tracked >= 7 ? svNum(s.accidents_per_week) : '–'
+			value: s?.accidents_per_week != null && tracked >= 7 ? `~${svNum(s.accidents_per_week)}` : '–'
 		},
 		{
 			label: 'per månad',
-			value: s?.accidents_per_month != null && tracked >= 30 ? svNum(s.accidents_per_month) : '–'
+			value:
+				s?.accidents_per_month != null && tracked >= 30 ? `~${svNum(s.accidents_per_month)}` : '–'
 		}
 	]);
 
@@ -238,7 +242,7 @@
 		<h2 class="font-semibold">🚶 Promenader</h2>
 		<Columns buckets={walkBuckets} colors={[WALK_COLOR]} />
 		<div class="flex flex-col gap-2">
-			{@render miniTile(s?.walks_per_day != null ? svNum(s.walks_per_day) : '–', '🚶 per dag')}
+			{@render miniTile(s?.walks_per_day != null ? `~${svNum(s.walks_per_day)}` : '–', '🚶 per dag')}
 			<div class="grid grid-cols-2 gap-2">
 				{@render miniTile(
 					s?.avg_walk_gap_min != null ? `~${minutesText(s.avg_walk_gap_min)}` : '–',
