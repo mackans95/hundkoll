@@ -2,7 +2,8 @@
 	import Columns, { type ColumnBucket } from '$lib/charts/Columns.svelte';
 	import TrendLine from '$lib/charts/TrendLine.svelte';
 	import { minutesText, pctText, svNum } from '$lib/format';
-	import { stockholmNowForInput } from '$lib/time';
+	import { addDays, addMonths, mondayOf, stockholmNowForInput } from '$lib/time';
+	import type { TrendBucket } from './+page.server';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -16,16 +17,6 @@
 
 	const today = stockholmNowForInput().slice(0, 10);
 
-	function dateAdd(iso: string, days: number): string {
-		const d = new Date(`${iso}T00:00:00Z`);
-		d.setUTCDate(d.getUTCDate() + days);
-		return d.toISOString().slice(0, 10);
-	}
-	function monthAdd(iso: string, months: number): string {
-		const d = new Date(`${iso.slice(0, 7)}-01T00:00:00Z`);
-		d.setUTCMonth(d.getUTCMonth() + months);
-		return d.toISOString().slice(0, 10);
-	}
 	function dayLabel(iso: string): string {
 		const d = new Date(`${iso}T00:00:00Z`);
 		return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
@@ -44,7 +35,7 @@
 
 	function last30Days(): string[] {
 		const out: string[] = [];
-		for (let i = 29; i >= 0; i--) out.push(dateAdd(today, -i));
+		for (let i = 29; i >= 0; i--) out.push(addDays(today, -i));
 		return out;
 	}
 
@@ -132,13 +123,12 @@
 		const byBucket = new Map(data.accidentBins.map((b) => [b.bucket, b]));
 		const starts: string[] = [];
 		if (data.period === 'day') {
-			for (let i = 29; i >= 0; i--) starts.push(dateAdd(today, -i));
+			for (let i = 29; i >= 0; i--) starts.push(addDays(today, -i));
 		} else if (data.period === 'week') {
-			const dow = new Date(`${today}T00:00:00Z`).getUTCDay();
-			const monday = dateAdd(today, -((dow + 6) % 7));
-			for (let i = 11; i >= 0; i--) starts.push(dateAdd(monday, -7 * i));
+			const monday = mondayOf(today);
+			for (let i = 11; i >= 0; i--) starts.push(addDays(monday, -7 * i));
 		} else {
-			for (let i = 11; i >= 0; i--) starts.push(monthAdd(today, -i));
+			for (let i = 11; i >= 0; i--) starts.push(addMonths(today, -i));
 		}
 		const every = data.period === 'day' ? 7 : 3;
 		const labels: Record<typeof data.period, (s: string) => string> = {
@@ -212,6 +202,50 @@
 		{ value: 'week', label: 'Vecka' },
 		{ value: 'month', label: 'Månad' }
 	];
+
+	// Trender: the last two complete periods compared, neutrally colored —
+	// whether "more" is good depends on the metric, so no green/red.
+	const TREND_METRICS: {
+		label: string;
+		get: (b: TrendBucket) => number | null;
+		fmt: (v: number) => string;
+	}[] = [
+		{ label: '🚶 Promenader', get: (b) => b.walks, fmt: (v) => svNum(v) },
+		{ label: '⏳ Mellan promenader', get: (b) => b.walk_gap_min, fmt: (v) => `~${minutesText(v)}` },
+		{ label: '⏱️ Snittlängd', get: (b) => b.walk_duration_min, fmt: (v) => `~${minutesText(v)}` },
+		{ label: '⏳ Mellan mål', get: (b) => b.meal_gap_min, fmt: (v) => `~${minutesText(v)}` },
+		{ label: '✅ Åt upp', get: (b) => b.meal_finish_rate, fmt: pctText },
+		{ label: '⚠️ Olyckor', get: (b) => b.accidents, fmt: (v) => svNum(v) }
+	];
+
+	const trendRows = $derived(
+		TREND_METRICS.map((metric) => {
+			const from = data.trendPrev ? metric.get(data.trendPrev) : null;
+			const to = data.trendLatest ? metric.get(data.trendLatest) : null;
+			let badge = '–';
+			if (from != null && to != null && from !== 0) {
+				const pct = Math.round(((to - from) / Math.abs(from)) * 100);
+				badge = pct === 0 ? '±0 %' : `${pct > 0 ? '↑' : '↓'} ${Math.abs(pct)} %`;
+			}
+			return {
+				label: metric.label,
+				from: from != null ? metric.fmt(from) : '–',
+				to: to != null ? metric.fmt(to) : '–',
+				badge
+			};
+		})
+	);
+	const hasTrend = $derived(data.trendPrev != null && data.trendLatest != null);
+
+	const trendCaption = $derived.by(() => {
+		if (data.trend === 'day') {
+			return `${dayLabel(data.trendLatestBucket)} jämfört med ${dayLabel(data.trendPrevBucket)}`;
+		}
+		if (data.trend === 'week') {
+			return `v.${isoWeek(data.trendLatestBucket)} jämfört med v.${isoWeek(data.trendPrevBucket)}`;
+		}
+		return `${monthLabel(data.trendLatestBucket)} jämfört med ${monthLabel(data.trendPrevBucket)}`;
+	});
 </script>
 
 {#snippet miniTile(value: string, label: string)}
@@ -228,6 +262,17 @@
 	</span>
 {/snippet}
 
+{#snippet foldHeader(title: string)}
+	<summary
+		class="flex cursor-pointer list-none items-center justify-between border-gray-200 bg-gray-50 px-4 py-3 font-semibold transition-colors select-none group-open:border-b hover:bg-gray-100 [&::-webkit-details-marker]:hidden"
+	>
+		{title}
+		<span class="text-gray-400 transition-transform group-open:rotate-180" aria-hidden="true">
+			▾
+		</span>
+	</summary>
+{/snippet}
+
 <svelte:head><title>Statistik – Hundkoll</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
@@ -238,96 +283,162 @@
 		</p>
 	</header>
 
-	<section class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-		<h2 class="font-semibold">🚶 Promenader</h2>
-		<Columns buckets={walkBuckets} colors={[WALK_COLOR]} />
-		<div class="flex flex-col gap-2">
-			{@render miniTile(s?.walks_per_day != null ? `~${svNum(s.walks_per_day)}` : '–', '🚶 per dag')}
-			<div class="grid grid-cols-2 gap-2">
-				{@render miniTile(
-					s?.avg_walk_gap_min != null ? `~${minutesText(s.avg_walk_gap_min)}` : '–',
-					'⏳ mellan promenader'
-				)}
-				{@render miniTile(
-					s?.avg_walk_duration_min != null ? `~${minutesText(s.avg_walk_duration_min)}` : '–',
-					'⏱️ snittlängd'
-				)}
-			</div>
-		</div>
-	</section>
-
-	<section class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-		<h2 class="font-semibold">🍽️ Mat</h2>
-		<Columns buckets={mealBuckets} colors={MEAL_COLORS} />
-		<div class="flex gap-4 text-sm text-gray-600">
-			{@render legendDot(MEAL_COLORS[0], 'Åt upp')}
-			{@render legendDot(MEAL_COLORS[1], 'Åt inte upp')}
-			{#if hasUnknownMeals}
-				{@render legendDot(MEAL_COLORS[2], 'Okänt')}
+	<details open class="group overflow-hidden rounded-2xl border border-gray-200 bg-white">
+		{@render foldHeader('📈 Trender')}
+		<div class="flex flex-col gap-3 p-4">
+			<p class="text-sm text-gray-500">{trendCaption}</p>
+			<nav class="flex rounded-lg bg-gray-100 p-1" aria-label="Trendperiod">
+				{#each periodTabs as tab (tab.value)}
+					<a
+						href="?period={data.period}&trend={tab.value}"
+						data-sveltekit-noscroll
+						aria-current={data.trend === tab.value ? 'true' : undefined}
+						class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {data.trend ===
+						tab.value
+							? 'bg-white text-gray-900 shadow-sm'
+							: 'text-gray-500 hover:text-gray-900'}"
+					>
+						{tab.label}
+					</a>
+				{/each}
+			</nav>
+			{#if hasTrend}
+				<ul class="divide-y divide-gray-100">
+					{#each trendRows as row (row.label)}
+						<li class="flex items-center gap-2 py-2">
+							<span class="text-sm font-medium">{row.label}</span>
+							<span class="ml-auto text-sm text-gray-500">{row.from} → {row.to}</span>
+							<span
+								class="w-16 shrink-0 rounded-full bg-gray-100 px-1 py-0.5 text-center text-xs font-semibold text-gray-700"
+							>
+								{row.badge}
+							</span>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="py-6 text-center text-sm text-gray-500">
+					{data.trend === 'day'
+						? 'Visas när två hela dagar har spårats.'
+						: data.trend === 'week'
+							? 'Visas när två hela veckor har spårats.'
+							: 'Visas när två hela månader har spårats.'}
+				</p>
 			{/if}
 		</div>
-		<div class="grid grid-cols-2 gap-2">
-			{@render miniTile(
-				s?.avg_meal_gap_min != null ? `~${minutesText(s.avg_meal_gap_min)}` : '–',
-				'⏳ mellan mål'
-			)}
-			{@render miniTile(
-				s?.meal_finish_rate != null ? pctText(s.meal_finish_rate) : '–',
-				'✅ åt upp'
-			)}
-		</div>
-	</section>
+	</details>
 
-	<section class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-		<h2 class="font-semibold">⚠️ Olyckor</h2>
-		<nav class="flex rounded-lg bg-gray-100 p-1" aria-label="Periodval">
-			{#each periodTabs as tab (tab.value)}
-				<a
-					href="?period={tab.value}"
-					data-sveltekit-noscroll
-					aria-current={data.period === tab.value ? 'true' : undefined}
-					class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {data.period === tab.value
-						? 'bg-white text-gray-900 shadow-sm'
-						: 'text-gray-500 hover:text-gray-900'}"
-				>
-					{tab.label}
-				</a>
-			{/each}
-		</nav>
-		{#if periodReady}
-			<Columns buckets={accidentBuckets} colors={ACCIDENT_COLORS} />
+	<details open class="group overflow-hidden rounded-2xl border border-gray-200 bg-white">
+		{@render foldHeader('🚶 Promenader')}
+		<div class="flex flex-col gap-3 p-4">
+			<Columns buckets={walkBuckets} colors={[WALK_COLOR]} />
+			<div class="flex flex-col gap-2">
+				{@render miniTile(
+					s?.walks_per_day != null ? `~${svNum(s.walks_per_day)}` : '–',
+					'🚶 per dag'
+				)}
+				<div class="grid grid-cols-2 gap-2">
+					{@render miniTile(
+						s?.avg_walk_gap_min != null ? `~${minutesText(s.avg_walk_gap_min)}` : '–',
+						'⏳ mellan promenader'
+					)}
+					{@render miniTile(
+						s?.avg_walk_duration_min != null ? `~${minutesText(s.avg_walk_duration_min)}` : '–',
+						'⏱️ snittlängd'
+					)}
+				</div>
+			</div>
+		</div>
+	</details>
+
+	<details open class="group overflow-hidden rounded-2xl border border-gray-200 bg-white">
+		{@render foldHeader('🍽️ Mat')}
+		<div class="flex flex-col gap-3 p-4">
+			<Columns buckets={mealBuckets} colors={MEAL_COLORS} />
 			<div class="flex gap-4 text-sm text-gray-600">
-				{@render legendDot(ACCIDENT_COLORS[0], 'Kiss')}
-				{@render legendDot(ACCIDENT_COLORS[1], 'Bajs')}
-				{#if hasUnspecified}
-					{@render legendDot(ACCIDENT_COLORS[2], 'Ospecificerat')}
+				{@render legendDot(MEAL_COLORS[0], 'Åt upp')}
+				{@render legendDot(MEAL_COLORS[1], 'Åt inte upp')}
+				{#if hasUnknownMeals}
+					{@render legendDot(MEAL_COLORS[2], 'Okänt')}
 				{/if}
 			</div>
-		{:else}
-			<p class="py-6 text-center text-sm text-gray-500">
-				{data.period === 'week'
-					? 'Veckovyn visas när en hel vecka har spårats.'
-					: 'Månadsvyn visas när en hel månad har spårats.'}
-			</p>
-		{/if}
-		<div class="grid grid-cols-3 gap-2">
-			{#each accidentTiles as tile (tile.label)}
-				{@render miniTile(tile.value, tile.label)}
-			{/each}
+			<div class="grid grid-cols-2 gap-2">
+				{@render miniTile(
+					s?.avg_meal_gap_min != null ? `~${minutesText(s.avg_meal_gap_min)}` : '–',
+					'⏳ mellan mål'
+				)}
+				{@render miniTile(
+					s?.meal_finish_rate != null ? pctText(s.meal_finish_rate) : '–',
+					'✅ åt upp'
+				)}
+			</div>
 		</div>
-	</section>
+	</details>
 
-	<section class="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-4">
-		<div class="flex items-baseline justify-between">
-			<h2 class="font-semibold">⚖️ Vikt</h2>
-			{#if data.weights.length > 0}
-				<p class="text-lg font-bold">{svNum(data.weights[data.weights.length - 1].kg)} kg</p>
+	<details open class="group overflow-hidden rounded-2xl border border-gray-200 bg-white">
+		{@render foldHeader('⚠️ Olyckor')}
+		<div class="flex flex-col gap-3 p-4">
+			<nav class="flex rounded-lg bg-gray-100 p-1" aria-label="Periodval">
+				{#each periodTabs as tab (tab.value)}
+					<a
+						href="?period={tab.value}&trend={data.trend}"
+						data-sveltekit-noscroll
+						aria-current={data.period === tab.value ? 'true' : undefined}
+						class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {data.period ===
+						tab.value
+							? 'bg-white text-gray-900 shadow-sm'
+							: 'text-gray-500 hover:text-gray-900'}"
+					>
+						{tab.label}
+					</a>
+				{/each}
+			</nav>
+			{#if periodReady}
+				<Columns buckets={accidentBuckets} colors={ACCIDENT_COLORS} />
+				<div class="flex gap-4 text-sm text-gray-600">
+					{@render legendDot(ACCIDENT_COLORS[0], 'Kiss')}
+					{@render legendDot(ACCIDENT_COLORS[1], 'Bajs')}
+					{#if hasUnspecified}
+						{@render legendDot(ACCIDENT_COLORS[2], 'Ospecificerat')}
+					{/if}
+				</div>
+			{:else}
+				<p class="py-6 text-center text-sm text-gray-500">
+					{data.period === 'week'
+						? 'Veckovyn visas när en hel vecka har spårats.'
+						: 'Månadsvyn visas när en hel månad har spårats.'}
+				</p>
+			{/if}
+			<div class="grid grid-cols-3 gap-2">
+				{#each accidentTiles as tile (tile.label)}
+					{@render miniTile(tile.value, tile.label)}
+				{/each}
+			</div>
+		</div>
+	</details>
+
+	<details open class="group overflow-hidden rounded-2xl border border-gray-200 bg-white">
+		<summary
+			class="flex cursor-pointer list-none items-center justify-between border-gray-200 bg-gray-50 px-4 py-3 font-semibold transition-colors select-none group-open:border-b hover:bg-gray-100 [&::-webkit-details-marker]:hidden"
+		>
+			<span>⚖️ Vikt</span>
+			<span class="flex items-center gap-2">
+				{#if data.weights.length > 0}
+					<span class="text-lg font-bold">
+						{svNum(data.weights[data.weights.length - 1].kg)} kg
+					</span>
+				{/if}
+				<span class="text-gray-400 transition-transform group-open:rotate-180" aria-hidden="true">
+					▾
+				</span>
+			</span>
+		</summary>
+		<div class="flex flex-col gap-2 p-4">
+			{#if weightPoints.length === 0}
+				<p class="text-sm text-gray-500">Ingen vägning loggad ännu.</p>
+			{:else}
+				<TrendLine points={weightPoints} color={WEIGHT_COLOR} unit="kg" />
 			{/if}
 		</div>
-		{#if weightPoints.length === 0}
-			<p class="text-sm text-gray-500">Ingen vägning loggad ännu.</p>
-		{:else}
-			<TrendLine points={weightPoints} color={WEIGHT_COLOR} unit="kg" />
-		{/if}
-	</section>
+	</details>
 </main>
