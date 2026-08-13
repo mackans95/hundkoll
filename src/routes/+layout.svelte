@@ -31,7 +31,7 @@
 					aria-current={page.url.pathname === tab.href ? 'page' : undefined}
 					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors {page.url
 						.pathname === tab.href
-						? 'font-semibold text-gray-900'
+						? 'bg-emerald-100 font-semibold text-gray-900'
 						: 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}"
 				>
 					<span class="text-xl" aria-hidden="true">{tab.icon}</span>

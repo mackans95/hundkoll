@@ -1,11 +1,14 @@
 <script lang="ts" module>
-	export type TooltipRow = { label: string; value: string; color?: string };
+	export type TooltipCell = { label?: string; value: string; color?: string; big?: boolean };
 
+	// Each tooltip row renders as its own card inside the tooltip; cells in
+	// a row split its width evenly with divider lines ("🚶 7 | 🟡 14 | 💩 3").
+	// big renders the label large — for emoji that drown at text size.
 	export type ColumnBucket = {
 		label: string;
 		tick: boolean;
 		segments: number[];
-		tooltip: { heading: string; rows: TooltipRow[] };
+		tooltip: { heading: string; rows: TooltipCell[][] };
 	};
 </script>
 
@@ -104,13 +107,22 @@
 				{:else}
 					<rect x={i * slot} y={PAD_TOP} width={slot} height={plotH} fill="transparent" />
 				{/if}
-				{#each stack(bucket.segments) as seg (seg.idx)}
-					{#if seg.isTop}
-						<path d={roundedTop(x, seg.y, barW, seg.h)} fill={colors[seg.idx]} />
-					{:else}
-						<rect {x} y={seg.y} width={barW} height={seg.h} fill={colors[seg.idx]} />
-					{/if}
-				{/each}
+				<!-- Hovered bar keeps its color and gains a dark outline; the
+				     rest of the chart fades back. -->
+				<g
+					stroke={hovered === i ? '#111827' : 'none'}
+					stroke-opacity="0.4"
+					opacity={hovered !== null && hovered !== i ? 0.35 : 1}
+					style="transition: opacity 120ms"
+				>
+					{#each stack(bucket.segments) as seg (seg.idx)}
+						{#if seg.isTop}
+							<path d={roundedTop(x, seg.y, barW, seg.h)} fill={colors[seg.idx]} />
+						{:else}
+							<rect {x} y={seg.y} width={barW} height={seg.h} fill={colors[seg.idx]} />
+						{/if}
+					{/each}
+				</g>
 				{#if bucket.tick}
 					<text
 						x={i * slot + slot / 2}
@@ -133,15 +145,33 @@
 			style="left: {tipLeft}%; top: calc({tipTop}% - 6px)"
 		>
 			<p class="font-semibold">{bucket.tooltip.heading}</p>
-			{#each bucket.tooltip.rows as row (row.label)}
-				<p class="flex items-center gap-1.5">
-					{#if row.color}
-						<span class="h-2 w-2 shrink-0 rounded-full" style="background:{row.color}"></span>
-					{/if}
-					<span class="text-gray-300">{row.label}</span>
-					<span class="ml-auto pl-2 font-semibold">{row.value}</span>
-				</p>
-			{/each}
+			<div class="mt-1 flex flex-col gap-1">
+				{#each bucket.tooltip.rows as row, ri (ri)}
+					<div class="flex items-stretch rounded-md bg-white/10 px-2 py-1">
+						{#each row as cell, ci (ci)}
+							{#if ci > 0}
+								<span class="mx-2 w-px shrink-0 self-stretch bg-white/20"></span>
+							{/if}
+							<span
+								class="flex flex-1 items-center gap-1.5 {row.length > 1
+									? 'justify-center'
+									: 'justify-between'}"
+							>
+								{#if cell.color}
+									<span class="h-2 w-2 shrink-0 rounded-full" style="background:{cell.color}"
+									></span>
+								{/if}
+								{#if cell.label}
+									<span class={cell.big ? 'text-lg leading-none' : 'text-gray-300'}>
+										{cell.label}
+									</span>
+								{/if}
+								<span class="font-semibold">{cell.value}</span>
+							</span>
+						{/each}
+					</div>
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>
