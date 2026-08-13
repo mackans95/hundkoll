@@ -82,16 +82,40 @@
 		].join('');
 	}
 
-	// Tooltip anchor as percentages of the chart box, clamped so the box
-	// never hangs outside the card at the edges.
-	const tipLeft = $derived(
-		hovered === null ? 0 : Math.min(86, Math.max(14, ((hovered + 0.5) * slot * 100) / W))
-	);
+	// Hover follows the pointer at the container level: per-bar enter events
+	// don't fire during a touch drag (the first-touched element captures the
+	// pointer), but container pointermove does.
+	let containerEl: HTMLDivElement | undefined = $state();
+	let containerW = $state(0);
+	let tipW = $state(0);
+
+	function hoverFromEvent(e: PointerEvent) {
+		if (!containerEl) return;
+		const rect = containerEl.getBoundingClientRect();
+		const idx = Math.floor(((e.clientX - rect.left) / rect.width) * buckets.length);
+		hovered = Math.min(buckets.length - 1, Math.max(0, idx));
+	}
+
+	// Tooltip center in pixels, clamped by the measured tooltip width so the
+	// box never leaves the container (and therefore never the viewport).
+	const tipLeftPx = $derived.by(() => {
+		if (hovered === null || containerW === 0) return 0;
+		const ideal = (((hovered + 0.5) * slot) / W) * containerW;
+		const half = tipW / 2;
+		return Math.min(containerW - half - 2, Math.max(half + 2, ideal));
+	});
 	const tipTop = $derived(hovered === null ? 0 : (y(total(buckets[hovered])) * 100) / height);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="relative" onpointerleave={() => (hovered = null)}>
+<div
+	bind:this={containerEl}
+	bind:clientWidth={containerW}
+	class="relative touch-pan-y select-none"
+	onpointermove={hoverFromEvent}
+	onpointerdown={hoverFromEvent}
+	onpointerleave={() => (hovered = null)}
+>
 	<svg viewBox="0 0 {W} {height}" class="w-full" role="img">
 		<line x1="0" x2={W} y1={y(top)} y2={y(top)} stroke="#f3f4f6" />
 		<line x1="0" x2={W} y1={y(top / 2)} y2={y(top / 2)} stroke="#f3f4f6" />
@@ -100,8 +124,7 @@
 
 		{#each buckets as bucket, i (i)}
 			{@const x = i * slot + (slot - barW) / 2}
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<g onpointerenter={() => (hovered = i)}>
+			<g>
 				{#if hovered === i}
 					<rect x={i * slot} y={PAD_TOP} width={slot} height={plotH} fill="#f3f4f6" rx="3" />
 				{:else}
@@ -141,8 +164,9 @@
 	{#if hovered !== null}
 		{@const bucket = buckets[hovered]}
 		<div
+			bind:clientWidth={tipW}
 			class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
-			style="left: {tipLeft}%; top: calc({tipTop}% - 6px)"
+			style="left: {tipLeftPx}px; top: calc({tipTop}% - 6px)"
 		>
 			<p class="font-semibold">{bucket.tooltip.heading}</p>
 			<div class="mt-1 flex flex-col gap-1">

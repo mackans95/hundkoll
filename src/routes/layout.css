@@ -1,2 +1,8 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
+
+/* The app must never scroll sideways on mobile; clip instead of hidden
+   so no phantom scroll container is created. */
+html {
+	overflow-x: clip;
+}
