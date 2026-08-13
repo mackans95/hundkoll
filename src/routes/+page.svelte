@@ -5,19 +5,12 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	const CATEGORY_LABELS: Record<string, string> = {
-		routine: 'Rutin',
-		care: 'Skötsel',
-		health: 'Hälsa'
-	};
+	// Category identity is carried by the tile colors alone.
 	const CATEGORY_COLORS: Record<string, string> = {
-		routine: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700',
-		care: 'bg-sky-600 hover:bg-sky-700 active:bg-sky-700',
-		health: 'bg-amber-600 hover:bg-amber-700 active:bg-amber-700'
+		routine: 'border-emerald-800 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700',
+		care: 'border-sky-800 bg-sky-600 hover:bg-sky-700 active:bg-sky-700',
+		health: 'border-amber-800 bg-amber-600 hover:bg-amber-700 active:bg-amber-700'
 	};
-
-	// sort_order already groups the catalogue by category.
-	const categories = $derived([...new Set(data.types.map((t) => t.category))]);
 
 	const timeFormat = new Intl.DateTimeFormat('sv-SE', {
 		timeZone: 'Europe/Stockholm',
@@ -31,44 +24,38 @@
 
 <svelte:head><title>Hundkoll</title></svelte:head>
 
-<main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4 pb-10">
+<main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4 pb-10">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">{data.dog?.name ?? 'Hundkoll'}</h1>
+		<p class="mt-1 text-sm text-gray-500">Daglig logg</p>
 	</header>
 
 	{#if form?.message && !data.detailType}
 		<p class="rounded-lg bg-red-50 p-4 text-red-800">{form.message}</p>
 	{/if}
 
-	{#each categories as category (category)}
-		<section class="flex flex-col gap-2">
-			<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">
-				{CATEGORY_LABELS[category] ?? category}
-			</h2>
-			<div class="grid grid-cols-3 gap-2">
-				{#each data.types.filter((t) => t.category === category) as type (type.id)}
-					<a
-						href="?detail={type.id}"
-						class="flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-4 text-white transition active:scale-95 {CATEGORY_COLORS[
-							category
-						]}"
-					>
-						<span class="text-3xl" aria-hidden="true">{type.icon}</span>
-						<span class="text-sm font-semibold">{type.label}</span>
-					</a>
-				{/each}
-			</div>
-		</section>
-	{/each}
+	<section class="rounded-2xl border border-gray-200 bg-white p-3">
+		<div class="grid grid-cols-3 gap-2">
+			{#each data.types as type (type.id)}
+				<a
+					href="?detail={type.id}"
+					class="flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-4 text-white transition active:scale-95 {CATEGORY_COLORS[
+						type.category
+					]}"
+				>
+					<span class="text-3xl" aria-hidden="true">{type.icon}</span>
+					<span class="text-sm font-semibold">{type.label}</span>
+				</a>
+			{/each}
+		</div>
+	</section>
 
-	<section class="flex flex-col gap-2">
-		<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">
-			Senaste händelser
-		</h2>
+	<section class="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-4">
+		<h2 class="font-semibold">Senaste händelser</h2>
 		{#if data.events.length === 0}
-			<p class="px-1 text-gray-500">Inget loggat ännu.</p>
+			<p class="text-gray-500">Inget loggat ännu.</p>
 		{:else}
-			<ul class="divide-y divide-gray-200 px-1">
+			<ul class="divide-y divide-gray-200">
 				{#each data.events as event (event.id)}
 					{@const extra = [detailSummary(event.type_id, event.details), event.note]
 						.filter(Boolean)
