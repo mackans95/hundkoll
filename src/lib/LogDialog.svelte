@@ -73,7 +73,7 @@
 									type="button"
 									aria-label="Färre {field.label.toLowerCase()}"
 									onclick={() => (counts[field.name] = Math.max(1, counts[field.name] - 1))}
-									class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none active:bg-gray-100"
+									class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
 								>
 									−
 								</button>
@@ -82,7 +82,7 @@
 									type="button"
 									aria-label="Fler {field.label.toLowerCase()}"
 									onclick={() => (counts[field.name] += 1)}
-									class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none active:bg-gray-100"
+									class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
 								>
 									+
 								</button>
@@ -119,13 +119,13 @@
 			<div class="mt-2 flex gap-2">
 				<a
 					href="/"
-					class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700"
+					class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-50"
 				>
 					Avbryt
 				</a>
 				<button
 					type="submit"
-					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white active:bg-gray-700"
+					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
 				>
 					Spara
 				</button>

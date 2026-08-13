@@ -16,7 +16,21 @@ export type Summary = {
 	days_counted: number | null;
 };
 
-type WalkDay = { day: string; n: number };
+type WalkDay = {
+	day: string;
+	n: number;
+	pee: number;
+	poop: number;
+	avg_gap_min: number | null;
+	avg_duration_min: number | null;
+};
+type MealDay = {
+	day: string;
+	n: number;
+	finished_true: number;
+	finished_false: number;
+	avg_gap_min: number | null;
+};
 type AccidentBin = { bucket: string; n: number; pee: number; poop: number };
 type WeightEvent = { occurred_at: string; details: Record<string, unknown> };
 
@@ -25,20 +39,27 @@ const BIN_WINDOW_DAYS: Record<Period, number> = { day: 30, week: 84, month: 365 
 
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	const rawPeriod = url.searchParams.get('period') as Period | null;
-	const period: Period = rawPeriod && PERIODS.includes(rawPeriod) ? rawPeriod : 'week';
+	const period: Period = rawPeriod && PERIODS.includes(rawPeriod) ? rawPeriod : 'day';
 
 	const daysAgo = (days: number) =>
 		new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
-	const [summaryRes, walksRes, binsRes, weightsRes] = await Promise.all([
+	const [summaryRes, walksRes, mealsRes, binsRes, weightsRes] = await Promise.all([
 		supabase.from('stats_summary').select('*').limit(1).maybeSingle<Summary>(),
 		supabase
 			.from('stats_daily_counts')
-			.select('day, n')
+			.select('day, n, pee, poop, avg_gap_min, avg_duration_min')
 			.eq('type_id', 'walk')
 			.gte('day', daysAgo(30))
 			.order('day')
 			.overrideTypes<WalkDay[]>(),
+		supabase
+			.from('stats_daily_counts')
+			.select('day, n, finished_true, finished_false, avg_gap_min')
+			.eq('type_id', 'meal')
+			.gte('day', daysAgo(30))
+			.order('day')
+			.overrideTypes<MealDay[]>(),
 		supabase
 			.from('stats_accident_bins')
 			.select('bucket, n, pee, poop')
@@ -58,6 +79,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		period,
 		summary: summaryRes.data,
 		walkDays: walksRes.data ?? [],
+		mealDays: mealsRes.data ?? [],
 		accidentBins: binsRes.data ?? [],
 		weights: (weightsRes.data ?? [])
 			.filter((w) => typeof w.details.kg === 'number')

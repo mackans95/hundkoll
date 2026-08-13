@@ -11,9 +11,9 @@
 		health: 'Hälsa'
 	};
 	const CATEGORY_COLORS: Record<string, string> = {
-		routine: 'bg-emerald-600 active:bg-emerald-700',
-		care: 'bg-sky-600 active:bg-sky-700',
-		health: 'bg-amber-600 active:bg-amber-700'
+		routine: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700',
+		care: 'bg-sky-600 hover:bg-sky-700 active:bg-sky-700',
+		health: 'bg-amber-600 hover:bg-amber-700 active:bg-amber-700'
 	};
 
 	// sort_order already groups the catalogue by category.
