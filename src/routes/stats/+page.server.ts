@@ -13,6 +13,7 @@ export type Summary = {
 	accidents_per_day: number | null;
 	accidents_per_week: number | null;
 	accidents_per_month: number | null;
+	days_counted: number | null;
 };
 
 type WalkDay = { day: string; n: number };

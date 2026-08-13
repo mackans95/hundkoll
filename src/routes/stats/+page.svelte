@@ -132,7 +132,9 @@
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">Statistik</h1>
-		<p class="mt-1 text-sm text-gray-500">Snitt över de senaste 30 dagarna.</p>
+		<p class="mt-1 text-sm text-gray-500">
+			Snitt över de senaste {data.summary?.days_counted ?? 30} dagarna.
+		</p>
 	</header>
 
 	<section class="grid grid-cols-2 gap-2">
