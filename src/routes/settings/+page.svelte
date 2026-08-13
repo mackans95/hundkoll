@@ -45,7 +45,7 @@
 			{/each}
 			<button
 				type="submit"
-				class="mt-2 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white active:bg-gray-700"
+				class="mt-2 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
 			>
 				Spara
 			</button>
@@ -56,7 +56,7 @@
 		<form method="POST" action="?/logout" use:enhance>
 			<button
 				type="submit"
-				class="w-full rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700"
+				class="w-full rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
 			>
 				Logga ut
 			</button>

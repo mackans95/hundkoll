@@ -43,8 +43,11 @@
 			out.push({
 				label: dayLabel(day),
 				tick: (29 - i) % 7 === 0,
-				title: `${dayLabel(day)}: ${n} promenader`,
-				segments: [n]
+				segments: [n],
+				tooltip: {
+					heading: dayLabel(day),
+					rows: [{ label: 'Promenader', value: String(n), color: WALK_COLOR }]
+				}
 			});
 		}
 		return out;
@@ -65,18 +68,30 @@
 		}
 		const every = data.period === 'day' ? 7 : 3;
 		const label = data.period === 'month' ? monthLabel : dayLabel;
+		const headings: Record<typeof data.period, (s: string) => string> = {
+			day: dayLabel,
+			week: (s) => `Veckan ${dayLabel(s)}`,
+			month: monthLabel
+		};
 		return starts.map((start, i) => {
 			const bin = byBucket.get(start);
 			const pee = bin?.pee ?? 0;
 			const poop = bin?.poop ?? 0;
 			const other = Math.max(0, (bin?.n ?? 0) - pee - poop);
-			const parts = [`${pee} kiss`, `${poop} bajs`];
-			if (other > 0) parts.push(`${other} ospecificerat`);
 			return {
 				label: label(start),
 				tick: i % every === 0,
-				title: `${label(start)}: ${parts.join(' · ')}`,
-				segments: [pee, poop, other]
+				segments: [pee, poop, other],
+				tooltip: {
+					heading: headings[data.period](start),
+					rows: [
+						{ label: 'Kiss', value: String(pee), color: ACCIDENT_COLORS[0] },
+						{ label: 'Bajs', value: String(poop), color: ACCIDENT_COLORS[1] },
+						...(other > 0
+							? [{ label: 'Ospecificerat', value: String(other), color: ACCIDENT_COLORS[2] }]
+							: [])
+					]
+				}
 			};
 		});
 	});
@@ -108,15 +123,19 @@
 		{ label: 'Åt upp', value: s?.meal_finish_rate != null ? pctText(s.meal_finish_rate) : '–' }
 	]);
 
+	// Per-week/month averages are extrapolated pace until a full week or
+	// month has actually been tracked — show a blank instead of a skewed
+	// number until then.
+	const tracked = $derived(s?.days_counted ?? 0);
 	const accidentTiles = $derived([
 		{ label: 'per dag', value: s?.accidents_per_day != null ? svNum(s.accidents_per_day) : '–' },
 		{
 			label: 'per vecka',
-			value: s?.accidents_per_week != null ? svNum(s.accidents_per_week) : '–'
+			value: s?.accidents_per_week != null && tracked >= 7 ? svNum(s.accidents_per_week) : '–'
 		},
 		{
 			label: 'per månad',
-			value: s?.accidents_per_month != null ? svNum(s.accidents_per_month) : '–'
+			value: s?.accidents_per_month != null && tracked >= 30 ? svNum(s.accidents_per_month) : '–'
 		}
 	]);
 
@@ -170,7 +189,7 @@
 					aria-current={data.period === tab.value ? 'true' : undefined}
 					class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {data.period === tab.value
 						? 'bg-white text-gray-900 shadow-sm'
-						: 'text-gray-500'}"
+						: 'text-gray-500 hover:text-gray-900'}"
 				>
 					{tab.label}
 				</a>

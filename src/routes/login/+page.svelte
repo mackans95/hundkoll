@@ -41,7 +41,7 @@
 		</label>
 		<button
 			type="submit"
-			class="rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white active:bg-gray-700"
+			class="rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
 		>
 			Logga in
 		</button>
