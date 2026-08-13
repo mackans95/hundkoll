@@ -40,6 +40,26 @@ export function stockholmInputToUtc(input: string): Date | null {
 	return new Date(guess.getTime() - offsetMs(once));
 }
 
+/** Add days to a YYYY-MM-DD string (UTC arithmetic on date-only values). */
+export function addDays(iso: string, days: number): string {
+	const d = new Date(`${iso}T00:00:00Z`);
+	d.setUTCDate(d.getUTCDate() + days);
+	return d.toISOString().slice(0, 10);
+}
+
+/** Add months to a YYYY-MM-DD string, snapping to the 1st of the month. */
+export function addMonths(iso: string, months: number): string {
+	const d = new Date(`${iso.slice(0, 7)}-01T00:00:00Z`);
+	d.setUTCMonth(d.getUTCMonth() + months);
+	return d.toISOString().slice(0, 10);
+}
+
+/** Monday of the ISO week containing the given YYYY-MM-DD date. */
+export function mondayOf(iso: string): string {
+	const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
+	return addDays(iso, -((dow + 6) % 7));
+}
+
 const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['year', 365 * 86_400_000],
 	['month', 30 * 86_400_000],
