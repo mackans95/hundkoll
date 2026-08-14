@@ -47,9 +47,15 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		types,
 		events: eventsResult.data ?? [],
 		detailType: types.find((t) => t.id === detailParam) ?? null,
-		nowLocal: stockholmNowForInput()
+		nowLocal: stockholmNowForInput(),
+		// The row id travels with the form so a resubmit — a double tap, or a
+		// retry after a response was lost — collides on the primary key
+		// instead of inserting the same walk twice.
+		eventId: crypto.randomUUID()
 	};
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const actions: Actions = {
 	log: async ({ request, locals: { supabase } }) => {
@@ -62,6 +68,11 @@ export const actions: Actions = {
 		}
 
 		const row: Record<string, unknown> = { dog_id: dog.id, type_id: typeId };
+
+		const eventId = String(form.get('event_id') ?? '');
+		if (UUID_RE.test(eventId)) {
+			row.id = eventId;
+		}
 
 		const occurredRaw = String(form.get('occurred_at') ?? '').trim();
 		if (occurredRaw) {
@@ -112,7 +123,9 @@ export const actions: Actions = {
 		}
 
 		const { error } = await supabase.from('events').insert(row);
-		if (error) {
+		// 23505 = unique violation: this exact event is already stored, so the
+		// submission was a duplicate rather than a failure.
+		if (error && error.code !== '23505') {
 			console.error('event insert failed:', error.code, error.message);
 			return fail(500, { message: 'Kunde inte logga händelsen.' });
 		}

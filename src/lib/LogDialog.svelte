@@ -4,8 +4,12 @@
 
 	type EventType = { id: string; label: string; icon: string | null };
 
-	let { type, nowLocal, message }: { type: EventType; nowLocal: string; message: string | null } =
-		$props();
+	let {
+		type,
+		nowLocal,
+		eventId,
+		message
+	}: { type: EventType; nowLocal: string; eventId: string; message: string | null } = $props();
 
 	const fields = $derived(DETAIL_FIELDS[type.id] ?? []);
 
@@ -41,6 +45,7 @@
 		<form method="POST" action="?/log" use:enhance class="flex flex-col gap-3">
 			<input type="hidden" name="type_id" value={type.id} />
 			<input type="hidden" name="detailed" value="1" />
+			<input type="hidden" name="event_id" value={eventId} />
 
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-gray-700">Tidpunkt</span>

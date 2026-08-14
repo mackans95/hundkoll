@@ -81,6 +81,11 @@
 
 {#if data.detailType}
 	{#key data.detailType.id}
-		<LogDialog type={data.detailType} nowLocal={data.nowLocal} message={form?.message ?? null} />
+		<LogDialog
+			type={data.detailType}
+			nowLocal={data.nowLocal}
+			eventId={data.eventId}
+			message={form?.message ?? null}
+		/>
 	{/key}
 {/if}

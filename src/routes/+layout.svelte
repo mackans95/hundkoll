@@ -1,6 +1,5 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
@@ -15,10 +14,9 @@
 	];
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
-
 {#if data.session}
-	<div class="pb-20">
+	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
+	<div class="pb-[calc(5rem+env(safe-area-inset-bottom))]">
 		{@render children()}
 	</div>
 	<nav
