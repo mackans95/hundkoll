@@ -1,9 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to
+		     anything other than zero, which the bottom nav relies on. -->
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="text-scale" content="scale" />
+		<link rel="icon" href="%sveltekit.assets%/icon.svg" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<meta name="theme-color" content="#059669" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="apple-mobile-web-app-title" content="Hundkoll" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
