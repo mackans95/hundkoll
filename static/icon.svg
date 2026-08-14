@@ -1,18 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <title>Hundkoll</title>
-  <rect width="512" height="512" fill="#059669" />
-  <rect x="106" y="106" width="300" height="300" rx="46" fill="#f59e0b" />
-  <g stroke="#b45309" stroke-width="14" stroke-linecap="round">
-    <line x1="206" y1="134" x2="206" y2="378" />
-    <line x1="306" y1="134" x2="306" y2="378" />
-    <line x1="134" y1="206" x2="378" y2="206" />
-    <line x1="134" y1="306" x2="378" y2="306" />
+  <!-- Full-bleed waffle: launchers mask the icon to their own shape, and a
+       grid is texture, so the corners are safe to lose. The paw stays well
+       inside the maskable safe zone (the central 80%). -->
+  <rect width="512" height="512" fill="#f59e0b" />
+  <g stroke="#b45309" stroke-width="28">
+    <line x1="171" y1="0" x2="171" y2="512" />
+    <line x1="341" y1="0" x2="341" y2="512" />
+    <line x1="0" y1="171" x2="512" y2="171" />
+    <line x1="0" y1="341" x2="512" y2="341" />
   </g>
   <g fill="#ffffff">
-    <ellipse cx="256" cy="294" rx="54" ry="45" />
-    <ellipse cx="198" cy="234" rx="23" ry="29" transform="rotate(-20 198 234)" />
-    <ellipse cx="233" cy="209" rx="22" ry="28" transform="rotate(-8 233 209)" />
-    <ellipse cx="279" cy="209" rx="22" ry="28" transform="rotate(8 279 209)" />
-    <ellipse cx="314" cy="234" rx="23" ry="29" transform="rotate(20 314 234)" />
+    <ellipse cx="256" cy="308" rx="76" ry="63" />
+    <ellipse cx="175" cy="224" rx="32" ry="41" transform="rotate(-20 175 224)" />
+    <ellipse cx="224" cy="189" rx="31" ry="39" transform="rotate(-8 224 189)" />
+    <ellipse cx="288" cy="189" rx="31" ry="39" transform="rotate(8 288 189)" />
+    <ellipse cx="337" cy="224" rx="32" ry="41" transform="rotate(20 337 224)" />
   </g>
 </svg>
