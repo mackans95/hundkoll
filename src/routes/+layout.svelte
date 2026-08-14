@@ -1,10 +1,26 @@
 <script lang="ts">
 	import './layout.css';
 	import { page } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import { flushQueue, loadQueue } from '$lib/offline-queue.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	// Anything logged without signal is sent as soon as there is some —
+	// on launch, and the moment the connection comes back.
+	onMount(() => {
+		const send = async () => {
+			if ((await flushQueue()) > 0) {
+				await invalidateAll();
+			}
+		};
+		loadQueue().then(send);
+		addEventListener('online', send);
+		return () => removeEventListener('online', send);
+	});
 
 	const tabs = [
 		{ href: '/', label: 'Logga', icon: '🐾' },

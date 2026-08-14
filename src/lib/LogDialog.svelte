@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { DETAIL_FIELDS } from '$lib/events';
+	import { enqueue } from '$lib/offline-queue.svelte';
+	import { stockholmInputToUtc } from '$lib/time';
 
 	type EventType = { id: string; label: string; icon: string | null };
 
@@ -8,10 +11,62 @@
 		type,
 		nowLocal,
 		eventId,
-		message
-	}: { type: EventType; nowLocal: string; eventId: string; message: string | null } = $props();
+		message,
+		onClose
+	}: {
+		type: EventType;
+		nowLocal: string;
+		eventId: string;
+		message: string | null;
+		/** Set when the dialog was opened client-side (offline). */
+		onClose?: () => void;
+	} = $props();
 
 	const fields = $derived(DETAIL_FIELDS[type.id] ?? []);
+
+	async function queue(formData: FormData) {
+		const values: Record<string, string> = {};
+		for (const [name, value] of formData.entries()) {
+			if (typeof value === 'string') values[name] = value;
+		}
+		const occurred = stockholmInputToUtc(values.occurred_at ?? '') ?? new Date();
+		await enqueue({
+			id: values.event_id,
+			typeId: type.id,
+			label: type.label,
+			icon: type.icon,
+			occurredAt: occurred.toISOString(),
+			fields: values,
+			attempts: 0
+		});
+
+		if (onClose) {
+			onClose();
+		} else {
+			// This dialog came from ?detail=… — the signal dropped after it
+			// opened. A full navigation closes it, and the service worker
+			// answers it from cache.
+			location.href = '/';
+		}
+	}
+
+	// Offline, the submission is kept on the phone instead of failing: the
+	// row id already travels with the form, so sending it later cannot
+	// duplicate the event.
+	const submit: SubmitFunction = ({ formData, cancel }) => {
+		if (!navigator.onLine) {
+			cancel();
+			queue(formData);
+			return;
+		}
+		return async ({ result, update }) => {
+			if (result.type === 'error') {
+				await queue(formData);
+				return;
+			}
+			await update();
+		};
+	};
 
 	// Checked count fields and their stepper values; a missing key means the
 	// checkbox is unchecked. Fresh per dialog open (the page keys this
@@ -42,7 +97,7 @@
 			<p class="mb-3 rounded-lg bg-red-50 p-3 text-red-800">{message}</p>
 		{/if}
 
-		<form method="POST" action="?/log" use:enhance class="flex flex-col gap-3">
+		<form method="POST" action="?/log" use:enhance={submit} class="flex flex-col gap-3">
 			<input type="hidden" name="type_id" value={type.id} />
 			<input type="hidden" name="detailed" value="1" />
 			<input type="hidden" name="event_id" value={eventId} />
@@ -122,12 +177,22 @@
 			</label>
 
 			<div class="mt-2 flex gap-2">
-				<a
-					href="/"
-					class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-				>
-					Avbryt
-				</a>
+				{#if onClose}
+					<button
+						type="button"
+						onclick={onClose}
+						class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+					>
+						Avbryt
+					</button>
+				{:else}
+					<a
+						href="/"
+						class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+					>
+						Avbryt
+					</a>
+				{/if}
 				<button
 					type="submit"
 					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
