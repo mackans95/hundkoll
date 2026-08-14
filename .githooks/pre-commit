@@ -1,0 +1,51 @@
+#!/bin/sh
+# The commit author is stamped from git config, which falls back to the
+# global identity — the work account — whenever this repo lacks a local
+# one (a fresh clone, most likely). Refuse such commits.
+
+allowed_emails="mackan.g12@gmail.com 70203239+mackans95@users.noreply.github.com"
+expected_gh="mackans95"
+email=$(git config user.email)
+
+author_ok=0
+for allowed in $allowed_emails; do
+	if [ "$email" = "$allowed" ]; then
+		author_ok=1
+	fi
+done
+
+if [ "$author_ok" -eq 0 ]; then
+	cat >&2 <<EOF
+
+✗ Commit blocked — author email is "${email:-unset}"
+
+  Hundkoll only takes commits from the private account. Set it for
+  this repo:
+
+    git config --local user.name mackans95
+    git config --local user.email mackan.g12@gmail.com
+
+EOF
+	exit 1
+fi
+
+# Warn early about the account that will push. git contacts the remote
+# before running pre-push, so a wrong gh account surfaces as GitHub's
+# opaque 403 and never reaches that hook — say it here instead, while
+# the commit itself (correctly authored) is allowed through. Read from
+# gh's config rather than `gh auth status`, which costs a network call.
+hosts="${GH_CONFIG_DIR:-$HOME/.config/gh}/hosts.yml"
+if [ -r "$hosts" ]; then
+	active=$(awk '/^github\.com:/{f=1;next} /^[^ ]/{f=0} f && /^[ \t]+user:/{print $2}' "$hosts")
+	if [ -n "$active" ] && [ "$active" != "$expected_gh" ]; then
+		cat >&2 <<EOF
+
+⚠ Committed, but gh is active as "$active" — the push will be rejected.
+
+    gh auth switch -u $expected_gh
+
+EOF
+	fi
+fi
+
+exit 0

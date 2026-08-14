@@ -1,0 +1,31 @@
+#!/bin/sh
+# Pushes over https authenticate through gh's credential helper, and
+# `gh pr create` uses the same account, so the active gh account decides
+# who GitHub thinks is pushing. Keep the work account out of this repo.
+#
+# Note the limit of this hook: git authenticates to the remote to list
+# refs BEFORE running pre-push, so when the active account has no access
+# at all, GitHub's 403 lands first and this never runs. It fires in the
+# case that would otherwise slip through — an account GitHub does let in.
+# The pre-commit hook warns about the account earlier, before any of it.
+
+expected="mackans95"
+active=$(gh auth status --active 2>/dev/null |
+	sed -n 's/.*Logged in to github.com account \([^ ]*\).*/\1/p' | head -1)
+
+# gh missing or logged out: not this hook's business — let the push run
+# and whatever credential helper is configured handle it.
+if [ -z "$active" ] || [ "$active" = "$expected" ]; then
+	exit 0
+fi
+
+cat >&2 <<EOF
+
+✗ Push blocked — gh is active as "$active"
+
+  Switch back to the private account and push again:
+
+    gh auth switch -u $expected
+
+EOF
+exit 1
