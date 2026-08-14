@@ -21,10 +21,25 @@ const DEV = build.length === 0;
 
 sw.addEventListener('install', (event) => {
 	event.waitUntil(
-		caches
-			.open(CACHE)
-			.then((cache) => cache.addAll(PRECACHE))
-			.then(() => sw.skipWaiting())
+		(async () => {
+			const cache = await caches.open(CACHE);
+			await cache.addAll(PRECACHE);
+
+			// The page load that installs this worker is fetched before the
+			// worker controls anything, so the app's own HTML would not be
+			// cached by it — and the first offline launch would have nothing
+			// to show. Fetch the log page here so that launch works.
+			try {
+				const response = await fetch('/', { credentials: 'same-origin' });
+				if (response.status === 200 && !response.redirected) {
+					await cache.put('/', response);
+				}
+			} catch {
+				// Installing while offline; the first online navigation caches it.
+			}
+
+			await sw.skipWaiting();
+		})()
 	);
 });
 
@@ -70,18 +85,24 @@ async function respond(event: FetchEvent): Promise<Response> {
 	// that copy is what lets the app open at all without signal.
 	try {
 		const response = await fetch(request);
-		if (response.status === 200) {
+		// A redirected response belongs to a different URL — caching it under
+		// this one would, for an expired session, pin the login page in place
+		// of the app.
+		if (response.status === 200 && !response.redirected) {
 			event.waitUntil(cache.put(request, response.clone()));
 		}
 		return response;
 	} catch {
-		const cached = await cache.match(request);
+		// ignoreVary: SvelteKit varies its responses on headers that differ
+		// between a navigation and a data request, which would otherwise turn
+		// a perfectly good cached page into a miss.
+		const cached = await cache.match(request, { ignoreVary: true });
 		if (cached) return cached;
 
 		// An unvisited page with nothing cached: fall back to the log
 		// page, which is the one worth reaching anyway.
 		if (request.mode === 'navigate') {
-			const home = await cache.match('/');
+			const home = await cache.match('/', { ignoreVary: true });
 			if (home) return home;
 		}
 		return offlineResponse();
