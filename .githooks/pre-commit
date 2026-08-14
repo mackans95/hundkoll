@@ -1,0 +1,26 @@
+#!/bin/sh
+# The commit author is stamped from git config, which falls back to the
+# global identity — the work account — whenever this repo lacks a local
+# one (a fresh clone, most likely). Refuse such commits.
+
+allowed_emails="mackan.g12@gmail.com 70203239+mackans95@users.noreply.github.com"
+email=$(git config user.email)
+
+for allowed in $allowed_emails; do
+	if [ "$email" = "$allowed" ]; then
+		exit 0
+	fi
+done
+
+cat >&2 <<EOF
+
+✗ Commit blocked — author email is "${email:-unset}"
+
+  Hundkoll only takes commits from the private account. Set it for
+  this repo:
+
+    git config --local user.name mackans95
+    git config --local user.email mackan.g12@gmail.com
+
+EOF
+exit 1
