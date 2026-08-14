@@ -1,42 +1,188 @@
-# sv
+# Hundkoll
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A private daily-care log for our dog **Våfflan** — walks, meals, accidents, grooming,
+health. Built for one specific moment: standing in the hallway with a leash in one hand,
+logging a walk with the thumb of the other.
 
-## Creating a project
+The question the app exists to answer is _"when was X last done, and is it overdue?"_
 
-If you're seeing this, you've probably already done this step. Congrats!
+## The app
+
+Four screens, as a bottom tab bar:
+
+| Screen            | What it does                                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Logga** (`/`)   | A 3×3 grid of tap targets, one per activity. Tapping opens a dialog for time, type-specific details and a note. |
+| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red.             |
+| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.       |
+| **Inställningar** | The interval for each activity, editable. Blank means "no schedule". Also logout.                               |
+
+Swedish in the UI, English in the code.
+
+## Stack
+
+- **SvelteKit** (Svelte 5 runes) + TypeScript + Tailwind 4
+- **Supabase** — Postgres, Auth, RLS (region `eu-north-1`)
+- **Vercel** via `adapter-vercel`, function pinned to `arn1` (Stockholm) so it runs in the
+  same city as the database — see [Performance](#performance)
+- No runtime dependencies beyond `@supabase/supabase-js` and `@supabase/ssr`. The charts
+  are hand-rolled inline SVG; there is no charting library.
+
+## Running it locally
 
 ```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.17.0 create --template minimal --types ts --add tailwindcss="plugins:forms" prettier sveltekit-adapter="adapter:vercel" --install npm hundkoll
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install          # also wires up the git hooks, see Conventions
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+You need a `.env` with the two variables in [`.env.example`](.env.example):
 
-To create a production version of your app:
-
-```sh
-npm run build
+```
+PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-You can preview the production build with `npm run preview`.
+> **`PUBLIC_SUPABASE_URL` must be the bare host** — no `/rest/v1` suffix. `supabase-js`
+> appends service paths itself, and a suffixed base URL breaks auth with a confusing 404
+> (`Invalid path specified in request URL`). This has bitten us once already.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The publishable key is safe in the browser **only** because RLS is enforced. It identifies
+the app, not the user, and is never an authorisation mechanism. The secret key is not used
+anywhere in this project.
+
+Other commands:
+
+| Command           | Purpose                                     |
+| ----------------- | ------------------------------------------- |
+| `npm run check`   | `svelte-check` — run this before committing |
+| `npm run format`  | Prettier                                    |
+| `npm run build`   | production build                            |
+| `npm run db-push` | apply pending migrations to Supabase        |
+
+## Data model
+
+The insight the schema is built on: **everything logged is the same thing — an event with a
+timestamp.** Walks, meals and nail trims differ only in whether they have an expected
+recurrence and which detail fields they carry. So there is one `events` table with a `jsonb`
+details column, plus an `event_types` catalogue holding the intervals.
+
+Adding a new tracked activity is therefore a row insert, not a migration.
+
+```
+households ─┬─ household_members ── auth.users
+            └─ dogs ── events ── event_types
+```
+
+Current catalogue:
+
+| Type        | Label         | Category | Interval |
+| ----------- | ------------- | -------- | -------- |
+| `walk`      | Promenad      | routine  | —        |
+| `meal`      | Matning       | routine  | —        |
+| `accident`  | Olycka        | routine  | —        |
+| `nail_trim` | Kloklippning  | care     | 42 days  |
+| `grooming`  | Pälsklippning | care     | 70 days  |
+| `bath`      | Bad           | care     | 56 days  |
+| `deworming` | Avmaskning    | health   | —        |
+| `vet`       | Veterinär     | health   | —        |
+| `weight`    | Vägning       | health   | —        |
+
+`details` examples: walk `{"duration_min": 35, "pee": 3, "poop": 1}`, meal
+`{"finished": true}`, weight `{"kg": 12.4}`. Pee and poop are counts; older rows hold
+booleans and are still read correctly.
+
+### Aggregation lives in SQL
+
+Pages format, they do not compute. Five views:
+
+| View                   | Answers                                                                    |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `dog_care_status`      | last done and next due per activity — powers the Status screen             |
+| `stats_summary`        | every headline average, one row per dog                                    |
+| `stats_daily_counts`   | per type per day: counts, pee/poop, finished meals, gap and duration means |
+| `stats_accident_bins`  | accidents binned per day, ISO week and month, split kiss/bajs              |
+| `stats_period_summary` | one row per period bucket — powers the Trender comparisons                 |
+
+Two rules these views follow, both learned the hard way:
+
+- **Days are Stockholm days.** A 00:30 walk belongs to the day it felt like, not to UTC.
+- **Averages divide by what was actually measured.** Rates divide by days tracked (capped
+  at the window), not by the window length, and "time between" pools only gaps _within_ a
+  day — otherwise the overnight 22:00 → 07:30 stretch dominates every number.
+
+### Migrations
+
+Schema lives in `supabase/migrations/` and is applied with `npm run db-push`.
+
+> **Never change the schema in the Supabase web UI.** The migration files are the source of
+> truth. And do not push a migration from an unmerged branch — the database is shared with
+> production, so schema changes land when the branch merges.
+
+## Auth
+
+Email and password, with **no signup flow**. The two users are created by hand in the
+Supabase dashboard and public signup is disabled; there is no registration UI to build.
+Password resets are done by hand in the SQL editor:
+
+```sql
+update auth.users
+set encrypted_password = crypt('new-password', gen_salt('bf'))
+where email = '...';
+```
+
+The app sends no email at all, so there is no SMTP to configure. `hooks.server.ts` creates
+a per-request Supabase client from cookies, validates the session with `getUser()` rather
+than trusting the cookie, and guards every route except `/login`.
+
+RLS is the only wall, since the publishable key is public: a row is visible and writable
+only if the user is a member of the owning household. `event_types` is readable by anyone
+and writable only in `interval_days`, via a column grant, so the Settings screen can adjust
+schedules without being able to rewrite the catalogue.
+
+## Offline and installable
+
+Hundkoll is a PWA: manifest, icons, and standalone display, so it installs to the home
+screen on both phones.
+
+- **`src/service-worker.ts`** precaches the built assets and serves pages network-first
+  with a cache fallback, so the app opens without signal showing the last known state. It
+  stands down entirely under `vite dev`.
+- **`src/lib/offline-queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
+  on launch and on the `online` event. Pending events show dimmed with ⏳ until they land.
+
+Both rely on one detail: **the event's row id is generated when the dialog renders and
+travels with the form.** Replaying a queued log is therefore idempotent — a send that
+reached the server but lost its response collides on the primary key, which the action
+treats as success rather than logging the walk twice. The same mechanism makes a double tap
+on Spara harmless.
+
+## Performance
+
+The Vercel function is pinned to `arn1` in `vite.config.ts`. Without it, requests entered
+Vercel's edge in Stockholm but executed in Washington DC while the database sat in
+Stockholm — roughly half a second of Atlantic per tap. Do not remove the region pin.
+
+## Conventions
+
+- **Branch and PR for every change.** Marcus reviews and merges; nothing is committed to
+  `master` directly.
+- **Form actions over client-side fetch.** Most of the app is "tap button, insert row,
+  re-render list" and works without JavaScript, including the log dialog. Offline support
+  is the one place that genuinely needs JS.
+- **All timestamps are `timestamptz`**, rendered in `Europe/Stockholm`.
+- **Git hooks** in `.githooks/` refuse commits authored by the wrong GitHub account and
+  pushes from the wrong `gh` login. `npm install` points `core.hooksPath` at them via the
+  `prepare` script, so a fresh clone configures itself.
+
+### One gotcha worth knowing
+
+The global gitignore on Marcus's machine includes GitHub's Python block, which contains
+`lib/` — and that silently excludes SvelteKit's `src/lib/`. The project `.gitignore`
+carries `!src/lib/` to override it. **Do not remove that line.** If something builds
+locally but fails on Vercel with `ENOENT` on a file you know exists, run
+`git check-ignore -v <path>` before investigating anything else.
+
+## Deployment
+
+Vercel deploys `master` automatically. Migrations do not deploy with it — run
+`npm run db-push` after merging anything that touches `supabase/migrations/`.
