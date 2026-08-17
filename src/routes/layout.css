@@ -6,3 +6,18 @@
 html {
 	overflow-x: clip;
 }
+
+/* Buttons are utilities rather than a component because the same styling
+   has to sit on a <button>, a submit, and an <a> — the dialog's Avbryt is
+   a link when the page can navigate and a button when it cannot. */
+@utility btn {
+	@apply rounded-lg px-4 py-3 text-center font-semibold transition-colors;
+}
+
+@utility btn-primary {
+	@apply bg-gray-900 text-white hover:bg-gray-800 active:bg-gray-700;
+}
+
+@utility btn-secondary {
+	@apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+}

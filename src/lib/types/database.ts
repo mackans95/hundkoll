@@ -1,0 +1,494 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+	// Allows to automatically instantiate createClient with right options
+	// instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+	__InternalSupabase: {
+		PostgrestVersion: '14.15';
+	};
+	graphql_public: {
+		Tables: {
+			[_ in never]: never;
+		};
+		Views: {
+			[_ in never]: never;
+		};
+		Functions: {
+			graphql: {
+				Args: {
+					extensions?: Json;
+					operationName?: string;
+					query?: string;
+					variables?: Json;
+				};
+				Returns: Json;
+			};
+		};
+		Enums: {
+			[_ in never]: never;
+		};
+		CompositeTypes: {
+			[_ in never]: never;
+		};
+	};
+	public: {
+		Tables: {
+			dogs: {
+				Row: {
+					birth_date: string | null;
+					breed: string | null;
+					created_at: string;
+					household_id: string;
+					id: string;
+					name: string;
+					photo_path: string | null;
+				};
+				Insert: {
+					birth_date?: string | null;
+					breed?: string | null;
+					created_at?: string;
+					household_id: string;
+					id?: string;
+					name: string;
+					photo_path?: string | null;
+				};
+				Update: {
+					birth_date?: string | null;
+					breed?: string | null;
+					created_at?: string;
+					household_id?: string;
+					id?: string;
+					name?: string;
+					photo_path?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'dogs_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: false;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			event_types: {
+				Row: {
+					category: string;
+					icon: string | null;
+					id: string;
+					interval_days: number | null;
+					label: string;
+					sort_order: number;
+				};
+				Insert: {
+					category: string;
+					icon?: string | null;
+					id: string;
+					interval_days?: number | null;
+					label: string;
+					sort_order?: number;
+				};
+				Update: {
+					category?: string;
+					icon?: string | null;
+					id?: string;
+					interval_days?: number | null;
+					label?: string;
+					sort_order?: number;
+				};
+				Relationships: [];
+			};
+			events: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					details: Json;
+					dog_id: string;
+					id: string;
+					note: string | null;
+					occurred_at: string;
+					type_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					details?: Json;
+					dog_id: string;
+					id?: string;
+					note?: string | null;
+					occurred_at?: string;
+					type_id: string;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					details?: Json;
+					dog_id?: string;
+					id?: string;
+					note?: string | null;
+					occurred_at?: string;
+					type_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_summary';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			household_members: {
+				Row: {
+					household_id: string;
+					user_id: string;
+				};
+				Insert: {
+					household_id: string;
+					user_id: string;
+				};
+				Update: {
+					household_id?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'household_members_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: false;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			households: {
+				Row: {
+					created_at: string;
+					id: string;
+					name: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					name: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					name?: string;
+				};
+				Relationships: [];
+			};
+		};
+		Views: {
+			dog_care_status: {
+				Row: {
+					category: string | null;
+					dog_id: string | null;
+					due_at: string | null;
+					icon: string | null;
+					interval_days: number | null;
+					label: string | null;
+					last_at: string | null;
+					sort_order: number | null;
+					type_id: string | null;
+				};
+				Relationships: [];
+			};
+			stats_accident_bins: {
+				Row: {
+					bucket: string | null;
+					dog_id: string | null;
+					n: number | null;
+					pee: number | null;
+					period: string | null;
+					poop: number | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_summary';
+						referencedColumns: ['dog_id'];
+					}
+				];
+			};
+			stats_daily_counts: {
+				Row: {
+					avg_duration_min: number | null;
+					avg_gap_min: number | null;
+					day: string | null;
+					dog_id: string | null;
+					duration_min: number | null;
+					finished_false: number | null;
+					finished_true: number | null;
+					n: number | null;
+					pee: number | null;
+					poop: number | null;
+					type_id: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_summary';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			stats_period_summary: {
+				Row: {
+					accidents: number | null;
+					bucket: string | null;
+					dog_id: string | null;
+					meal_finish_rate: number | null;
+					meal_gap_min: number | null;
+					period: string | null;
+					walk_duration_min: number | null;
+					walk_gap_min: number | null;
+					walks: number | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_summary';
+						referencedColumns: ['dog_id'];
+					}
+				];
+			};
+			stats_summary: {
+				Row: {
+					accidents_per_day: number | null;
+					accidents_per_month: number | null;
+					accidents_per_week: number | null;
+					avg_meal_gap_min: number | null;
+					avg_walk_duration_min: number | null;
+					avg_walk_gap_min: number | null;
+					days_counted: number | null;
+					dog_id: string | null;
+					meal_finish_rate: number | null;
+					walks_per_day: number | null;
+				};
+				Relationships: [];
+			};
+		};
+		Functions: {
+			is_household_member: { Args: { hid: string }; Returns: boolean };
+		};
+		Enums: {
+			[_ in never]: never;
+		};
+		CompositeTypes: {
+			[_ in never]: never;
+		};
+	};
+};
+
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
+
+export type Tables<
+	DefaultSchemaTableNameOrOptions extends
+		| keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+		| { schema: keyof DatabaseWithoutInternals },
+	TableName extends (DefaultSchemaTableNameOrOptions extends {
+		schema: keyof DatabaseWithoutInternals;
+	}
+		? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+				DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+		: never) = never
+> = DefaultSchemaTableNameOrOptions extends {
+	schema: keyof DatabaseWithoutInternals;
+}
+	? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+			DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+			Row: infer R;
+		}
+		? R
+		: never
+	: DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+		? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+				Row: infer R;
+			}
+			? R
+			: never
+		: never;
+
+export type TablesInsert<
+	DefaultSchemaTableNameOrOptions extends
+		keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+	TableName extends (DefaultSchemaTableNameOrOptions extends {
+		schema: keyof DatabaseWithoutInternals;
+	}
+		? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+		: never) = never
+> = DefaultSchemaTableNameOrOptions extends {
+	schema: keyof DatabaseWithoutInternals;
+}
+	? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+			Insert: infer I;
+		}
+		? I
+		: never
+	: DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+		? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+				Insert: infer I;
+			}
+			? I
+			: never
+		: never;
+
+export type TablesUpdate<
+	DefaultSchemaTableNameOrOptions extends
+		keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+	TableName extends (DefaultSchemaTableNameOrOptions extends {
+		schema: keyof DatabaseWithoutInternals;
+	}
+		? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+		: never) = never
+> = DefaultSchemaTableNameOrOptions extends {
+	schema: keyof DatabaseWithoutInternals;
+}
+	? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+			Update: infer U;
+		}
+		? U
+		: never
+	: DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+		? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+				Update: infer U;
+			}
+			? U
+			: never
+		: never;
+
+export type Enums<
+	DefaultSchemaEnumNameOrOptions extends
+		keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+	EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+		schema: keyof DatabaseWithoutInternals;
+	}
+		? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+		: never) = never
+> = DefaultSchemaEnumNameOrOptions extends {
+	schema: keyof DatabaseWithoutInternals;
+}
+	? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+	: DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+		? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+		: never;
+
+export type CompositeTypes<
+	PublicCompositeTypeNameOrOptions extends
+		keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
+	CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+		schema: keyof DatabaseWithoutInternals;
+	}
+		? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+		: never) = never
+> = PublicCompositeTypeNameOrOptions extends {
+	schema: keyof DatabaseWithoutInternals;
+}
+	? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+	: PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+		? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+		: never;
+
+export const Constants = {
+	graphql_public: {
+		Enums: {}
+	},
+	public: {
+		Enums: {}
+	}
+} as const;

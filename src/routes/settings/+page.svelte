@@ -1,29 +1,30 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import * as locale from '$lib/locale';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 </script>
 
-<svelte:head><title>Inställningar – Hundkoll</title></svelte:head>
+<svelte:head><title>{locale.app.pageTitle(locale.settings.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
 	<header class="px-1">
-		<h1 class="text-3xl font-bold">Inställningar</h1>
+		<h1 class="text-3xl font-bold">{locale.settings.title}</h1>
 	</header>
 
 	{#if data.saved}
-		<p class="rounded-lg bg-green-50 p-4 text-green-800">Sparat!</p>
+		<p class="rounded-lg bg-green-50 p-4 text-green-800">{locale.settings.saved}</p>
 	{/if}
 	{#if form?.message}
 		<p class="rounded-lg bg-red-50 p-4 text-red-800">{form.message}</p>
 	{/if}
 
 	<section class="flex flex-col gap-2">
-		<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">Intervall</h2>
-		<p class="px-1 text-sm text-gray-500">
-			Antal dagar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.
-		</p>
+		<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">
+			{locale.settings.intervalsHeading}
+		</h2>
+		<p class="px-1 text-sm text-gray-500">{locale.settings.intervalsHelp}</p>
 		<form method="POST" action="?/save" use:enhance class="flex flex-col gap-2">
 			{#each data.types as type (type.id)}
 				<label
@@ -39,27 +40,17 @@
 							inputmode="numeric"
 							class="w-20 rounded-lg border-gray-300 text-right"
 						/>
-						<span class="text-sm text-gray-500">dagar</span>
+						<span class="text-sm text-gray-500">{locale.settings.days}</span>
 					</span>
 				</label>
 			{/each}
-			<button
-				type="submit"
-				class="mt-2 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
-			>
-				Spara
-			</button>
+			<button type="submit" class="mt-2 btn btn-primary">{locale.settings.save}</button>
 		</form>
 	</section>
 
 	<section class="mt-auto flex flex-col gap-2">
 		<form method="POST" action="?/logout" use:enhance>
-			<button
-				type="submit"
-				class="w-full rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-			>
-				Logga ut
-			</button>
+			<button type="submit" class="w-full btn btn-secondary">{locale.settings.logout}</button>
 		</form>
 	</section>
 </main>

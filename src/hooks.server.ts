@@ -1,49 +1,11 @@
-import { createServerClient } from '@supabase/ssr';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { PUBLIC_SUPABASE_PUBLISHABLE_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { safeGetSession } from '$lib/server/auth';
+import { createRequestClient } from '$lib/server/db';
 
 const supabase: Handle = async ({ event, resolve }) => {
-	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
-		cookies: {
-			getAll: () => event.cookies.getAll(),
-			setAll: (cookiesToSet) => {
-				cookiesToSet.forEach(({ name, value, options }) => {
-					// SvelteKit requires an explicit path on every cookie.
-					event.cookies.set(name, value, { ...options, path: '/' });
-				});
-			}
-		}
-	});
-
-	event.locals.safeGetSession = async () => {
-		const {
-			data: { session }
-		} = await event.locals.supabase.auth.getSession();
-		if (!session) {
-			return { session: null, user: null };
-		}
-
-		// getSession() reads the cookie without verifying it; getUser()
-		// authenticates against the Auth server before we trust anything.
-		const {
-			data: { user },
-			error
-		} = await event.locals.supabase.auth.getUser();
-		if (error || !user) {
-			return { session: null, user: null };
-		}
-
-		// Rebuild the session around the verified user. Reading session.user
-		// from the getSession() result — even implicitly, when SvelteKit
-		// serializes page data — is what triggers the "could be insecure"
-		// console warning.
-		const { access_token, refresh_token, expires_at, expires_in, token_type } = session;
-		return {
-			session: { access_token, refresh_token, expires_at, expires_in, token_type, user },
-			user
-		};
-	};
+	event.locals.supabase = createRequestClient(event.cookies);
+	event.locals.safeGetSession = () => safeGetSession(event.locals.supabase);
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {

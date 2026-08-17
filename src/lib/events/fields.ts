@@ -1,0 +1,49 @@
+// Per-type detail fields, shared by the dialog form (rendering) and the
+// form action (parsing). Adding a field here is all it takes to collect it.
+//
+// 'count' renders as a checkbox that reveals a stepper when checked; it
+// submits the checkbox under the field name plus the count under
+// "<name>_count" (so a no-JS submission degrades to a count of 1).
+
+import * as locale from '$lib/locale';
+
+export type DetailField = {
+	name: string;
+	label: string;
+	input: 'number' | 'checkbox' | 'count';
+	step?: string;
+	required?: boolean;
+};
+
+export const DETAIL_FIELDS: Record<string, DetailField[]> = {
+	walk: [
+		{ name: 'duration_min', label: locale.activities.fields.durationMin, input: 'number' },
+		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
+		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
+	],
+	accident: [
+		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
+		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
+	],
+	// Portion size is always the same, so meals only track whether she
+	// finished; legacy portion_g rows still render in summaries.
+	meal: [{ name: 'finished', label: locale.activities.fields.finished, input: 'checkbox' }],
+	weight: [
+		{
+			name: 'kg',
+			label: locale.activities.fields.weightKg,
+			input: 'number',
+			step: '0.1',
+			required: true
+		}
+	]
+};
+
+/**
+ * Lists the detail fields an activity collects, which is none for most of
+ * them — a nail trim is just a timestamp.
+ * "walk" → three fields, "bath" → []
+ */
+export function fieldsFor(typeId: string): DetailField[] {
+	return DETAIL_FIELDS[typeId] ?? [];
+}

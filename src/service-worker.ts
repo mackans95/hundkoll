@@ -2,6 +2,7 @@
 /// <reference no-default-lib="true"/>
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
+import * as locale from '$lib/locale';
 import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -70,6 +71,11 @@ sw.addEventListener('fetch', (event) => {
 	event.respondWith(respond(event));
 });
 
+/**
+ * Answers a request: precached assets straight from the cache, everything
+ * else from the network with the last good copy kept as a fallback. That
+ * fallback is what lets the app open at all without signal.
+ */
 async function respond(event: FetchEvent): Promise<Response> {
 	const { request } = event;
 	const url = new URL(request.url);
@@ -109,14 +115,17 @@ async function respond(event: FetchEvent): Promise<Response> {
 	}
 }
 
-/** Last resort: nothing cached and no network. */
+/**
+ * Explains itself in Swedish when there is nothing cached and no network,
+ * which is nicer than the browser's own error page.
+ */
 function offlineResponse(): Response {
 	const html = `<!doctype html>
 <html lang="sv">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Offline – Hundkoll</title>
+		<title>${locale.offline.title} – ${locale.app.name}</title>
 		<style>
 			body { font-family: system-ui, sans-serif; margin: 0; min-height: 100dvh;
 				display: flex; flex-direction: column; align-items: center;
@@ -126,8 +135,8 @@ function offlineResponse(): Response {
 		</style>
 	</head>
 	<body>
-		<h1>Ingen anslutning</h1>
-		<p>Hundkoll kunde inte laddas. Försök igen när du har signal.</p>
+		<h1>${locale.offline.heading}</h1>
+		<p>${locale.offline.body}</p>
 	</body>
 </html>`;
 	return new Response(html, {

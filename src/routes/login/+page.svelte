@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import * as locale from '$lib/locale';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
 </script>
 
-<svelte:head><title>Logga in – Hundkoll</title></svelte:head>
+<svelte:head><title>{locale.app.pageTitle(locale.login.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
 	<div>
-		<h1 class="text-3xl font-bold">Hundkoll</h1>
-		<p class="mt-1 text-gray-600">Logga in för att fortsätta.</p>
+		<h1 class="text-3xl font-bold">{locale.app.name}</h1>
+		<p class="mt-1 text-gray-600">{locale.login.prompt}</p>
 	</div>
 
 	{#if form?.message}
@@ -19,7 +20,7 @@
 
 	<form method="POST" use:enhance class="flex flex-col gap-3">
 		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Mejladress</span>
+			<span class="text-sm font-medium text-gray-700">{locale.login.email}</span>
 			<input
 				type="email"
 				name="email"
@@ -30,7 +31,7 @@
 			/>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Lösenord</span>
+			<span class="text-sm font-medium text-gray-700">{locale.login.password}</span>
 			<input
 				type="password"
 				name="password"
@@ -39,11 +40,6 @@
 				class="rounded-lg border-gray-300"
 			/>
 		</label>
-		<button
-			type="submit"
-			class="rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
-		>
-			Logga in
-		</button>
+		<button type="submit" class="btn btn-primary">{locale.login.submit}</button>
 	</form>
 </main>

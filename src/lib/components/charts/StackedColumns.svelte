@@ -1,18 +1,6 @@
-<script lang="ts" module>
-	export type TooltipCell = { label?: string; value: string; color?: string; big?: boolean };
-
-	// Each tooltip row renders as its own card inside the tooltip; cells in
-	// a row split its width evenly with divider lines ("🚶 7 | 🟡 14 | 💩 3").
-	// big renders the label large — for emoji that drown at text size.
-	export type ColumnBucket = {
-		label: string;
-		tick: boolean;
-		segments: number[];
-		tooltip: { heading: string; rows: TooltipCell[][] };
-	};
-</script>
-
 <script lang="ts">
+	import type { ColumnBucket } from '$lib/types/charts';
+
 	let {
 		buckets,
 		colors,
@@ -26,6 +14,11 @@
 
 	let hovered = $state<number | null>(null);
 
+	/**
+	 * Rounds an axis maximum up to a number a reader can divide by eye, so the
+	 * gridline halfway up means something.
+	 * 7 → 10, 23 → 25
+	 */
 	function niceCeil(v: number): number {
 		if (v <= 5) return Math.ceil(v);
 		const pow = 10 ** Math.floor(Math.log10(v));
@@ -35,6 +28,7 @@
 		return 10 * pow;
 	}
 
+	/** Adds a column's segments up to the height the whole bar reaches. */
 	function total(bucket: ColumnBucket): number {
 		return bucket.segments.reduce((a, v) => a + v, 0);
 	}
@@ -43,11 +37,16 @@
 	const slot = $derived(W / Math.max(1, buckets.length));
 	const barW = $derived(Math.max(2, Math.min(16, slot - 2)));
 
+	/** Places a value on the vertical axis, counting down from the top. */
 	function y(value: number): number {
 		return PAD_TOP + plotH * (1 - value / top);
 	}
 
-	/** Stacked segment geometry, bottom-up, with a 2px gap between fills. */
+	/**
+	 * Works out where each segment of a stacked bar sits, bottom-up, skipping
+	 * the zeroes and leaving a 2px gap between fills so the colours read as
+	 * separate bands rather than one block.
+	 */
 	function stack(segments: number[]): { idx: number; y: number; h: number; isTop: boolean }[] {
 		const nonZero = segments.map((v, idx) => ({ v, idx })).filter((s) => s.v > 0);
 		const out: { idx: number; y: number; h: number; isTop: boolean }[] = [];
@@ -68,7 +67,10 @@
 		return out;
 	}
 
-	/** Bar with 3px-rounded top corners, flat baseline (the data end is the top). */
+	/**
+	 * Draws a bar with rounded top corners and a flat baseline, since the top is
+	 * the end that carries the value.
+	 */
 	function roundedTop(x: number, yy: number, w: number, h: number): string {
 		const r = Math.min(3, h / 2, w / 2);
 		return [
@@ -89,6 +91,7 @@
 	let containerW = $state(0);
 	let tipW = $state(0);
 
+	/** Picks the column under the pointer from its position across the chart. */
 	function hoverFromEvent(e: PointerEvent) {
 		if (!containerEl) return;
 		const rect = containerEl.getBoundingClientRect();

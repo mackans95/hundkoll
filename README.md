@@ -52,12 +52,100 @@ anywhere in this project.
 
 Other commands:
 
-| Command           | Purpose                                     |
-| ----------------- | ------------------------------------------- |
-| `npm run check`   | `svelte-check` — run this before committing |
-| `npm run format`  | Prettier                                    |
-| `npm run build`   | production build                            |
-| `npm run db-push` | apply pending migrations to Supabase        |
+| Command             | Purpose                                                |
+| ------------------- | ------------------------------------------------------ |
+| `npm run check`     | `svelte-check` — run this before committing            |
+| `npm run format`    | Prettier                                               |
+| `npm run build`     | production build                                       |
+| `npm run db-push`   | apply pending migrations to Supabase                   |
+| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the schema |
+
+## Code layout
+
+```
+src/lib/
+  types/       types only; database.ts is generated, domain.ts is what the app uses
+  server/      every query, and nothing else — the bundler keeps it off the client
+  events/      the detail-field catalogue, shared by the form and the action
+  stats/       pure row → chart-column and row → tile logic
+  offline/     the IndexedDB queue and the submit handler that feeds it
+  components/  ui primitives at the top, then charts/ log/ stats/ status/
+  time.ts      computation: timezone conversion and calendar arithmetic
+  format.ts    presentation: the same values as Swedish text
+  locale.ts    every word the app shows
+```
+
+**All user-facing text lives in `locale.ts`.** There is one language and no plan for
+a second, so it is a plain module rather than a runtime lookup — but nothing else in
+`src/` should contain a Swedish string. Anything with a value in it is a function, so
+the grammar around the value stays with the words:
+
+```ts
+waitingBanner: (count: number) =>
+	`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal …` as const;
+```
+
+Every group is `as const` and **every function ends its template with `as const` too**,
+so hovering an entry in the editor shows the words rather than `string` —
+`` `Snitt över de senaste ${number} dagarna.` `` instead of `string`. Where a group
+also has to be exhaustive, write `as const satisfies Record<Period, string>` in that
+order: `satisfies` on its own, or a plain type annotation, widens the literals back to
+`string`.
+
+`format.ts` gets its vocabulary from `locale.units`, so "min", "tim" and "%" are
+declared once. Two exceptions on purpose: the activity names (Promenad, Matning …) are
+rows in `event_types`, and the installed app's name is in `static/manifest.webmanifest`,
+which the browser reads without going through the bundler. Emoji that belong to a label
+travel with it; standalone icons stay in the component next to the markup.
+
+Three rules hold this together:
+
+- **Routes wire, they do not query.** A `+page.server.ts` calls one or two functions
+  from `$lib/server` and returns the result.
+- **Components render, they do not derive.** Turning rows into columns, tiles or
+  badges happens in a plain `.ts` module that can be called without a DOM.
+- **`time.ts` computes, `format.ts` phrases.** If it returns Swedish, it belongs in
+  the second one.
+
+Those two are the only grab-bag modules, and a bare `swedishNumber` or `addDays` at a call
+site does not say where it came from — so they are imported as namespaces:
+
+```ts
+import * as format from '$lib/format';
+import * as time from '$lib/time';
+
+label: format.dayLabel(day),
+starts: time.lastDays(today, 30)
+```
+
+Use `import * as` rather than exporting a hand-written `export const format = {…}`
+object. It reads identically and needs no list kept in sync, and Rollup rewrites the
+member access back into a direct binding so tree-shaking still works — an exported
+object literal is a value, so everything it references stays live. Measured on this
+app: `import * as` is byte-for-byte identical to named imports, while the object cost
+392 bytes, and 22× as much in an isolated module where only one helper is used.
+
+Everything else keeps named imports; `walkBuckets` and `careStatus` already say where
+they came from.
+
+### House style
+
+- **No abbreviations in names, and the name says what comes out.** `swedishNumber`, not
+  `svNum`. In `format.ts` the suffix carries the role: `swedish…` for a locale-rendered
+  value, `…Text` for a phrase, `…Label` for a chart tick, `…Heading` for the roomier
+  tooltip version.
+- **A constant sits at module scope only if it has to** — because two functions share
+  it, because it is exported, or because it is expensive to rebuild. Everything else
+  lives inside the function that owns it. The `Intl` formatters are the "expensive"
+  case: constructing one costs 20–60× what formatting with it does. Regex literals are
+  _not_ — the engine caches them per site, so they can live inside their function.
+- **Every function gets a doc comment**: a sentence saying what it does, and an example
+  underneath when one makes it concrete.
+- **Comments sit next to what they explain**, not in a header block above a group.
+- **A file holds what its name says.** `types/` contains types and no runtime values —
+  a parser that returns a `Period` belongs with whoever parses, not next to the type.
+  Equally, a type shared across folders belongs in `types/`; a type that is one
+  module's own interface stays exported from that module.
 
 ## Data model
 
@@ -90,6 +178,11 @@ Current catalogue:
 `details` examples: walk `{"duration_min": 35, "pee": 3, "poop": 1}`, meal
 `{"finished": true}`, weight `{"kg": 12.4}`. Pee and poop are counts; older rows hold
 booleans and are still read correctly.
+
+The generated `src/lib/types/database.ts` is committed, and the Supabase client is
+typed against it — so a query that names a column the schema does not have fails to
+compile instead of returning empty rows. Regenerate it with `npm run gen-types` after
+any migration.
 
 ### Aggregation lives in SQL
 
@@ -147,7 +240,7 @@ screen on both phones.
 - **`src/service-worker.ts`** precaches the built assets and serves pages network-first
   with a cache fallback, so the app opens without signal showing the last known state. It
   stands down entirely under `vite dev`.
-- **`src/lib/offline-queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
+- **`src/lib/offline/queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
   on launch and on the `online` event. Pending events show dimmed with ⏳ until they land.
 
 Both rely on one detail: **the event's row id is generated when the dialog renders and

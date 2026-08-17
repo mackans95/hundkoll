@@ -12,7 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
-		"db-push": "supabase db push"
+		"db-push": "supabase db push",
+		"gen-types": "supabase gen types typescript --linked > src/lib/types/database.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-vercel": "^6.3.3",
