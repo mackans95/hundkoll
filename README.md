@@ -83,7 +83,7 @@ Three rules hold this together:
 - **`time.ts` computes, `format.ts` phrases.** If it returns Swedish, it belongs in
   the second one.
 
-Those two are the only grab-bag modules, and a bare `svNum` or `addDays` at a call
+Those two are the only grab-bag modules, and a bare `swedishNumber` or `addDays` at a call
 site does not say where it came from — so they are imported as namespaces:
 
 ```ts
@@ -103,6 +103,21 @@ app: `import * as` is byte-for-byte identical to named imports, while the object
 
 Everything else keeps named imports; `walkBuckets` and `careStatus` already say where
 they came from.
+
+### House style
+
+- **No abbreviations in names, and the name says what comes out.** `swedishNumber`, not
+  `svNum`. In `format.ts` the suffix carries the role: `swedish…` for a locale-rendered
+  value, `…Text` for a phrase, `…Label` for a chart tick, `…Heading` for the roomier
+  tooltip version.
+- **A constant sits at module scope only if it has to** — because two functions share
+  it, because it is exported, or because it is expensive to rebuild. Everything else
+  lives inside the function that owns it. The `Intl` formatters are the "expensive"
+  case: constructing one costs 20–60× what formatting with it does. Regex literals are
+  _not_ — the engine caches them per site, so they can live inside their function.
+- **Every function gets a doc comment**: a sentence saying what it does, and an example
+  underneath when one makes it concrete.
+- **Comments sit next to what they explain**, not in a header block above a group.
 
 ## Data model
 

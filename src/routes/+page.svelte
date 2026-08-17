@@ -17,6 +17,10 @@
 	// because the tiles cannot fetch a server-rendered one.
 	let offline = $state<OpenDialog | null>(null);
 
+	/**
+	 * Opens a dialog from data already on the page, with a fresh row id, for
+	 * when the server cannot be asked for one.
+	 */
 	function openOffline(type: EventType) {
 		offline = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput() };
 	}

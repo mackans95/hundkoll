@@ -20,7 +20,7 @@
 <FoldableCard title="⚖️ Vikt">
 	{#snippet aside()}
 		{#if latest}
-			<span class="text-lg font-bold">{format.svNum(latest.kg)} kg</span>
+			<span class="text-lg font-bold">{format.swedishNumber(latest.kg)} kg</span>
 		{/if}
 	{/snippet}
 

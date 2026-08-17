@@ -20,7 +20,7 @@
 					<span class="block truncate text-sm text-gray-500">⏳ väntar på signal</span>
 				</span>
 				<time datetime={queued.occurredAt} class="shrink-0 text-sm text-gray-500">
-					{format.eventTimeFormat.format(new Date(queued.occurredAt))}
+					{format.eventTime(new Date(queued.occurredAt))}
 				</time>
 			</li>
 		{/each}
@@ -37,7 +37,7 @@
 					{/if}
 				</span>
 				<time datetime={event.occurred_at} class="shrink-0 text-sm text-gray-500">
-					{format.eventTimeFormat.format(new Date(event.occurred_at))}
+					{format.eventTime(new Date(event.occurred_at))}
 				</time>
 			</li>
 		{/each}

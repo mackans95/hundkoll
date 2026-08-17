@@ -11,6 +11,11 @@ import type { Database } from '$lib/types/database';
 /** A client typed against the generated schema — every query is checked. */
 export type Db = SupabaseClient<Database>;
 
+/**
+ * Builds a Supabase client for one request, reading and writing the session
+ * through that request's cookies. One per request rather than one per process,
+ * so two users are never served from the same session.
+ */
 export function createRequestClient(cookies: Cookies): Db {
 	return createServerClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
 		cookies: {

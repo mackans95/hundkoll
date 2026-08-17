@@ -1,29 +1,46 @@
 // Turning values into Swedish text. Nothing here computes anything about
 // time — that lives in time.ts.
+//
+// The Intl formatters sit at module scope on purpose. Constructing one costs
+// 20–60x what formatting with it does, and these run once per chart column,
+// so rebuilding them per call is the one thing in this file worth hoisting
+// for. Everything cheap lives inside the function that owns it.
 
 import * as time from '$lib/time';
 
-const oneDecimal = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 });
+const numberFormat = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 });
 
-export function svNum(value: number, digits = 1): string {
-	return new Intl.NumberFormat('sv-SE', { maximumFractionDigits: digits }).format(value);
+/**
+ * Writes a number the Swedish way, with a comma for the decimal point and
+ * at most one decimal.
+ * 5.66 → "5,7"
+ */
+export function swedishNumber(value: number): string {
+	return numberFormat.format(value);
 }
 
-/** "36 min" below 90 minutes, "7,4 tim" above. */
+/**
+ * Writes a duration in whichever unit keeps it short, switching to hours
+ * once minutes stop being easy to read.
+ * 36 → "36 min", 444 → "7,4 tim"
+ */
 export function minutesText(minutes: number): string {
 	if (minutes < 90) {
 		return `${Math.round(minutes)} min`;
 	}
-	return `${oneDecimal.format(minutes / 60)} tim`;
+
+	return `${numberFormat.format(minutes / 60)} tim`;
 }
 
-/** 0.923 → "92 %" */
-export function pctText(fraction: number): string {
+/**
+ * Converts a fraction into a readable percentage, rounded to whole percent.
+ * 0.923 → "92 %"
+ */
+export function percentageText(fraction: number): string {
 	return `${Math.round(fraction * 100)} %`;
 }
 
-/** A logged event's timestamp: "tors 14 aug 07:32". */
-export const eventTimeFormat = new Intl.DateTimeFormat('sv-SE', {
+const eventTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 	timeZone: 'Europe/Stockholm',
 	weekday: 'short',
 	day: 'numeric',
@@ -32,31 +49,54 @@ export const eventTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 	minute: '2-digit'
 });
 
-// Chart axis and tooltip labels. The dates are already Stockholm days, so
-// they are read back in UTC to avoid shifting them a second time.
-const monthFormat = new Intl.DateTimeFormat('sv-SE', { month: 'short', timeZone: 'UTC' });
-
-/** "14/8" */
-export function dayLabel(iso: string): string {
-	const d = new Date(`${iso}T00:00:00Z`);
-	return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+/**
+ * Writes when a logged event happened, in Stockholm time regardless of where
+ * the code is running.
+ * → "tors 14 aug 07:32"
+ */
+export function eventTime(date: Date): string {
+	return eventTimeFormat.format(date);
 }
 
-/** "aug" */
+/**
+ * Labels a day for a chart axis, short enough to repeat across 30 columns.
+ * "2026-08-14" → "14/8"
+ */
+export function dayLabel(iso: string): string {
+	// Read back in UTC: the date is already a Stockholm day, so letting the
+	// local timezone touch it again would shift it a second time.
+	const day = new Date(`${iso}T00:00:00Z`);
+	return `${day.getUTCDate()}/${day.getUTCMonth() + 1}`;
+}
+
+const monthFormat = new Intl.DateTimeFormat('sv-SE', { month: 'short', timeZone: 'UTC' });
+
+/**
+ * Labels a month for a chart axis, using the month the date falls in.
+ * "2026-08-01" → "aug."
+ */
 export function monthLabel(iso: string): string {
 	return monthFormat.format(new Date(`${iso}T00:00:00Z`));
 }
 
-/** "v.33" — short enough for an axis tick. */
+/**
+ * Labels a week for a chart axis, abbreviated to fit a tick.
+ * "2026-08-10" → "v.33"
+ */
 export function weekLabel(iso: string): string {
 	return `v.${time.isoWeek(iso)}`;
 }
 
-/** "Vecka 33" — for a tooltip heading, where there is room. */
+/**
+ * Names a week for a tooltip heading, where there is room to spell it out.
+ * "2026-08-10" → "Vecka 33"
+ */
 export function weekHeading(iso: string): string {
 	return `Vecka ${time.isoWeek(iso)}`;
 }
 
+// Largest unit first: both functions below take the first one the value
+// reaches, so a five-week gap reads as weeks rather than 35 days.
 const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['year', 365 * 86_400_000],
 	['month', 30 * 86_400_000],
@@ -68,29 +108,40 @@ const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 
 const relativeFormat = new Intl.RelativeTimeFormat('sv', { numeric: 'auto' });
 
-/** "för 5 veckor sedan", "igår", "om 8 dagar". */
-export function svRelative(target: Date, base = new Date()): string {
+/**
+ * Says how long ago something happened, or how far off it still is, relative
+ * to now unless another moment is given.
+ * → "för 5 veckor sedan", "igår", "om 8 dagar"
+ */
+export function swedishRelative(target: Date, base = new Date()): string {
 	const diff = target.getTime() - base.getTime();
+
 	for (const [unit, unitMs] of RELATIVE_UNITS) {
 		if (Math.abs(diff) >= unitMs) {
 			return relativeFormat.format(Math.round(diff / unitMs), unit);
 		}
 	}
+
 	return 'nyss';
 }
 
-const DURATION_NAMES: Record<string, [singular: string, plural: string]> = {
-	year: ['år', 'år'],
-	month: ['månad', 'månader'],
-	week: ['vecka', 'veckor'],
-	day: ['dag', 'dagar'],
-	hour: ['timme', 'timmar'],
-	minute: ['minut', 'minuter']
-};
+/**
+ * Names a length of time without saying which direction it points, so it can
+ * be composed into a sentence like "3 dagar försenat".
+ * 259_200_000 → "3 dagar"
+ */
+export function swedishDuration(ms: number): string {
+	const DURATION_NAMES: Record<string, [singular: string, plural: string]> = {
+		year: ['år', 'år'],
+		month: ['månad', 'månader'],
+		week: ['vecka', 'veckor'],
+		day: ['dag', 'dagar'],
+		hour: ['timme', 'timmar'],
+		minute: ['minut', 'minuter']
+	};
 
-/** "3 dagar", "5 veckor" — for composing texts like "3 dagar försenat". */
-export function svDuration(ms: number): string {
 	const abs = Math.abs(ms);
+
 	for (const [unit, unitMs] of RELATIVE_UNITS) {
 		if (abs >= unitMs || unit === 'minute') {
 			const n = Math.max(1, Math.round(abs / unitMs));
@@ -98,5 +149,6 @@ export function svDuration(ms: number): string {
 			return `${n} ${n === 1 ? singular : plural}`;
 		}
 	}
+
 	return '';
 }

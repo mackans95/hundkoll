@@ -10,17 +10,30 @@ import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
-/** How many columns each period shows, and how often it labels one. */
+/**
+ * How wide each chart is, and how often it labels a column. Shared by the
+ * builders below, which all have to agree on them or the charts stop lining
+ * up with each other.
+ */
 const DAILY_WINDOW = 30;
 const PERIOD_COLUMNS = 12;
 const DAY_TICK_EVERY = 7;
 const PERIOD_TICK_EVERY = 3;
 
-/** "~42 min", or an en dash when the average has nothing to average. */
+/**
+ * Writes an average that may not exist, since a day with a single walk has
+ * no gap to average and no duration unless one was logged.
+ * 42 → "~42 min", null → "–"
+ */
 function optionalMinutes(value: number | null): string {
 	return value === null ? '–' : `~${format.minutesText(value)}`;
 }
 
+/**
+ * Builds the walks-per-day columns for the last 30 days. Each column carries
+ * the day's pee and poop counts and its own gap and duration averages, so
+ * the tooltip can answer "what happened that day" without another query.
+ */
 export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
@@ -52,6 +65,11 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 	});
 }
 
+/**
+ * Builds the meals-per-day columns for the last 30 days, stacked by whether
+ * she finished. A meal logged with a quick tap says nothing either way, so it
+ * becomes a third "unknown" segment rather than being counted as unfinished.
+ */
 export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
@@ -59,7 +77,6 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 		const row = byDay.get(day);
 		const finished = row?.finished_true ?? 0;
 		const notFinished = row?.finished_false ?? 0;
-		// Meals logged by a quick tap say nothing either way.
 		const unknown = Math.max(0, (row?.n ?? 0) - finished - notFinished);
 		const judged = finished + notFinished;
 
@@ -80,7 +97,7 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 								],
 								[
 									...(judged > 0
-										? [{ label: 'Andel', value: format.pctText(finished / judged) }]
+										? [{ label: 'Andel', value: format.percentageText(finished / judged) }]
 										: []),
 									{ label: 'Tid mellan', value: optionalMinutes(row?.avg_gap_min ?? null) }
 								]
@@ -90,39 +107,49 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 	});
 }
 
-/** The bucket start dates the accident chart covers, oldest first. */
+/**
+ * Lists the bucket start dates the accident chart covers, oldest first —
+ * 30 days, or 12 weeks aligned to Mondays, or 12 months aligned to the 1st.
+ */
 function accidentStarts(today: string, period: Period): string[] {
 	if (period === 'day') {
 		return time.lastDays(today, DAILY_WINDOW);
 	}
+
 	if (period === 'week') {
 		const monday = time.mondayOf(today);
 		return Array.from({ length: PERIOD_COLUMNS }, (_, i) =>
 			time.addDays(monday, -7 * (PERIOD_COLUMNS - 1 - i))
 		);
 	}
+
 	return Array.from({ length: PERIOD_COLUMNS }, (_, i) =>
 		time.addMonths(today, -(PERIOD_COLUMNS - 1 - i))
 	);
 }
 
-const AXIS_LABEL: Record<Period, (start: string) => string> = {
-	day: format.dayLabel,
-	week: format.weekLabel,
-	month: format.monthLabel
-};
-
-const TOOLTIP_HEADING: Record<Period, (start: string) => string> = {
-	day: format.dayLabel,
-	week: format.weekHeading,
-	month: format.monthLabel
-};
-
+/**
+ * Builds the accident columns for the selected period, split kiss/bajs. An
+ * accident logged without saying which becomes a third neutral segment.
+ */
 export function accidentBuckets(
 	bins: AccidentBin[],
 	period: Period,
 	today: string
 ): ColumnBucket[] {
+	// A tick has room for a date but not for "Vecka 33", so the axis and the
+	// tooltip label the same bucket differently.
+	const axisLabel: Record<Period, (start: string) => string> = {
+		day: format.dayLabel,
+		week: format.weekLabel,
+		month: format.monthLabel
+	};
+	const tooltipHeading: Record<Period, (start: string) => string> = {
+		day: format.dayLabel,
+		week: format.weekHeading,
+		month: format.monthLabel
+	};
+
 	const byBucket = new Map(bins.map((bin) => [bin.bucket, bin]));
 	const tickEvery = period === 'day' ? DAY_TICK_EVERY : PERIOD_TICK_EVERY;
 
@@ -133,11 +160,11 @@ export function accidentBuckets(
 		const other = Math.max(0, (bin?.n ?? 0) - pee - poop);
 
 		return {
-			label: AXIS_LABEL[period](start),
+			label: axisLabel[period](start),
 			tick: i % tickEvery === 0,
 			segments: [pee, poop, other],
 			tooltip: {
-				heading: TOOLTIP_HEADING[period](start),
+				heading: tooltipHeading[period](start),
 				rows: [
 					[
 						{ label: '🟡', value: String(pee), big: true },

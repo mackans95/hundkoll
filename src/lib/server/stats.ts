@@ -20,10 +20,6 @@ import type { WalkDay } from '$lib/types/domain';
 import { weightHistory } from './events';
 import type { Db } from './db';
 
-// How far back the accident chart looks per bin size (12-ish buckets each).
-const BIN_WINDOW_DAYS: Record<Period, number> = { day: 30, week: 84, month: 365 };
-const DAILY_WINDOW_DAYS = 30;
-
 export type Stats = {
 	period: Period;
 	trend: Period;
@@ -64,6 +60,7 @@ type SelectedPeriod = Pick<
 	| 'accidents'
 >;
 
+/** Narrows a daily-counts row into the columns the walk chart reads. */
 function toWalkDay(row: SelectedDaily): WalkDay | null {
 	if (!row.day) {
 		return null;
@@ -78,6 +75,7 @@ function toWalkDay(row: SelectedDaily): WalkDay | null {
 	};
 }
 
+/** Narrows a daily-counts row into the columns the meal chart reads. */
 function toMealDay(row: SelectedDaily): MealDay | null {
 	if (!row.day) {
 		return null;
@@ -91,6 +89,7 @@ function toMealDay(row: SelectedDaily): MealDay | null {
 	};
 }
 
+/** Narrows one accident bin, whichever period it was binned by. */
 function toAccidentBin(row: SelectedBin): AccidentBin | null {
 	if (!row.bucket) {
 		return null;
@@ -98,6 +97,7 @@ function toAccidentBin(row: SelectedBin): AccidentBin | null {
 	return { bucket: row.bucket, n: row.n ?? 0, pee: row.pee ?? 0, poop: row.poop ?? 0 };
 }
 
+/** Narrows one period bucket into the metrics the Trender card compares. */
 function toTrendBucket(row: SelectedPeriod): TrendBucket | null {
 	if (!row.bucket) {
 		return null;
@@ -113,12 +113,17 @@ function toTrendBucket(row: SelectedPeriod): TrendBucket | null {
 	};
 }
 
+/** Keeps the rows that survived narrowing and drops the ones that did not. */
 function present<T>(rows: (T | null)[]): T[] {
 	return rows.filter((row): row is T => row !== null);
 }
 
 /** Everything the stats screen shows, for one period and one trend period. */
 export async function loadStats(db: Db, period: Period, trend: Period): Promise<Stats> {
+	// How far back to read per bin size, each covering a dozen-ish buckets.
+	const BIN_WINDOW_DAYS: Record<Period, number> = { day: 30, week: 84, month: 365 };
+	const DAILY_WINDOW_DAYS = 30;
+
 	const today = time.stockholmNowForInput().slice(0, 10);
 	const { prev: trendPrevBucket, latest: trendLatestBucket } = trendBucketKeys(today, trend);
 

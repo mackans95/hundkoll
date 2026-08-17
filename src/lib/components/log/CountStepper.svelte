@@ -6,6 +6,7 @@
 	let checked = $state(false);
 	let count = $state(1);
 
+	/** Turns the count on or off, starting over at one each time it comes back. */
 	function toggle(on: boolean) {
 		checked = on;
 		if (!on) {

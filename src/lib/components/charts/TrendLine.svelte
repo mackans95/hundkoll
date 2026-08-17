@@ -28,10 +28,12 @@
 	const t0 = $derived(Math.min(...points.map((p) => p.t)));
 	const t1 = $derived(Math.max(...points.map((p) => p.t)));
 
+	/** Places a timestamp along the horizontal axis, centring a lone point. */
 	function x(t: number): number {
 		if (t1 === t0) return W / 2;
 		return PAD.left + ((t - t0) / (t1 - t0)) * (W - PAD.left - PAD.right);
 	}
+	/** Places a weight on the vertical axis, within the padded domain above. */
 	function y(v: number): number {
 		return PAD.top + (1 - (v - lo) / (hi - lo)) * (height - PAD.top - PAD.bottom);
 	}
@@ -47,8 +49,8 @@
 <svg viewBox="0 0 {W} {height}" class="w-full" role="img">
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(hi)} y2={y(hi)} stroke="#f3f4f6" />
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(lo)} y2={y(lo)} stroke="#e5e7eb" />
-	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{format.svNum(hi)}</text>
-	<text x="0" y={y(lo) + 3} font-size="9" class="fill-gray-400">{format.svNum(lo)}</text>
+	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{format.swedishNumber(hi)}</text>
+	<text x="0" y={y(lo) + 3} font-size="9" class="fill-gray-400">{format.swedishNumber(lo)}</text>
 
 	{#if points.length > 1}
 		<path d={path} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" />
@@ -56,7 +58,7 @@
 
 	{#each points as p (p.t)}
 		<circle cx={x(p.t)} cy={y(p.value)} r="4" fill={color} stroke="#fff" stroke-width="2">
-			<title>{p.label}: {format.svNum(p.value)} {unit}</title>
+			<title>{p.label}: {format.swedishNumber(p.value)} {unit}</title>
 		</circle>
 	{/each}
 
@@ -69,7 +71,7 @@
 			font-weight="600"
 			class="fill-gray-700"
 		>
-			{format.svNum(last.value)}{unit ? ` ${unit}` : ''}
+			{format.swedishNumber(last.value)}{unit ? ` ${unit}` : ''}
 		</text>
 		<text x={PAD.left} y={height - 4} font-size="9" class="fill-gray-400">
 			{points[0].label}

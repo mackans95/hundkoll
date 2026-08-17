@@ -4,12 +4,15 @@
 
 	let { row, now }: { row: StatusRow; now: Date } = $props();
 
-	/** Amber for the last week before something is due. */
-	const AMBER_WINDOW_MS = 7 * 86_400_000;
-
 	type Badge = { text: string; classes: string };
 
+	/**
+	 * Says where this activity stands: red once it is overdue, amber in the
+	 * last week before it is due, green while there is still time.
+	 */
 	const badge = $derived.by((): Badge => {
+		const AMBER_WINDOW_MS = 7 * 86_400_000;
+
 		if (!row.due_at) {
 			return { text: 'Aldrig loggat', classes: 'bg-gray-100 text-gray-600' };
 		}
@@ -17,12 +20,12 @@
 		const remaining = due.getTime() - now.getTime();
 		if (remaining < 0) {
 			return {
-				text: `${format.svDuration(remaining)} försenat`,
+				text: `${format.swedishDuration(remaining)} försenat`,
 				classes: 'bg-red-100 text-red-800'
 			};
 		}
 		return {
-			text: `dags ${format.svRelative(due, now)}`,
+			text: `dags ${format.swedishRelative(due, now)}`,
 			classes:
 				remaining <= AMBER_WINDOW_MS ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
 		};
@@ -35,7 +38,7 @@
 		<h2 class="font-semibold">{row.label}</h2>
 		<p class="text-sm text-gray-500">
 			{#if row.last_at}
-				{format.svRelative(new Date(row.last_at), now)} · var {row.interval_days}:e dag
+				{format.swedishRelative(new Date(row.last_at), now)} · var {row.interval_days}:e dag
 			{:else}
 				var {row.interval_days}:e dag
 			{/if}

@@ -1,6 +1,10 @@
 import type { EventDetails } from '$lib/types/domain';
 
-/** "kiss", "kiss ×3" — accepts legacy boolean rows as a count of one. */
+/**
+ * Names a count of something, leaving the number off when there was only one.
+ * Accepts the older rows that stored a plain boolean, reading true as one.
+ * (3, "kiss") → "kiss ×3", (true, "kiss") → "kiss"
+ */
 function countText(value: unknown, word: string): string | null {
 	if (value === true) {
 		return word;
@@ -11,7 +15,12 @@ function countText(value: unknown, word: string): string | null {
 	return null;
 }
 
-/** Short Swedish summary of an event's details for the recent-events list. */
+/**
+ * Sums up what an event's details say, short enough to sit under its label in
+ * the recent-events list. Returns an empty string when there is nothing to
+ * add beyond the activity itself.
+ * ("walk", { duration_min: 35, pee: 3 }) → "35 min · kiss ×3"
+ */
 export function detailSummary(typeId: string, details: EventDetails): string {
 	const parts: (string | null)[] = [];
 	if (typeId === 'walk' || typeId === 'accident') {

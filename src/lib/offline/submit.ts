@@ -11,8 +11,16 @@ import { enqueue } from './queue.svelte';
 
 type DialogType = Pick<EventType, 'id' | 'label' | 'icon'>;
 
-/** A `use:enhance` handler that queues the log when the network is gone. */
+/**
+ * Builds the `use:enhance` handler for the log form: it posts normally when
+ * there is signal, and keeps the submission on the phone when there is not,
+ * either because the network was already gone or because the send failed.
+ */
 export function createLogSubmit(type: DialogType, onQueued: () => void): SubmitFunction {
+	/**
+	 * Copies the submitted form into the queue and closes the dialog, so the
+	 * log can be replayed later exactly as it would have been posted.
+	 */
 	async function queue(formData: FormData) {
 		const fields: Record<string, string> = {};
 		for (const [name, value] of formData.entries()) {

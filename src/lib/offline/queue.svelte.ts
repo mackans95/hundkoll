@@ -6,8 +6,6 @@
 // primary key and the server reports success rather than logging the
 // walk twice.
 
-const DB_NAME = 'hundkoll';
-const DB_VERSION = 1;
 const STORE = 'queue';
 
 /** The shape SvelteKit answers a form action with. */
@@ -36,7 +34,15 @@ export const offlineQueue = $state<{ items: QueuedLog[]; sending: boolean }>({
 	sending: false
 });
 
+/**
+ * Opens the queue database, creating the object store on first run. Keyed by
+ * the event's row id, so putting the same log twice replaces it rather than
+ * queueing it again.
+ */
 function openDb(): Promise<IDBDatabase> {
+	const DB_NAME = 'hundkoll';
+	const DB_VERSION = 1;
+
 	return new Promise((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, DB_VERSION);
 		request.onupgradeneeded = () => {
@@ -49,6 +55,11 @@ function openDb(): Promise<IDBDatabase> {
 	});
 }
 
+/**
+ * Runs one request against the store and resolves with its result, so the
+ * callers below can read like ordinary async functions instead of nesting
+ * IndexedDB event handlers.
+ */
 function tx<T>(
 	mode: IDBTransactionMode,
 	run: (store: IDBObjectStore) => IDBRequest<T>
@@ -63,7 +74,11 @@ function tx<T>(
 	);
 }
 
-/** Read the queue off disk into the reactive state. */
+/**
+ * Reads the queue off disk into the reactive state, newest first. A database
+ * that cannot be opened — private mode, or storage denied — is treated as an
+ * empty queue, since the app still works online without one.
+ */
 export async function loadQueue(): Promise<void> {
 	try {
 		const items = await tx<QueuedLog[]>('readonly', (store) => store.getAll());
@@ -74,29 +89,36 @@ export async function loadQueue(): Promise<void> {
 	}
 }
 
+/**
+ * Stores a log to send later and shows it in the list straight away, so a tap
+ * without signal still looks like it was recorded.
+ */
 export async function enqueue(log: QueuedLog): Promise<void> {
 	await tx('readwrite', (store) => store.put(log));
 	offlineQueue.items = [log, ...offlineQueue.items.filter((item) => item.id !== log.id)];
 }
 
+/** Forgets a queued log, because it landed or because it never will. */
 async function drop(id: string): Promise<void> {
 	await tx('readwrite', (store) => store.delete(id));
 	offlineQueue.items = offlineQueue.items.filter((item) => item.id !== id);
 }
 
+/** Records that a send failed, so a log cannot be retried forever. */
 async function bumpAttempts(log: QueuedLog): Promise<void> {
 	const updated = { ...log, attempts: log.attempts + 1 };
 	await tx('readwrite', (store) => store.put(updated));
 	offlineQueue.items = offlineQueue.items.map((item) => (item.id === log.id ? updated : item));
 }
 
-const MAX_ATTEMPTS = 5;
-
 /**
- * Send everything waiting. Returns how many reached the server, so the
- * caller knows whether the page data is now stale.
+ * Sends everything waiting, oldest first so the list keeps its order once the
+ * rows land. Returns how many reached the server, which tells the caller
+ * whether the page data it is showing is now stale.
  */
 export async function flushQueue(): Promise<number> {
+	const MAX_ATTEMPTS = 5;
+
 	if (offlineQueue.sending || offlineQueue.items.length === 0) return 0;
 	offlineQueue.sending = true;
 	let sent = 0;

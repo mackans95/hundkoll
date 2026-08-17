@@ -29,6 +29,11 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 	weight: [{ name: 'kg', label: 'Vikt (kg)', input: 'number', step: '0.1', required: true }]
 };
 
+/**
+ * Lists the detail fields an activity collects, which is none for most of
+ * them — a nail trim is just a timestamp.
+ * "walk" → three fields, "bath" → []
+ */
 export function fieldsFor(typeId: string): DetailField[] {
 	return DETAIL_FIELDS[typeId] ?? [];
 }

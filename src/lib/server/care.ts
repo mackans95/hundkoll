@@ -1,7 +1,10 @@
 import type { EventCategory, EventType, StatusRow, ViewRow } from '$lib/types/domain';
 import type { Db } from './db';
 
-/** The activity catalogue, in display order. */
+/**
+ * Lists the activity catalogue in display order — the rows that drive the log
+ * grid, the status screen and the settings form alike.
+ */
 export async function listEventTypes(db: Db): Promise<EventType[]> {
 	const { data } = await db
 		.from('event_types')
@@ -11,6 +14,10 @@ export async function listEventTypes(db: Db): Promise<EventType[]> {
 	return (data ?? []).map((row) => ({ ...row, category: row.category as EventCategory }));
 }
 
+/**
+ * Narrows one view row into a status row, or drops it. The view groups by dog
+ * and type, so a row missing either is not a row worth showing.
+ */
 function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 	// The view is grouped by dog and type, so these are never null in
 	// practice; dropping any row that lacks them keeps the promise honest.
@@ -46,7 +53,10 @@ export async function careStatus(db: Db): Promise<{ timed: StatusRow[]; untimed:
 	};
 }
 
-/** Returns a Swedish error message, or null when the intervals are saved. */
+/**
+ * Saves whichever intervals the settings form changed, leaving the rest
+ * untouched. Returns a Swedish error message, or null when all of them stuck.
+ */
 export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
 	const { data: types } = await db.from('event_types').select('id, interval_days');
 

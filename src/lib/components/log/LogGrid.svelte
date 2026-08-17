@@ -18,9 +18,11 @@
 		health: 'border-amber-800 bg-amber-600 hover:bg-amber-700 active:bg-amber-700'
 	};
 
+	/**
+	 * Lets the link navigate when there is signal, and asks the page to open a
+	 * dialog itself when there is not.
+	 */
 	function tap(event: MouseEvent, type: EventType) {
-		// Offline the tile cannot fetch a server-rendered dialog, so the page
-		// opens one from data it already has.
 		if (navigator.onLine) {
 			return;
 		}

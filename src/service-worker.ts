@@ -70,6 +70,11 @@ sw.addEventListener('fetch', (event) => {
 	event.respondWith(respond(event));
 });
 
+/**
+ * Answers a request: precached assets straight from the cache, everything
+ * else from the network with the last good copy kept as a fallback. That
+ * fallback is what lets the app open at all without signal.
+ */
 async function respond(event: FetchEvent): Promise<Response> {
 	const { request } = event;
 	const url = new URL(request.url);
@@ -109,7 +114,10 @@ async function respond(event: FetchEvent): Promise<Response> {
 	}
 }
 
-/** Last resort: nothing cached and no network. */
+/**
+ * Explains itself in Swedish when there is nothing cached and no network,
+ * which is nicer than the browser's own error page.
+ */
 function offlineResponse(): Response {
 	const html = `<!doctype html>
 <html lang="sv">

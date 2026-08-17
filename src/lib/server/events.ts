@@ -4,8 +4,10 @@ import type { Json } from '$lib/types/database';
 import type { EventDetails, EventInsert, EventRow, WeightPoint } from '$lib/types/domain';
 import type { Db } from './db';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+/**
+ * Reads the most recently logged events, newest first, with each one's
+ * catalogue row attached so the list can show a label and an icon.
+ */
 export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 	const { data } = await db
 		.from('events')
@@ -18,7 +20,10 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
 }
 
-/** Every weighing, oldest first, flattened out of the details column. */
+/**
+ * Reads every weighing, oldest first, lifting the kilos out of the details
+ * column. Rows without a number are dropped rather than plotted as zero.
+ */
 export async function weightHistory(db: Db): Promise<WeightPoint[]> {
 	const { data } = await db
 		.from('events')
@@ -41,6 +46,8 @@ export type ParsedEvent = { ok: true; row: EventInsert } | { ok: false; message:
  * true/false when we know the form actually rendered them.
  */
 export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
+	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 	const typeId = String(form.get('type_id') ?? '');
 	const row: EventInsert = { dog_id: dogId, type_id: typeId };
 
@@ -81,6 +88,10 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 
 type ParsedDetails = { ok: true; details: EventDetails } | { ok: false; message: string };
 
+/**
+ * Reads the type-specific fields out of a submitted form, following the same
+ * DETAIL_FIELDS list the dialog rendered them from.
+ */
 function parseDetails(form: FormData, typeId: string): ParsedDetails {
 	const details: EventDetails = {};
 
@@ -113,7 +124,10 @@ function parseDetails(form: FormData, typeId: string): ParsedDetails {
 	return { ok: true, details };
 }
 
-/** Returns a Swedish error message, or null when the event is stored. */
+/**
+ * Stores an event. Returns a Swedish error message, or null when it landed —
+ * including when it had already landed, since a duplicate is not a failure.
+ */
 export async function insertEvent(db: Db, row: EventInsert): Promise<string | null> {
 	const { error } = await db.from('events').insert(row);
 	// 23505 = unique violation: this exact event is already stored, so the

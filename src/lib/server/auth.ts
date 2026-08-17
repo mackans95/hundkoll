@@ -4,7 +4,8 @@ import type { Db } from './db';
 export type SessionResult = { session: Session | null; user: User | null };
 
 /**
- * The session, with its user verified against the Auth server.
+ * Reads the session and verifies its user against the Auth server, returning
+ * nothing at all if either step fails.
  *
  * getSession() only reads the cookie; it never checks that the cookie is
  * genuine. Reading `session.user` from that result — even implicitly, when
