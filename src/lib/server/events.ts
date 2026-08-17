@@ -1,0 +1,126 @@
+import { fieldsFor } from '$lib/events/fields';
+import { stockholmInputToUtc } from '$lib/time';
+import type { Json } from '$lib/types/database';
+import type { EventDetails, EventInsert, EventRow, WeightPoint } from '$lib/types/domain';
+import type { Db } from './db';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
+	const { data } = await db
+		.from('events')
+		.select('id, type_id, occurred_at, note, details, type:event_types(label, icon)')
+		.order('occurred_at', { ascending: false })
+		.limit(limit);
+
+	// `details` is jsonb, so the generated type is the whole Json union; the
+	// keys it actually holds are the ones DETAIL_FIELDS wrote.
+	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
+}
+
+/** Every weighing, oldest first, flattened out of the details column. */
+export async function weightHistory(db: Db): Promise<WeightPoint[]> {
+	const { data } = await db
+		.from('events')
+		.select('occurred_at, details')
+		.eq('type_id', 'weight')
+		.order('occurred_at');
+
+	return (data ?? [])
+		.map((row) => ({ occurred_at: row.occurred_at, kg: (row.details as EventDetails)?.kg }))
+		.filter((point): point is WeightPoint => typeof point.kg === 'number');
+}
+
+export type ParsedEvent = { ok: true; row: EventInsert } | { ok: false; message: string };
+
+/**
+ * Turn a submitted log form into a row.
+ *
+ * Dialog submissions carry every field and say so with `detailed`; a bare
+ * submission carries only the type. Checkboxes are only trustworthy as
+ * true/false when we know the form actually rendered them.
+ */
+export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
+	const typeId = String(form.get('type_id') ?? '');
+	const row: EventInsert = { dog_id: dogId, type_id: typeId };
+
+	// The row id is generated when the dialog renders and travels with the
+	// form, so a resubmit collides on the primary key instead of logging the
+	// same walk twice.
+	const eventId = String(form.get('event_id') ?? '');
+	if (UUID_RE.test(eventId)) {
+		row.id = eventId;
+	}
+
+	const occurredRaw = String(form.get('occurred_at') ?? '').trim();
+	if (occurredRaw) {
+		const occurred = stockholmInputToUtc(occurredRaw);
+		if (!occurred) {
+			return { ok: false, message: 'Ogiltig tidpunkt.' };
+		}
+		row.occurred_at = occurred.toISOString();
+	}
+
+	if (form.has('detailed')) {
+		const parsed = parseDetails(form, typeId);
+		if (!parsed.ok) {
+			return parsed;
+		}
+		if (Object.keys(parsed.details).length > 0) {
+			// Every value DETAIL_FIELDS produces is a number or a boolean.
+			row.details = parsed.details as Json;
+		}
+		const note = String(form.get('note') ?? '').trim();
+		if (note) {
+			row.note = note;
+		}
+	}
+
+	return { ok: true, row };
+}
+
+type ParsedDetails = { ok: true; details: EventDetails } | { ok: false; message: string };
+
+function parseDetails(form: FormData, typeId: string): ParsedDetails {
+	const details: EventDetails = {};
+
+	for (const field of fieldsFor(typeId)) {
+		if (field.input === 'checkbox') {
+			details[field.name] = form.get(field.name) === 'on';
+		} else if (field.input === 'count') {
+			// Checkbox plus stepper; without JS only the checkbox submits,
+			// which counts as one.
+			if (form.get(field.name) === 'on') {
+				const count = parseInt(String(form.get(`${field.name}_count`) ?? '1'), 10);
+				details[field.name] = Number.isFinite(count) && count > 0 ? count : 1;
+			} else {
+				details[field.name] = 0;
+			}
+		} else {
+			const raw = String(form.get(field.name) ?? '')
+				.trim()
+				.replace(',', '.');
+			if (raw) {
+				const value = Number(raw);
+				if (!Number.isFinite(value)) {
+					return { ok: false, message: `Ogiltigt värde för ${field.label.toLowerCase()}.` };
+				}
+				details[field.name] = value;
+			}
+		}
+	}
+
+	return { ok: true, details };
+}
+
+/** Returns a Swedish error message, or null when the event is stored. */
+export async function insertEvent(db: Db, row: EventInsert): Promise<string | null> {
+	const { error } = await db.from('events').insert(row);
+	// 23505 = unique violation: this exact event is already stored, so the
+	// submission was a duplicate rather than a failure.
+	if (error && error.code !== '23505') {
+		console.error('event insert failed:', error.code, error.message);
+		return 'Kunde inte logga händelsen.';
+	}
+	return null;
+}

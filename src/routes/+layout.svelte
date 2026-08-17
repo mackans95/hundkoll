@@ -4,7 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
-	import { flushQueue, loadQueue } from '$lib/offline-queue.svelte';
+	import { flushQueue, loadQueue } from '$lib/offline/queue.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();

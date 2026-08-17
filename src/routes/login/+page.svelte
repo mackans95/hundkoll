@@ -39,11 +39,6 @@
 				class="rounded-lg border-gray-300"
 			/>
 		</label>
-		<button
-			type="submit"
-			class="rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
-		>
-			Logga in
-		</button>
+		<button type="submit" class="btn btn-primary">Logga in</button>
 	</form>
 </main>

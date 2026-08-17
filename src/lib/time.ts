@@ -1,3 +1,6 @@
+// Time *computation*: timezone conversion and calendar arithmetic.
+// Turning any of this into text is format.ts's job.
+//
 // Europe/Stockholm is the app's wall-clock timezone; the database stores
 // timestamptz (UTC). The server runs in UTC on Vercel, so datetime-local
 // input values must be converted explicitly.
@@ -40,6 +43,19 @@ export function stockholmInputToUtc(input: string): Date | null {
 	return new Date(guess.getTime() - offsetMs(once));
 }
 
+/** Current Stockholm time formatted for a datetime-local input value. */
+export function stockholmNowForInput(): string {
+	const s = new Intl.DateTimeFormat('sv-SE', {
+		timeZone: TZ,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit'
+	}).format(new Date());
+	return s.replace(' ', 'T');
+}
+
 /** Add days to a YYYY-MM-DD string (UTC arithmetic on date-only values). */
 export function addDays(iso: string, days: number): string {
 	const d = new Date(`${iso}T00:00:00Z`);
@@ -60,59 +76,19 @@ export function mondayOf(iso: string): string {
 	return addDays(iso, -((dow + 6) % 7));
 }
 
-const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-	['year', 365 * 86_400_000],
-	['month', 30 * 86_400_000],
-	['week', 7 * 86_400_000],
-	['day', 86_400_000],
-	['hour', 3_600_000],
-	['minute', 60_000]
-];
-
-const relativeFormat = new Intl.RelativeTimeFormat('sv', { numeric: 'auto' });
-
-/** "för 5 veckor sedan", "igår", "om 8 dagar". */
-export function svRelative(target: Date, base = new Date()): string {
-	const diff = target.getTime() - base.getTime();
-	for (const [unit, unitMs] of RELATIVE_UNITS) {
-		if (Math.abs(diff) >= unitMs) {
-			return relativeFormat.format(Math.round(diff / unitMs), unit);
-		}
-	}
-	return 'nyss';
+/** ISO 8601 week number — the week numbers used in Sweden. */
+export function isoWeek(iso: string): number {
+	const d = new Date(`${iso}T00:00:00Z`);
+	d.setUTCDate(d.getUTCDate() + 4 - (((d.getUTCDay() + 6) % 7) + 1));
+	const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1);
+	return Math.ceil(((d.getTime() - yearStart) / 86_400_000 + 1) / 7);
 }
 
-const DURATION_NAMES: Record<string, [singular: string, plural: string]> = {
-	year: ['år', 'år'],
-	month: ['månad', 'månader'],
-	week: ['vecka', 'veckor'],
-	day: ['dag', 'dagar'],
-	hour: ['timme', 'timmar'],
-	minute: ['minut', 'minuter']
-};
-
-/** "3 dagar", "5 veckor" — for composing texts like "3 dagar försenat". */
-export function svDuration(ms: number): string {
-	const abs = Math.abs(ms);
-	for (const [unit, unitMs] of RELATIVE_UNITS) {
-		if (abs >= unitMs || unit === 'minute') {
-			const n = Math.max(1, Math.round(abs / unitMs));
-			const [singular, plural] = DURATION_NAMES[unit];
-			return `${n} ${n === 1 ? singular : plural}`;
-		}
+/** The last `count` days ending today, oldest first, as YYYY-MM-DD. */
+export function lastDays(today: string, count: number): string[] {
+	const out: string[] = [];
+	for (let i = count - 1; i >= 0; i--) {
+		out.push(addDays(today, -i));
 	}
-	return '';
-}
-
-/** Current Stockholm time formatted for a datetime-local input value. */
-export function stockholmNowForInput(): string {
-	const s = new Intl.DateTimeFormat('sv-SE', {
-		timeZone: TZ,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit'
-	}).format(new Date());
-	return s.replace(' ', 'T');
+	return out;
 }

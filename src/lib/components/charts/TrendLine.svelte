@@ -1,9 +1,6 @@
-<script lang="ts" module>
-	export type TrendPoint = { t: number; label: string; value: number };
-</script>
-
 <script lang="ts">
 	import { svNum } from '$lib/format';
+	import type { TrendPoint } from './types';
 
 	let {
 		points,

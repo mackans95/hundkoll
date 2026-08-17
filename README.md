@@ -52,12 +52,36 @@ anywhere in this project.
 
 Other commands:
 
-| Command           | Purpose                                     |
-| ----------------- | ------------------------------------------- |
-| `npm run check`   | `svelte-check` — run this before committing |
-| `npm run format`  | Prettier                                    |
-| `npm run build`   | production build                            |
-| `npm run db-push` | apply pending migrations to Supabase        |
+| Command             | Purpose                                                |
+| ------------------- | ------------------------------------------------------ |
+| `npm run check`     | `svelte-check` — run this before committing            |
+| `npm run format`    | Prettier                                               |
+| `npm run build`     | production build                                       |
+| `npm run db-push`   | apply pending migrations to Supabase                   |
+| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the schema |
+
+## Code layout
+
+```
+src/lib/
+  types/       database.ts is generated; domain.ts is what the app works with
+  server/      every query, and nothing else — the bundler keeps it off the client
+  events/      the detail-field catalogue, shared by the form and the action
+  stats/       pure row → chart-column and row → tile logic
+  offline/     the IndexedDB queue and the submit handler that feeds it
+  components/  ui primitives at the top, then charts/ log/ stats/ status/
+  time.ts      computation: timezone conversion and calendar arithmetic
+  format.ts    presentation: the same values as Swedish text
+```
+
+Three rules hold this together:
+
+- **Routes wire, they do not query.** A `+page.server.ts` calls one or two functions
+  from `$lib/server` and returns the result.
+- **Components render, they do not derive.** Turning rows into columns, tiles or
+  badges happens in a plain `.ts` module that can be called without a DOM.
+- **`time.ts` computes, `format.ts` phrases.** If it returns Swedish, it belongs in
+  the second one.
 
 ## Data model
 
@@ -90,6 +114,11 @@ Current catalogue:
 `details` examples: walk `{"duration_min": 35, "pee": 3, "poop": 1}`, meal
 `{"finished": true}`, weight `{"kg": 12.4}`. Pee and poop are counts; older rows hold
 booleans and are still read correctly.
+
+The generated `src/lib/types/database.ts` is committed, and the Supabase client is
+typed against it — so a query that names a column the schema does not have fails to
+compile instead of returning empty rows. Regenerate it with `npm run gen-types` after
+any migration.
 
 ### Aggregation lives in SQL
 
@@ -147,7 +176,7 @@ screen on both phones.
 - **`src/service-worker.ts`** precaches the built assets and serves pages network-first
   with a cache fallback, so the app opens without signal showing the last known state. It
   stands down entirely under `vite dev`.
-- **`src/lib/offline-queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
+- **`src/lib/offline/queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
   on launch and on the `online` event. Pending events show dimmed with ⏳ until they land.
 
 Both rely on one detail: **the event's row id is generated when the dialog renders and

@@ -1,18 +1,6 @@
-<script lang="ts" module>
-	export type TooltipCell = { label?: string; value: string; color?: string; big?: boolean };
-
-	// Each tooltip row renders as its own card inside the tooltip; cells in
-	// a row split its width evenly with divider lines ("🚶 7 | 🟡 14 | 💩 3").
-	// big renders the label large — for emoji that drown at text size.
-	export type ColumnBucket = {
-		label: string;
-		tick: boolean;
-		segments: number[];
-		tooltip: { heading: string; rows: TooltipCell[][] };
-	};
-</script>
-
 <script lang="ts">
+	import type { ColumnBucket } from './types';
+
 	let {
 		buckets,
 		colors,

@@ -43,23 +43,13 @@
 					</span>
 				</label>
 			{/each}
-			<button
-				type="submit"
-				class="mt-2 rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-gray-800 active:bg-gray-700"
-			>
-				Spara
-			</button>
+			<button type="submit" class="mt-2 btn btn-primary">Spara</button>
 		</form>
 	</section>
 
 	<section class="mt-auto flex flex-col gap-2">
 		<form method="POST" action="?/logout" use:enhance>
-			<button
-				type="submit"
-				class="w-full rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-			>
-				Logga ut
-			</button>
+			<button type="submit" class="w-full btn btn-secondary">Logga ut</button>
 		</form>
 	</section>
 </main>
