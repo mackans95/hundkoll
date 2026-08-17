@@ -4,7 +4,7 @@
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
-	import { stockholmNowForInput } from '$lib/time';
+	import * as time from '$lib/time';
 	import type { EventType } from '$lib/types/domain';
 	import type { ActionData, PageData } from './$types';
 
@@ -18,7 +18,7 @@
 	let offline = $state<OpenDialog | null>(null);
 
 	function openOffline(type: EventType) {
-		offline = { type, eventId: crypto.randomUUID(), nowLocal: stockholmNowForInput() };
+		offline = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput() };
 	}
 
 	const dialog = $derived<OpenDialog | null>(

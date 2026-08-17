@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TrendLine from '$lib/components/charts/TrendLine.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import { dayLabel, svNum } from '$lib/format';
+	import * as format from '$lib/format';
 	import { WEIGHT_COLOR } from '$lib/stats/palette';
 	import type { WeightPoint } from '$lib/types/domain';
 
@@ -10,7 +10,7 @@
 	const points = $derived(
 		weights.map((weight) => ({
 			t: new Date(weight.occurred_at).getTime(),
-			label: dayLabel(weight.occurred_at.slice(0, 10)),
+			label: format.dayLabel(weight.occurred_at.slice(0, 10)),
 			value: weight.kg
 		}))
 	);
@@ -20,7 +20,7 @@
 <FoldableCard title="⚖️ Vikt">
 	{#snippet aside()}
 		{#if latest}
-			<span class="text-lg font-bold">{svNum(latest.kg)} kg</span>
+			<span class="text-lg font-bold">{format.svNum(latest.kg)} kg</span>
 		{/if}
 	{/snippet}
 

@@ -1,7 +1,7 @@
 // Turning values into Swedish text. Nothing here computes anything about
 // time — that lives in time.ts.
 
-import { isoWeek } from '$lib/time';
+import * as time from '$lib/time';
 
 const oneDecimal = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 });
 
@@ -49,12 +49,12 @@ export function monthLabel(iso: string): string {
 
 /** "v.33" — short enough for an axis tick. */
 export function weekLabel(iso: string): string {
-	return `v.${isoWeek(iso)}`;
+	return `v.${time.isoWeek(iso)}`;
 }
 
 /** "Vecka 33" — for a tooltip heading, where there is room. */
 export function weekHeading(iso: string): string {
-	return `Vecka ${isoWeek(iso)}`;
+	return `Vecka ${time.isoWeek(iso)}`;
 }
 
 const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import StatusCard from '$lib/components/status/StatusCard.svelte';
-	import { svRelative } from '$lib/format';
+	import * as format from '$lib/format';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -33,7 +33,7 @@
 				<li class="flex items-baseline justify-between gap-3 py-2">
 					<span class="font-medium">{row.icon} {row.label}</span>
 					<span class="shrink-0 text-sm text-gray-500">
-						{row.last_at ? svRelative(new Date(row.last_at), now) : 'aldrig'}
+						{row.last_at ? format.svRelative(new Date(row.last_at), now) : 'aldrig'}
 					</span>
 				</li>
 			{/each}

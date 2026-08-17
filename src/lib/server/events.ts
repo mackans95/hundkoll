@@ -1,5 +1,5 @@
 import { fieldsFor } from '$lib/events/fields';
-import { stockholmInputToUtc } from '$lib/time';
+import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type { EventDetails, EventInsert, EventRow, WeightPoint } from '$lib/types/domain';
 import type { Db } from './db';
@@ -54,7 +54,7 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 
 	const occurredRaw = String(form.get('occurred_at') ?? '').trim();
 	if (occurredRaw) {
-		const occurred = stockholmInputToUtc(occurredRaw);
+		const occurred = time.stockholmInputToUtc(occurredRaw);
 		if (!occurred) {
 			return { ok: false, message: 'Ogiltig tidpunkt.' };
 		}

@@ -4,7 +4,7 @@
 // tracked, and an average of a partial history is an estimate. A value that
 // has nothing behind it shows an en dash rather than a zero.
 
-import { minutesText, pctText, svNum } from '$lib/format';
+import * as format from '$lib/format';
 import type { Period, StatSummary } from '$lib/types/domain';
 
 export type Tile = { label: string; value: string };
@@ -35,36 +35,36 @@ export function periodReady(period: Period, tracked: number): boolean {
 /** Per day first — it is the number worth reading — then the two averages. */
 export function walkTiles(summary: StatSummary | null): Tile[] {
 	return [
-		{ label: '🚶 per dag', value: approx(summary?.walks_per_day, (v) => svNum(v)) },
-		{ label: '⏳ mellan promenader', value: approx(summary?.avg_walk_gap_min, minutesText) },
-		{ label: '⏱️ snittlängd', value: approx(summary?.avg_walk_duration_min, minutesText) }
+		{ label: '🚶 per dag', value: approx(summary?.walks_per_day, (v) => format.svNum(v)) },
+		{ label: '⏳ mellan promenader', value: approx(summary?.avg_walk_gap_min, format.minutesText) },
+		{ label: '⏱️ snittlängd', value: approx(summary?.avg_walk_duration_min, format.minutesText) }
 	];
 }
 
 export function mealTiles(summary: StatSummary | null): Tile[] {
 	return [
-		{ label: '⏳ mellan mål', value: approx(summary?.avg_meal_gap_min, minutesText) },
+		{ label: '⏳ mellan mål', value: approx(summary?.avg_meal_gap_min, format.minutesText) },
 		{
 			label: '✅ åt upp',
 			// A finish rate is a measured share, not an estimate — no "~".
-			value: summary?.meal_finish_rate == null ? DASH : pctText(summary.meal_finish_rate)
+			value: summary?.meal_finish_rate == null ? DASH : format.pctText(summary.meal_finish_rate)
 		}
 	];
 }
 
 export function accidentTiles(summary: StatSummary | null, tracked: number): Tile[] {
 	return [
-		{ label: 'per dag', value: approx(summary?.accidents_per_day, (v) => svNum(v)) },
+		{ label: 'per dag', value: approx(summary?.accidents_per_day, (v) => format.svNum(v)) },
 		{
 			label: 'per vecka',
 			value: periodReady('week', tracked)
-				? approx(summary?.accidents_per_week, (v) => svNum(v))
+				? approx(summary?.accidents_per_week, (v) => format.svNum(v))
 				: DASH
 		},
 		{
 			label: 'per månad',
 			value: periodReady('month', tracked)
-				? approx(summary?.accidents_per_month, (v) => svNum(v))
+				? approx(summary?.accidents_per_month, (v) => format.svNum(v))
 				: DASH
 		}
 	];

@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
 import { insertEvent, parseEventForm, recentEvents } from '$lib/server/events';
-import { stockholmNowForInput } from '$lib/time';
+import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		types,
 		events,
 		detailType: types.find((type) => type.id === detailParam) ?? null,
-		nowLocal: stockholmNowForInput(),
+		nowLocal: time.stockholmNowForInput(),
 		// The row id travels with the form so a resubmit — a double tap, or a
 		// retry after a response was lost — collides on the primary key
 		// instead of inserting the same walk twice.

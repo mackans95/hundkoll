@@ -5,7 +5,7 @@
 // duplicate the event — see queue.svelte.ts.
 
 import type { SubmitFunction } from '@sveltejs/kit';
-import { stockholmInputToUtc } from '$lib/time';
+import * as time from '$lib/time';
 import type { EventType } from '$lib/types/domain';
 import { enqueue } from './queue.svelte';
 
@@ -20,7 +20,7 @@ export function createLogSubmit(type: DialogType, onQueued: () => void): SubmitF
 				fields[name] = value;
 			}
 		}
-		const occurred = stockholmInputToUtc(fields.occurred_at ?? '') ?? new Date();
+		const occurred = time.stockholmInputToUtc(fields.occurred_at ?? '') ?? new Date();
 		await enqueue({
 			id: fields.event_id,
 			typeId: type.id,

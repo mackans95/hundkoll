@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { svDuration, svRelative } from '$lib/format';
+	import * as format from '$lib/format';
 	import type { StatusRow } from '$lib/types/domain';
 
 	let { row, now }: { row: StatusRow; now: Date } = $props();
@@ -16,10 +16,13 @@
 		const due = new Date(row.due_at);
 		const remaining = due.getTime() - now.getTime();
 		if (remaining < 0) {
-			return { text: `${svDuration(remaining)} försenat`, classes: 'bg-red-100 text-red-800' };
+			return {
+				text: `${format.svDuration(remaining)} försenat`,
+				classes: 'bg-red-100 text-red-800'
+			};
 		}
 		return {
-			text: `dags ${svRelative(due, now)}`,
+			text: `dags ${format.svRelative(due, now)}`,
 			classes:
 				remaining <= AMBER_WINDOW_MS ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
 		};
@@ -32,7 +35,7 @@
 		<h2 class="font-semibold">{row.label}</h2>
 		<p class="text-sm text-gray-500">
 			{#if row.last_at}
-				{svRelative(new Date(row.last_at), now)} · var {row.interval_days}:e dag
+				{format.svRelative(new Date(row.last_at), now)} · var {row.interval_days}:e dag
 			{:else}
 				var {row.interval_days}:e dag
 			{/if}

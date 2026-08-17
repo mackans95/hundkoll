@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { detailSummary } from '$lib/events/summary';
-	import { eventTimeFormat } from '$lib/format';
+	import * as format from '$lib/format';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import type { EventRow } from '$lib/types/domain';
 
@@ -20,7 +20,7 @@
 					<span class="block truncate text-sm text-gray-500">⏳ väntar på signal</span>
 				</span>
 				<time datetime={queued.occurredAt} class="shrink-0 text-sm text-gray-500">
-					{eventTimeFormat.format(new Date(queued.occurredAt))}
+					{format.eventTimeFormat.format(new Date(queued.occurredAt))}
 				</time>
 			</li>
 		{/each}
@@ -37,7 +37,7 @@
 					{/if}
 				</span>
 				<time datetime={event.occurred_at} class="shrink-0 text-sm text-gray-500">
-					{eventTimeFormat.format(new Date(event.occurred_at))}
+					{format.eventTimeFormat.format(new Date(event.occurred_at))}
 				</time>
 			</li>
 		{/each}

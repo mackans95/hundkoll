@@ -1,26 +1,26 @@
 // The Trender card: the last two complete periods, compared.
 
-import { dayLabel, minutesText, monthLabel, pctText, svNum, weekLabel } from '$lib/format';
-import { addDays, addMonths, mondayOf } from '$lib/time';
+import * as format from '$lib/format';
+import * as time from '$lib/time';
 import type { Period, TrendBucket } from '$lib/types/domain';
 
 /** The last two COMPLETE buckets for a period — today never participates. */
 export function trendBucketKeys(today: string, period: Period): { prev: string; latest: string } {
 	if (period === 'day') {
-		return { prev: addDays(today, -2), latest: addDays(today, -1) };
+		return { prev: time.addDays(today, -2), latest: time.addDays(today, -1) };
 	}
 	if (period === 'week') {
-		const monday = mondayOf(today);
-		return { prev: addDays(monday, -14), latest: addDays(monday, -7) };
+		const monday = time.mondayOf(today);
+		return { prev: time.addDays(monday, -14), latest: time.addDays(monday, -7) };
 	}
 	const first = `${today.slice(0, 7)}-01`;
-	return { prev: addMonths(first, -2), latest: addMonths(first, -1) };
+	return { prev: time.addMonths(first, -2), latest: time.addMonths(first, -1) };
 }
 
 const BUCKET_LABEL: Record<Period, (iso: string) => string> = {
-	day: dayLabel,
-	week: weekLabel,
-	month: monthLabel
+	day: format.dayLabel,
+	week: format.weekLabel,
+	month: format.monthLabel
 };
 
 /** "v.33 jämfört med v.32" */
@@ -42,16 +42,24 @@ type TrendMetric = {
 };
 
 const TREND_METRICS: TrendMetric[] = [
-	{ label: '🚶 Promenader', get: (b) => b.walks, format: (v) => svNum(v) },
+	{ label: '🚶 Promenader', get: (b) => b.walks, format: (v) => format.svNum(v) },
 	{
 		label: '⏳ Mellan promenader',
 		get: (b) => b.walk_gap_min,
-		format: (v) => `~${minutesText(v)}`
+		format: (v) => `~${format.minutesText(v)}`
 	},
-	{ label: '⏱️ Snittlängd', get: (b) => b.walk_duration_min, format: (v) => `~${minutesText(v)}` },
-	{ label: '⏳ Mellan mål', get: (b) => b.meal_gap_min, format: (v) => `~${minutesText(v)}` },
-	{ label: '✅ Åt upp', get: (b) => b.meal_finish_rate, format: pctText },
-	{ label: '⚠️ Olyckor', get: (b) => b.accidents, format: (v) => svNum(v) }
+	{
+		label: '⏱️ Snittlängd',
+		get: (b) => b.walk_duration_min,
+		format: (v) => `~${format.minutesText(v)}`
+	},
+	{
+		label: '⏳ Mellan mål',
+		get: (b) => b.meal_gap_min,
+		format: (v) => `~${format.minutesText(v)}`
+	},
+	{ label: '✅ Åt upp', get: (b) => b.meal_finish_rate, format: format.pctText },
+	{ label: '⚠️ Olyckor', get: (b) => b.accidents, format: (v) => format.svNum(v) }
 ];
 
 export type TrendRow = { label: string; from: string; to: string; badge: string };

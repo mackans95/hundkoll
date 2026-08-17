@@ -5,8 +5,8 @@
 // chart has to mean "nothing happened", not "no row".
 
 import type { ColumnBucket } from '$lib/components/charts/types';
-import { dayLabel, minutesText, monthLabel, pctText, weekHeading, weekLabel } from '$lib/format';
-import { addDays, addMonths, lastDays, mondayOf } from '$lib/time';
+import * as format from '$lib/format';
+import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
@@ -18,21 +18,21 @@ const PERIOD_TICK_EVERY = 3;
 
 /** "~42 min", or an en dash when the average has nothing to average. */
 function optionalMinutes(value: number | null): string {
-	return value === null ? '–' : `~${minutesText(value)}`;
+	return value === null ? '–' : `~${format.minutesText(value)}`;
 }
 
 export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
-	return lastDays(today, DAILY_WINDOW).map((day, i) => {
+	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
 		const row = byDay.get(day);
 		const n = row?.n ?? 0;
 		return {
-			label: dayLabel(day),
+			label: format.dayLabel(day),
 			tick: i % DAY_TICK_EVERY === 0,
 			segments: [n],
 			tooltip: {
-				heading: dayLabel(day),
+				heading: format.dayLabel(day),
 				rows:
 					n === 0
 						? [[{ label: 'Promenader', value: '0', color: WALK_COLOR }]]
@@ -55,7 +55,7 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
-	return lastDays(today, DAILY_WINDOW).map((day, i) => {
+	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
 		const row = byDay.get(day);
 		const finished = row?.finished_true ?? 0;
 		const notFinished = row?.finished_false ?? 0;
@@ -64,11 +64,11 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 		const judged = finished + notFinished;
 
 		return {
-			label: dayLabel(day),
+			label: format.dayLabel(day),
 			tick: i % DAY_TICK_EVERY === 0,
 			segments: [finished, notFinished, unknown],
 			tooltip: {
-				heading: dayLabel(day),
+				heading: format.dayLabel(day),
 				rows:
 					(row?.n ?? 0) === 0
 						? [[{ label: 'Mål', value: '0', color: MEAL_COLORS[0] }]]
@@ -79,7 +79,9 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 									...(unknown > 0 ? [{ label: '❔', value: String(unknown), big: true }] : [])
 								],
 								[
-									...(judged > 0 ? [{ label: 'Andel', value: pctText(finished / judged) }] : []),
+									...(judged > 0
+										? [{ label: 'Andel', value: format.pctText(finished / judged) }]
+										: []),
 									{ label: 'Tid mellan', value: optionalMinutes(row?.avg_gap_min ?? null) }
 								]
 							]
@@ -91,29 +93,29 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 /** The bucket start dates the accident chart covers, oldest first. */
 function accidentStarts(today: string, period: Period): string[] {
 	if (period === 'day') {
-		return lastDays(today, DAILY_WINDOW);
+		return time.lastDays(today, DAILY_WINDOW);
 	}
 	if (period === 'week') {
-		const monday = mondayOf(today);
+		const monday = time.mondayOf(today);
 		return Array.from({ length: PERIOD_COLUMNS }, (_, i) =>
-			addDays(monday, -7 * (PERIOD_COLUMNS - 1 - i))
+			time.addDays(monday, -7 * (PERIOD_COLUMNS - 1 - i))
 		);
 	}
 	return Array.from({ length: PERIOD_COLUMNS }, (_, i) =>
-		addMonths(today, -(PERIOD_COLUMNS - 1 - i))
+		time.addMonths(today, -(PERIOD_COLUMNS - 1 - i))
 	);
 }
 
 const AXIS_LABEL: Record<Period, (start: string) => string> = {
-	day: dayLabel,
-	week: weekLabel,
-	month: monthLabel
+	day: format.dayLabel,
+	week: format.weekLabel,
+	month: format.monthLabel
 };
 
 const TOOLTIP_HEADING: Record<Period, (start: string) => string> = {
-	day: dayLabel,
-	week: weekHeading,
-	month: monthLabel
+	day: format.dayLabel,
+	week: format.weekHeading,
+	month: format.monthLabel
 };
 
 export function accidentBuckets(

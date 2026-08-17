@@ -6,7 +6,7 @@
 // once, so that pages never handle a `number | null` that is really a count.
 
 import { trendBucketKeys } from '$lib/stats/trends';
-import { stockholmNowForInput } from '$lib/time';
+import * as time from '$lib/time';
 import type {
 	AccidentBin,
 	MealDay,
@@ -119,7 +119,7 @@ function present<T>(rows: (T | null)[]): T[] {
 
 /** Everything the stats screen shows, for one period and one trend period. */
 export async function loadStats(db: Db, period: Period, trend: Period): Promise<Stats> {
-	const today = stockholmNowForInput().slice(0, 10);
+	const today = time.stockholmNowForInput().slice(0, 10);
 	const { prev: trendPrevBucket, latest: trendLatestBucket } = trendBucketKeys(today, trend);
 
 	const daysAgo = (days: number) =>

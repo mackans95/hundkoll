@@ -6,13 +6,13 @@
 	import WalkCard from '$lib/components/stats/WalkCard.svelte';
 	import WeightCard from '$lib/components/stats/WeightCard.svelte';
 	import { daysTracked } from '$lib/stats/summary';
-	import { stockholmNowForInput } from '$lib/time';
+	import * as time from '$lib/time';
 	import type { Period } from '$lib/types/domain';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const today = stockholmNowForInput().slice(0, 10);
+	const today = time.stockholmNowForInput().slice(0, 10);
 	const tracked = $derived(daysTracked(data.summary));
 
 	const tabs: Tab<Period>[] = [

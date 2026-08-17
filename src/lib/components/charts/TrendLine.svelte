@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { svNum } from '$lib/format';
+	import * as format from '$lib/format';
 	import type { TrendPoint } from './types';
 
 	let {
@@ -47,8 +47,8 @@
 <svg viewBox="0 0 {W} {height}" class="w-full" role="img">
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(hi)} y2={y(hi)} stroke="#f3f4f6" />
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(lo)} y2={y(lo)} stroke="#e5e7eb" />
-	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{svNum(hi)}</text>
-	<text x="0" y={y(lo) + 3} font-size="9" class="fill-gray-400">{svNum(lo)}</text>
+	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{format.svNum(hi)}</text>
+	<text x="0" y={y(lo) + 3} font-size="9" class="fill-gray-400">{format.svNum(lo)}</text>
 
 	{#if points.length > 1}
 		<path d={path} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" />
@@ -56,7 +56,7 @@
 
 	{#each points as p (p.t)}
 		<circle cx={x(p.t)} cy={y(p.value)} r="4" fill={color} stroke="#fff" stroke-width="2">
-			<title>{p.label}: {svNum(p.value)} {unit}</title>
+			<title>{p.label}: {format.svNum(p.value)} {unit}</title>
 		</circle>
 	{/each}
 
@@ -69,7 +69,7 @@
 			font-weight="600"
 			class="fill-gray-700"
 		>
-			{svNum(last.value)}{unit ? ` ${unit}` : ''}
+			{format.svNum(last.value)}{unit ? ` ${unit}` : ''}
 		</text>
 		<text x={PAD.left} y={height - 4} font-size="9" class="fill-gray-400">
 			{points[0].label}

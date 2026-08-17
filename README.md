@@ -83,6 +83,27 @@ Three rules hold this together:
 - **`time.ts` computes, `format.ts` phrases.** If it returns Swedish, it belongs in
   the second one.
 
+Those two are the only grab-bag modules, and a bare `svNum` or `addDays` at a call
+site does not say where it came from — so they are imported as namespaces:
+
+```ts
+import * as format from '$lib/format';
+import * as time from '$lib/time';
+
+label: format.dayLabel(day),
+starts: time.lastDays(today, 30)
+```
+
+Use `import * as` rather than exporting a hand-written `export const format = {…}`
+object. It reads identically and needs no list kept in sync, and Rollup rewrites the
+member access back into a direct binding so tree-shaking still works — an exported
+object literal is a value, so everything it references stays live. Measured on this
+app: `import * as` is byte-for-byte identical to named imports, while the object cost
+392 bytes, and 22× as much in an isolated module where only one helper is used.
+
+Everything else keeps named imports; `walkBuckets` and `careStatus` already say where
+they came from.
+
 ## Data model
 
 The insight the schema is built on: **everything logged is the same thing — an event with a
