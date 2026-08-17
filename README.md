@@ -240,8 +240,10 @@ screen on both phones.
 - **`src/service-worker.ts`** precaches the built assets and serves pages network-first
   with a cache fallback, so the app opens without signal showing the last known state. It
   stands down entirely under `vite dev`.
-- **`src/lib/offline/queue.svelte.ts`** holds logs made offline in IndexedDB and sends them
-  on launch and on the `online` event. Pending events show dimmed with ⏳ until they land.
+- **`src/lib/offline/queue.svelte.ts`** holds logs in IndexedDB and sends them in the
+  background — on save, on launch, and on the `online` event. **Every log goes through
+  it, not just the ones made without signal**, which is what makes Spara instant: see
+  [Performance](#performance).
 
 Both rely on one detail: **the event's row id is generated when the dialog renders and
 travels with the form.** Replaying a queued log is therefore idempotent — a send that
@@ -254,6 +256,35 @@ on Spara harmless.
 The Vercel function is pinned to `arn1` in `vite.config.ts`. Without it, requests entered
 Vercel's edge in Stockholm but executed in Washington DC while the database sat in
 Stockholm — roughly half a second of Atlantic per tap. Do not remove the region pin.
+
+### Nothing on the logging path waits for the server
+
+Logging a walk used to feel dead for a second or two on a phone, because both halves of
+it were round trips. A warm Supabase Auth call is ~70 ms and a warm page request ~265 ms,
+but they stack up: opening the dialog meant `getUser()` then three queries, and saving
+meant `getUser()` → `currentDog()` → `insert` and then a second request to re-read the
+page. Five serial hops, and a radio that has just woken up adds a second on top.
+
+Both are now off the critical path, and the fix in each case was to notice the server was
+not needed:
+
+- **Opening the dialog** needs the activity, the current time and a fresh row id — all of
+  which the page already has. Tapping a tile builds the dialog in place. The
+  `?detail=<id>` route stays as the pre-hydration and no-JavaScript fallback, and closing
+  it uses `replaceState` rather than a navigation, since there is no new data to fetch.
+- **Saving** writes to the queue, closes the dialog, and sends afterwards. The row shows
+  up in the list immediately, described by parsing the form the same way the action will
+  (`$lib/events/details.ts` is shared for exactly that reason), so it reads the same
+  before and after it is stored.
+
+A queued row only shows ⏳ once a send has actually been tried and failed, so the ordinary
+case shows no waiting state at all. A row the server _rejects_ stays on screen with the
+reason and a way to dismiss it — it is deliberately not dropped, since the log came from
+somebody typing.
+
+Switching screens is the one thing left that must reach the server, because each screen
+reads its own rows. That gets the thin progress bar in `layout.css`, which animates in
+after 150 ms so a fast switch never paints it.
 
 ## Conventions
 

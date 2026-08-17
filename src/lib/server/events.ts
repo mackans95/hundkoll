@@ -1,5 +1,5 @@
 import * as locale from '$lib/locale';
-import { fieldsFor } from '$lib/events/fields';
+import { parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type { EventDetails, EventInsert, EventRow, WeightPoint } from '$lib/types/domain';
@@ -72,7 +72,7 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	if (form.has('detailed')) {
 		const parsed = parseDetails(form, typeId);
 		if (!parsed.ok) {
-			return parsed;
+			return { ok: false, message: locale.errors.invalidValue(parsed.field) };
 		}
 		if (Object.keys(parsed.details).length > 0) {
 			// Every value DETAIL_FIELDS produces is a number or a boolean.
@@ -85,44 +85,6 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	}
 
 	return { ok: true, row };
-}
-
-type ParsedDetails = { ok: true; details: EventDetails } | { ok: false; message: string };
-
-/**
- * Reads the type-specific fields out of a submitted form, following the same
- * DETAIL_FIELDS list the dialog rendered them from.
- */
-function parseDetails(form: FormData, typeId: string): ParsedDetails {
-	const details: EventDetails = {};
-
-	for (const field of fieldsFor(typeId)) {
-		if (field.input === 'checkbox') {
-			details[field.name] = form.get(field.name) === 'on';
-		} else if (field.input === 'count') {
-			// Checkbox plus stepper; without JS only the checkbox submits,
-			// which counts as one.
-			if (form.get(field.name) === 'on') {
-				const count = parseInt(String(form.get(`${field.name}_count`) ?? '1'), 10);
-				details[field.name] = Number.isFinite(count) && count > 0 ? count : 1;
-			} else {
-				details[field.name] = 0;
-			}
-		} else {
-			const raw = String(form.get(field.name) ?? '')
-				.trim()
-				.replace(',', '.');
-			if (raw) {
-				const value = Number(raw);
-				if (!Number.isFinite(value)) {
-					return { ok: false, message: locale.errors.invalidValue(field.label) };
-				}
-				details[field.name] = value;
-			}
-		}
-	}
-
-	return { ok: true, details };
 }
 
 /**

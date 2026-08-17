@@ -1,26 +1,21 @@
 <script lang="ts">
 	import './layout.css';
-	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
+	import { navigating, page } from '$app/state';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
-	import { flushQueue, loadQueue } from '$lib/offline/queue.svelte';
 	import * as locale from '$lib/locale';
+	import { loadQueue } from '$lib/offline/queue.svelte';
+	import { sendPending } from '$lib/offline/sync';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	// Anything logged without signal is sent as soon as there is some —
-	// on launch, and the moment the connection comes back.
+	// Anything not yet stored is sent as soon as it can be — on launch, and the
+	// moment the connection comes back.
 	onMount(() => {
-		const send = async () => {
-			if ((await flushQueue()) > 0) {
-				await invalidateAll();
-			}
-		};
-		loadQueue().then(send);
-		addEventListener('online', send);
-		return () => removeEventListener('online', send);
+		loadQueue().then(sendPending);
+		addEventListener('online', sendPending);
+		return () => removeEventListener('online', sendPending);
 	});
 
 	const tabs = [
@@ -32,6 +27,13 @@
 </script>
 
 {#if data.session}
+	<!-- Switching screens is the one thing left that has to wait for the server,
+	     since each one reads its own rows. The bar animates in after a delay, so
+	     a fast switch never flashes it. -->
+	{#if navigating.to}
+		<div class="loading-bar" role="presentation"></div>
+	{/if}
+
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
 	<div class="pb-[calc(5rem+env(safe-area-inset-bottom))]">
 		{@render children()}
@@ -41,8 +43,11 @@
 	>
 		<div class="mx-auto flex max-w-sm">
 			{#each tabs as tab (tab.href)}
+				<!-- preload on tap: the load starts on touch rather than on the
+				     click that follows it, which is a free head start on mobile. -->
 				<a
 					href={tab.href}
+					data-sveltekit-preload-data="tap"
 					aria-current={page.url.pathname === tab.href ? 'page' : undefined}
 					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors {page.url
 						.pathname === tab.href
