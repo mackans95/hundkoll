@@ -96,9 +96,17 @@ export function weekHeading(iso: string): string {
 	return locale.units.weekLong(time.isoWeek(iso));
 }
 
+/**
+ * The units these two functions step through, taken from locale so the list
+ * and the Swedish words for it cannot drift apart — a unit with no words, or
+ * words with no unit, is now a compile error. `Intl.RelativeTimeFormatUnit`
+ * would also accept the plural spellings, which have no entry in locale.
+ */
+type DurationUnit = keyof typeof locale.units.durationNames;
+
 // Largest unit first: both functions below take the first one the value
 // reaches, so a five-week gap reads as weeks rather than 35 days.
-const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+const RELATIVE_UNITS: [DurationUnit, number][] = [
 	['year', 365 * 86_400_000],
 	['month', 30 * 86_400_000],
 	['week', 7 * 86_400_000],

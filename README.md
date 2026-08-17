@@ -82,8 +82,15 @@ the grammar around the value stays with the words:
 
 ```ts
 waitingBanner: (count: number) =>
-	`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal …`;
+	`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal …` as const;
 ```
+
+Every group is `as const` and **every function ends its template with `as const` too**,
+so hovering an entry in the editor shows the words rather than `string` —
+`` `Snitt över de senaste ${number} dagarna.` `` instead of `string`. Where a group
+also has to be exhaustive, write `as const satisfies Record<Period, string>` in that
+order: `satisfies` on its own, or a plain type annotation, widens the literals back to
+`string`.
 
 `format.ts` gets its vocabulary from `locale.units`, so "min", "tim" and "%" are
 declared once. Two exceptions on purpose: the activity names (Promenad, Matning …) are
