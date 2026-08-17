@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { fieldsFor } from '$lib/events/fields';
+	import * as locale from '$lib/locale';
 	import { createLogSubmit } from '$lib/offline/submit';
 	import type { EventType } from '$lib/types/domain';
 	import DetailFields from './DetailFields.svelte';
@@ -40,7 +41,7 @@
 	<div
 		role="dialog"
 		aria-modal="true"
-		aria-label="Logga {type.label.toLowerCase()}"
+		aria-label={locale.log.dialog.ariaLabel(type.label)}
 		class="w-full max-w-sm rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
 	>
 		<h2 class="mb-4 text-xl font-bold">{type.icon} {type.label}</h2>
@@ -55,7 +56,7 @@
 			<input type="hidden" name="event_id" value={eventId} />
 
 			<label class="flex flex-col gap-1">
-				<span class="text-sm font-medium text-gray-700">Tidpunkt</span>
+				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.time}</span>
 				<input
 					type="datetime-local"
 					name="occurred_at"
@@ -69,17 +70,19 @@
 			<DetailFields {fields} />
 
 			<label class="flex flex-col gap-1">
-				<span class="text-sm font-medium text-gray-700">Anteckning</span>
+				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.note}</span>
 				<textarea name="note" rows="2" class="rounded-lg border-gray-300"></textarea>
 			</label>
 
 			<div class="mt-2 flex gap-2">
 				{#if onClose}
-					<button type="button" onclick={onClose} class="flex-1 btn btn-secondary">Avbryt</button>
+					<button type="button" onclick={onClose} class="flex-1 btn btn-secondary"
+						>{locale.log.dialog.cancel}</button
+					>
 				{:else}
-					<a href="/" class="flex-1 btn btn-secondary">Avbryt</a>
+					<a href="/" class="flex-1 btn btn-secondary">{locale.log.dialog.cancel}</a>
 				{/if}
-				<button type="submit" class="flex-1 btn btn-primary">Spara</button>
+				<button type="submit" class="flex-1 btn btn-primary">{locale.log.dialog.save}</button>
 			</div>
 		</form>
 	</div>

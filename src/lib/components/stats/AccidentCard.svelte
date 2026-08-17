@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
+	import * as locale from '$lib/locale';
 	import ChartLegend, { type LegendItem } from '$lib/components/ChartLegend.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
@@ -33,14 +34,16 @@
 
 	const hasUnspecified = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
 	const legend = $derived<LegendItem[]>([
-		{ color: ACCIDENT_COLORS[0], label: 'Kiss' },
-		{ color: ACCIDENT_COLORS[1], label: 'Bajs' },
-		...(hasUnspecified ? [{ color: ACCIDENT_COLORS[2], label: 'Ospecificerat' }] : [])
+		{ color: ACCIDENT_COLORS[0], label: locale.stats.accidents.legendPee },
+		{ color: ACCIDENT_COLORS[1], label: locale.stats.accidents.legendPoop },
+		...(hasUnspecified
+			? [{ color: ACCIDENT_COLORS[2], label: locale.stats.accidents.legendUnspecified }]
+			: [])
 	]);
 </script>
 
-<FoldableCard title="⚠️ Olyckor">
-	<TabBar {tabs} current={period} href={tabHref} label="Periodval" />
+<FoldableCard title={locale.stats.accidents.heading}>
+	<TabBar {tabs} current={period} href={tabHref} label={locale.stats.periodPickerLabel} />
 
 	{#if ready}
 		<StackedColumns {buckets} colors={ACCIDENT_COLORS} />
@@ -49,9 +52,7 @@
 		<!-- A bar for a period that has not finished yet would read as a
 		     complete one, so the chart waits rather than showing a stub. -->
 		<p class="py-6 text-center text-sm text-gray-500">
-			{period === 'week'
-				? 'Veckovyn visas när en hel vecka har spårats.'
-				: 'Månadsvyn visas när en hel månad har spårats.'}
+			{locale.stats.accidents.pending(period)}
 		</p>
 	{/if}
 

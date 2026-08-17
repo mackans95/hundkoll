@@ -1,5 +1,6 @@
 <script lang="ts">
 	import TrendLine from '$lib/components/charts/TrendLine.svelte';
+	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import * as format from '$lib/format';
 	import { WEIGHT_COLOR } from '$lib/stats/palette';
@@ -17,7 +18,7 @@
 	const latest = $derived(weights.at(-1) ?? null);
 </script>
 
-<FoldableCard title="⚖️ Vikt">
+<FoldableCard title={locale.stats.weight.heading}>
 	{#snippet aside()}
 		{#if latest}
 			<span class="text-lg font-bold">{format.swedishNumber(latest.kg)} kg</span>
@@ -25,7 +26,7 @@
 	{/snippet}
 
 	{#if points.length === 0}
-		<p class="text-sm text-gray-500">Ingen vägning loggad ännu.</p>
+		<p class="text-sm text-gray-500">{locale.stats.weight.empty}</p>
 	{:else}
 		<TrendLine {points} color={WEIGHT_COLOR} unit="kg" />
 	{/if}

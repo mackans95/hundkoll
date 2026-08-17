@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import { flushQueue, loadQueue } from '$lib/offline/queue.svelte';
+	import * as locale from '$lib/locale';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
@@ -23,10 +24,10 @@
 	});
 
 	const tabs = [
-		{ href: '/', label: 'Logga', icon: '🐾' },
-		{ href: '/status', label: 'Status', icon: '⏱️' },
-		{ href: '/stats', label: 'Statistik', icon: '📊' },
-		{ href: '/settings', label: 'Inställningar', icon: '⚙️' }
+		{ href: '/', label: locale.nav.log, icon: '🐾' },
+		{ href: '/status', label: locale.nav.status, icon: '⏱️' },
+		{ href: '/stats', label: locale.nav.stats, icon: '📊' },
+		{ href: '/settings', label: locale.nav.settings, icon: '⚙️' }
 	];
 </script>
 

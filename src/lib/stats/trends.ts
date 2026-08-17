@@ -1,5 +1,6 @@
 // The Trender card: the last two complete periods, compared.
 
+import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
 import type { Period, TrendBucket } from '$lib/types/domain';
@@ -36,7 +37,7 @@ export function trendCaption(period: Period, prev: string, latest: string): stri
 	};
 
 	const label = bucketLabel[period];
-	return `${label(latest)} jämfört med ${label(prev)}`;
+	return locale.stats.trends.comparison(label(latest), label(prev));
 }
 
 /**
@@ -45,8 +46,7 @@ export function trendCaption(period: Period, prev: string, latest: string): stri
  * "month" → "Visas när två hela månader har spårats."
  */
 export function trendPending(period: Period): string {
-	const noun = period === 'day' ? 'dagar' : period === 'week' ? 'veckor' : 'månader';
-	return `Visas när två hela ${noun} har spårats.`;
+	return locale.stats.trends.pending(period);
 }
 
 type TrendMetric = {
@@ -66,11 +66,15 @@ export type TrendRow = { label: string; from: string; to: string; badge: string 
  */
 function changeBadge(from: number | null, to: number | null): string {
 	if (from === null || to === null || from === 0) {
-		return '–';
+		return locale.units.missing;
 	}
 
 	const percent = Math.round(((to - from) / Math.abs(from)) * 100);
-	return percent === 0 ? '±0 %' : `${percent > 0 ? '↑' : '↓'} ${Math.abs(percent)} %`;
+	if (percent === 0) {
+		return locale.stats.trends.unchanged;
+	}
+
+	return locale.stats.trends.change(percent > 0 ? 'up' : 'down', Math.abs(percent));
 }
 
 /**
@@ -80,24 +84,32 @@ function changeBadge(from: number | null, to: number | null): string {
  */
 export function buildTrendRows(prev: TrendBucket | null, latest: TrendBucket | null): TrendRow[] {
 	const metrics: TrendMetric[] = [
-		{ label: '🚶 Promenader', get: (b) => b.walks, format: format.swedishNumber },
+		{ label: locale.stats.trends.metrics.walks, get: (b) => b.walks, format: format.swedishNumber },
 		{
-			label: '⏳ Mellan promenader',
+			label: locale.stats.trends.metrics.walkGap,
 			get: (b) => b.walk_gap_min,
-			format: (v) => `~${format.minutesText(v)}`
+			format: (v) => locale.units.approximately(format.minutesText(v))
 		},
 		{
-			label: '⏱️ Snittlängd',
+			label: locale.stats.trends.metrics.walkDuration,
 			get: (b) => b.walk_duration_min,
-			format: (v) => `~${format.minutesText(v)}`
+			format: (v) => locale.units.approximately(format.minutesText(v))
 		},
 		{
-			label: '⏳ Mellan mål',
+			label: locale.stats.trends.metrics.mealGap,
 			get: (b) => b.meal_gap_min,
-			format: (v) => `~${format.minutesText(v)}`
+			format: (v) => locale.units.approximately(format.minutesText(v))
 		},
-		{ label: '✅ Åt upp', get: (b) => b.meal_finish_rate, format: format.percentageText },
-		{ label: '⚠️ Olyckor', get: (b) => b.accidents, format: format.swedishNumber }
+		{
+			label: locale.stats.trends.metrics.mealFinishRate,
+			get: (b) => b.meal_finish_rate,
+			format: format.percentageText
+		},
+		{
+			label: locale.stats.trends.metrics.accidents,
+			get: (b) => b.accidents,
+			format: format.swedishNumber
+		}
 	];
 
 	return metrics.map((metric) => {
@@ -106,8 +118,8 @@ export function buildTrendRows(prev: TrendBucket | null, latest: TrendBucket | n
 
 		return {
 			label: metric.label,
-			from: from === null ? '–' : metric.format(from),
-			to: to === null ? '–' : metric.format(to),
+			from: from === null ? locale.units.missing : metric.format(from),
+			to: to === null ? locale.units.missing : metric.format(to),
 			badge: changeBadge(from, to)
 		};
 	});

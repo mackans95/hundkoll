@@ -6,6 +6,7 @@
 // so rebuilding them per call is the one thing in this file worth hoisting
 // for. Everything cheap lives inside the function that owns it.
 
+import * as locale from '$lib/locale';
 import * as time from '$lib/time';
 
 const numberFormat = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 });
@@ -26,10 +27,10 @@ export function swedishNumber(value: number): string {
  */
 export function minutesText(minutes: number): string {
 	if (minutes < 90) {
-		return `${Math.round(minutes)} min`;
+		return locale.units.minutes(String(Math.round(minutes)));
 	}
 
-	return `${numberFormat.format(minutes / 60)} tim`;
+	return locale.units.hours(numberFormat.format(minutes / 60));
 }
 
 /**
@@ -37,7 +38,7 @@ export function minutesText(minutes: number): string {
  * 0.923 → "92 %"
  */
 export function percentageText(fraction: number): string {
-	return `${Math.round(fraction * 100)} %`;
+	return locale.units.percent(Math.round(fraction * 100));
 }
 
 const eventTimeFormat = new Intl.DateTimeFormat('sv-SE', {
@@ -84,7 +85,7 @@ export function monthLabel(iso: string): string {
  * "2026-08-10" → "v.33"
  */
 export function weekLabel(iso: string): string {
-	return `v.${time.isoWeek(iso)}`;
+	return locale.units.weekShort(time.isoWeek(iso));
 }
 
 /**
@@ -92,7 +93,7 @@ export function weekLabel(iso: string): string {
  * "2026-08-10" → "Vecka 33"
  */
 export function weekHeading(iso: string): string {
-	return `Vecka ${time.isoWeek(iso)}`;
+	return locale.units.weekLong(time.isoWeek(iso));
 }
 
 // Largest unit first: both functions below take the first one the value
@@ -122,7 +123,7 @@ export function swedishRelative(target: Date, base = new Date()): string {
 		}
 	}
 
-	return 'nyss';
+	return locale.units.justNow;
 }
 
 /**
@@ -131,22 +132,12 @@ export function swedishRelative(target: Date, base = new Date()): string {
  * 259_200_000 → "3 dagar"
  */
 export function swedishDuration(ms: number): string {
-	const DURATION_NAMES: Record<string, [singular: string, plural: string]> = {
-		year: ['år', 'år'],
-		month: ['månad', 'månader'],
-		week: ['vecka', 'veckor'],
-		day: ['dag', 'dagar'],
-		hour: ['timme', 'timmar'],
-		minute: ['minut', 'minuter']
-	};
-
 	const abs = Math.abs(ms);
 
 	for (const [unit, unitMs] of RELATIVE_UNITS) {
 		if (abs >= unitMs || unit === 'minute') {
-			const n = Math.max(1, Math.round(abs / unitMs));
-			const [singular, plural] = DURATION_NAMES[unit];
-			return `${n} ${n === 1 ? singular : plural}`;
+			const count = Math.max(1, Math.round(abs / unitMs));
+			return locale.units.counted(count, locale.units.durationNames[unit]);
 		}
 	}
 

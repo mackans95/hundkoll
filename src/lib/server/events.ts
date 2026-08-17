@@ -1,3 +1,4 @@
+import * as locale from '$lib/locale';
 import { fieldsFor } from '$lib/events/fields';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
@@ -63,7 +64,7 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	if (occurredRaw) {
 		const occurred = time.stockholmInputToUtc(occurredRaw);
 		if (!occurred) {
-			return { ok: false, message: 'Ogiltig tidpunkt.' };
+			return { ok: false, message: locale.errors.invalidTime };
 		}
 		row.occurred_at = occurred.toISOString();
 	}
@@ -114,7 +115,7 @@ function parseDetails(form: FormData, typeId: string): ParsedDetails {
 			if (raw) {
 				const value = Number(raw);
 				if (!Number.isFinite(value)) {
-					return { ok: false, message: `Ogiltigt värde för ${field.label.toLowerCase()}.` };
+					return { ok: false, message: locale.errors.invalidValue(field.label) };
 				}
 				details[field.name] = value;
 			}
@@ -134,7 +135,7 @@ export async function insertEvent(db: Db, row: EventInsert): Promise<string | nu
 	// submission was a duplicate rather than a failure.
 	if (error && error.code !== '23505') {
 		console.error('event insert failed:', error.code, error.message);
-		return 'Kunde inte logga händelsen.';
+		return locale.errors.logFailed;
 	}
 	return null;
 }

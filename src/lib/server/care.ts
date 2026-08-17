@@ -1,3 +1,4 @@
+import * as locale from '$lib/locale';
 import type { EventCategory, EventType, StatusRow, ViewRow } from '$lib/types/domain';
 import type { Db } from './db';
 
@@ -64,7 +65,7 @@ export async function saveIntervals(db: Db, form: FormData): Promise<string | nu
 		const raw = String(form.get(`interval_${type.id}`) ?? '').trim();
 		const value = raw === '' ? null : parseInt(raw, 10);
 		if (value !== null && (!Number.isFinite(value) || value < 1)) {
-			return 'Intervall måste vara ett antal dagar (minst 1).';
+			return locale.errors.intervalRange;
 		}
 		if (value === type.interval_days) {
 			continue;
@@ -75,7 +76,7 @@ export async function saveIntervals(db: Db, form: FormData): Promise<string | nu
 			.eq('id', type.id);
 		if (error) {
 			console.error('interval update failed:', error.code, error.message);
-			return 'Kunde inte spara.';
+			return locale.errors.saveFailed;
 		}
 	}
 

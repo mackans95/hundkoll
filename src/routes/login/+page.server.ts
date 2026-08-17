@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as locale from '$lib/locale';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -8,7 +9,7 @@ export const actions: Actions = {
 		const password = String(form.get('password') ?? '');
 
 		if (!email || !password) {
-			return fail(400, { email, message: 'Fyll i både mejladress och lösenord.' });
+			return fail(400, { email, message: locale.errors.missingCredentials });
 		}
 
 		const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -17,8 +18,8 @@ export const actions: Actions = {
 			console.error('signInWithPassword failed:', error.code, error.status, error.message);
 			const message =
 				error.code === 'invalid_credentials'
-					? 'Fel mejladress eller lösenord.'
-					: 'Inloggningen misslyckades. Försök igen.';
+					? locale.errors.invalidCredentials
+					: locale.errors.loginFailed;
 			return fail(400, { email, message });
 		}
 

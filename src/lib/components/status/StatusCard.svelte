@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as format from '$lib/format';
+	import * as locale from '$lib/locale';
 	import type { StatusRow } from '$lib/types/domain';
 
 	let { row, now }: { row: StatusRow; now: Date } = $props();
@@ -14,18 +15,18 @@
 		const AMBER_WINDOW_MS = 7 * 86_400_000;
 
 		if (!row.due_at) {
-			return { text: 'Aldrig loggat', classes: 'bg-gray-100 text-gray-600' };
+			return { text: locale.status.neverLogged, classes: 'bg-gray-100 text-gray-600' };
 		}
 		const due = new Date(row.due_at);
 		const remaining = due.getTime() - now.getTime();
 		if (remaining < 0) {
 			return {
-				text: `${format.swedishDuration(remaining)} försenat`,
+				text: locale.status.overdue(format.swedishDuration(remaining)),
 				classes: 'bg-red-100 text-red-800'
 			};
 		}
 		return {
-			text: `dags ${format.swedishRelative(due, now)}`,
+			text: locale.status.due(format.swedishRelative(due, now)),
 			classes:
 				remaining <= AMBER_WINDOW_MS ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
 		};
@@ -38,9 +39,12 @@
 		<h2 class="font-semibold">{row.label}</h2>
 		<p class="text-sm text-gray-500">
 			{#if row.last_at}
-				{format.swedishRelative(new Date(row.last_at), now)} · var {row.interval_days}:e dag
+				{locale.status.lastAndInterval(
+					format.swedishRelative(new Date(row.last_at), now),
+					locale.status.everyNthDay(row.interval_days)
+				)}
 			{:else}
-				var {row.interval_days}:e dag
+				{locale.status.everyNthDay(row.interval_days)}
 			{/if}
 		</p>
 	</div>

@@ -5,6 +5,7 @@
 // chart has to mean "nothing happened", not "no row".
 
 import type { ColumnBucket } from '$lib/types/charts';
+import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
@@ -26,7 +27,9 @@ const PERIOD_TICK_EVERY = 3;
  * 42 → "~42 min", null → "–"
  */
 function optionalMinutes(value: number | null): string {
-	return value === null ? '–' : `~${format.minutesText(value)}`;
+	return value === null
+		? locale.units.missing
+		: locale.units.approximately(format.minutesText(value));
 }
 
 /**
@@ -48,16 +51,22 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					n === 0
-						? [[{ label: 'Promenader', value: '0', color: WALK_COLOR }]]
+						? [[{ label: locale.stats.walks.emptyTooltip, value: '0', color: WALK_COLOR }]]
 						: [
 								[
-									{ label: '🚶', value: String(n), big: true },
-									{ label: '🟡', value: String(row?.pee ?? 0), big: true },
-									{ label: '💩', value: String(row?.poop ?? 0), big: true }
+									{ label: locale.stats.symbols.walk, value: String(n), big: true },
+									{ label: locale.stats.symbols.pee, value: String(row?.pee ?? 0), big: true },
+									{ label: locale.stats.symbols.poop, value: String(row?.poop ?? 0), big: true }
 								],
 								[
-									{ label: 'Tid mellan', value: optionalMinutes(row?.avg_gap_min ?? null) },
-									{ label: 'Längd', value: optionalMinutes(row?.avg_duration_min ?? null) }
+									{
+										label: locale.stats.walks.between,
+										value: optionalMinutes(row?.avg_gap_min ?? null)
+									},
+									{
+										label: locale.stats.walks.length,
+										value: optionalMinutes(row?.avg_duration_min ?? null)
+									}
 								]
 							]
 			}
@@ -88,18 +97,32 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					(row?.n ?? 0) === 0
-						? [[{ label: 'Mål', value: '0', color: MEAL_COLORS[0] }]]
+						? [[{ label: locale.stats.meals.emptyTooltip, value: '0', color: MEAL_COLORS[0] }]]
 						: [
 								[
-									{ label: '✅', value: String(finished), big: true },
-									{ label: '❌', value: String(notFinished), big: true },
-									...(unknown > 0 ? [{ label: '❔', value: String(unknown), big: true }] : [])
+									{ label: locale.stats.symbols.finished, value: String(finished), big: true },
+									{
+										label: locale.stats.symbols.notFinished,
+										value: String(notFinished),
+										big: true
+									},
+									...(unknown > 0
+										? [{ label: locale.stats.symbols.unknown, value: String(unknown), big: true }]
+										: [])
 								],
 								[
 									...(judged > 0
-										? [{ label: 'Andel', value: format.percentageText(finished / judged) }]
+										? [
+												{
+													label: locale.stats.meals.share,
+													value: format.percentageText(finished / judged)
+												}
+											]
 										: []),
-									{ label: 'Tid mellan', value: optionalMinutes(row?.avg_gap_min ?? null) }
+									{
+										label: locale.stats.walks.between,
+										value: optionalMinutes(row?.avg_gap_min ?? null)
+									}
 								]
 							]
 			}
@@ -167,9 +190,11 @@ export function accidentBuckets(
 				heading: tooltipHeading[period](start),
 				rows: [
 					[
-						{ label: '🟡', value: String(pee), big: true },
-						{ label: '💩', value: String(poop), big: true },
-						...(other > 0 ? [{ label: '❔', value: String(other), big: true }] : [])
+						{ label: locale.stats.symbols.pee, value: String(pee), big: true },
+						{ label: locale.stats.symbols.poop, value: String(poop), big: true },
+						...(other > 0
+							? [{ label: locale.stats.symbols.unknown, value: String(other), big: true }]
+							: [])
 					]
 				]
 			}

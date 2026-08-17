@@ -1,3 +1,4 @@
+import * as locale from '$lib/locale';
 import type { EventDetails } from '$lib/types/domain';
 
 /**
@@ -10,7 +11,7 @@ function countText(value: unknown, word: string): string | null {
 		return word;
 	}
 	if (typeof value === 'number' && value > 0) {
-		return value > 1 ? `${word} ×${value}` : word;
+		return value > 1 ? locale.activities.summary.repeated(word, value) : word;
 	}
 	return null;
 }
@@ -25,23 +26,26 @@ export function detailSummary(typeId: string, details: EventDetails): string {
 	const parts: (string | null)[] = [];
 	if (typeId === 'walk' || typeId === 'accident') {
 		if (typeof details.duration_min === 'number') {
-			parts.push(`${details.duration_min} min`);
+			parts.push(locale.units.minutes(String(details.duration_min)));
 		}
-		parts.push(countText(details.pee, 'kiss'), countText(details.poop, 'bajs'));
+		parts.push(
+			countText(details.pee, locale.activities.summary.pee),
+			countText(details.poop, locale.activities.summary.poop)
+		);
 	} else if (typeId === 'meal') {
 		if (typeof details.portion_g === 'number') {
-			parts.push(`${details.portion_g} g`);
+			parts.push(locale.units.grams(String(details.portion_g)));
 		}
 		if (details.finished === true) {
-			parts.push('åt upp');
+			parts.push(locale.activities.summary.finished);
 		}
 		if (details.finished === false) {
-			parts.push('åt inte upp');
+			parts.push(locale.activities.summary.notFinished);
 		}
 	} else if (typeId === 'weight') {
 		if (typeof details.kg === 'number') {
-			parts.push(`${String(details.kg).replace('.', ',')} kg`);
+			parts.push(locale.units.kilograms(String(details.kg).replace('.', ',')));
 		}
 	}
-	return parts.filter(Boolean).join(' · ');
+	return parts.filter(Boolean).join(locale.activities.summary.separator);
 }

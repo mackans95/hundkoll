@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as locale from '$lib/locale';
+
 	let { name, label }: { name: string; label: string } = $props();
 
 	// The checkbox is what submits without JavaScript, where it degrades to
@@ -31,7 +33,7 @@
 		<div class="flex items-center gap-3">
 			<button
 				type="button"
-				aria-label="Färre {label.toLowerCase()}"
+				aria-label={locale.log.dialog.fewer(label)}
 				onclick={() => (count = Math.max(1, count - 1))}
 				class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
 			>
@@ -40,7 +42,7 @@
 			<span class="w-4 text-center font-semibold">{count}</span>
 			<button
 				type="button"
-				aria-label="Fler {label.toLowerCase()}"
+				aria-label={locale.log.dialog.more(label)}
 				onclick={() => (count += 1)}
 				class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
 			>

@@ -5,6 +5,8 @@
 // submits the checkbox under the field name plus the count under
 // "<name>_count" (so a no-JS submission degrades to a count of 1).
 
+import * as locale from '$lib/locale';
+
 export type DetailField = {
 	name: string;
 	label: string;
@@ -15,18 +17,26 @@ export type DetailField = {
 
 export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 	walk: [
-		{ name: 'duration_min', label: 'Längd (minuter)', input: 'number' },
-		{ name: 'pee', label: 'Kiss', input: 'count' },
-		{ name: 'poop', label: 'Bajs', input: 'count' }
+		{ name: 'duration_min', label: locale.activities.fields.durationMin, input: 'number' },
+		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
+		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
 	],
 	accident: [
-		{ name: 'pee', label: 'Kiss', input: 'count' },
-		{ name: 'poop', label: 'Bajs', input: 'count' }
+		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
+		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
 	],
 	// Portion size is always the same, so meals only track whether she
 	// finished; legacy portion_g rows still render in summaries.
-	meal: [{ name: 'finished', label: 'Åt upp', input: 'checkbox' }],
-	weight: [{ name: 'kg', label: 'Vikt (kg)', input: 'number', step: '0.1', required: true }]
+	meal: [{ name: 'finished', label: locale.activities.fields.finished, input: 'checkbox' }],
+	weight: [
+		{
+			name: 'kg',
+			label: locale.activities.fields.weightKg,
+			input: 'number',
+			step: '0.1',
+			required: true
+		}
+	]
 };
 
 /**

@@ -72,7 +72,24 @@ src/lib/
   components/  ui primitives at the top, then charts/ log/ stats/ status/
   time.ts      computation: timezone conversion and calendar arithmetic
   format.ts    presentation: the same values as Swedish text
+  locale.ts    every word the app shows
 ```
+
+**All user-facing text lives in `locale.ts`.** There is one language and no plan for
+a second, so it is a plain module rather than a runtime lookup — but nothing else in
+`src/` should contain a Swedish string. Anything with a value in it is a function, so
+the grammar around the value stays with the words:
+
+```ts
+waitingBanner: (count: number) =>
+	`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal …`;
+```
+
+`format.ts` gets its vocabulary from `locale.units`, so "min", "tim" and "%" are
+declared once. Two exceptions on purpose: the activity names (Promenad, Matning …) are
+rows in `event_types`, and the installed app's name is in `static/manifest.webmanifest`,
+which the browser reads without going through the bundler. Emoji that belong to a label
+travel with it; standalone icons stay in the component next to the markup.
 
 Three rules hold this together:
 

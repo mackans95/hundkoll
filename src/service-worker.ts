@@ -2,6 +2,7 @@
 /// <reference no-default-lib="true"/>
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
+import * as locale from '$lib/locale';
 import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -124,7 +125,7 @@ function offlineResponse(): Response {
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Offline – Hundkoll</title>
+		<title>${locale.offline.title} – ${locale.app.name}</title>
 		<style>
 			body { font-family: system-ui, sans-serif; margin: 0; min-height: 100dvh;
 				display: flex; flex-direction: column; align-items: center;
@@ -134,8 +135,8 @@ function offlineResponse(): Response {
 		</style>
 	</head>
 	<body>
-		<h1>Ingen anslutning</h1>
-		<p>Hundkoll kunde inte laddas. Försök igen när du har signal.</p>
+		<h1>${locale.offline.heading}</h1>
+		<p>${locale.offline.body}</p>
 	</body>
 </html>`;
 	return new Response(html, {

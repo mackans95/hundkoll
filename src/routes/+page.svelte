@@ -3,6 +3,7 @@
 	import EventList from '$lib/components/log/EventList.svelte';
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
+	import * as locale from '$lib/locale';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
 	import type { EventType } from '$lib/types/domain';
@@ -35,12 +36,12 @@
 	const waiting = $derived(offlineQueue.items.length);
 </script>
 
-<svelte:head><title>Hundkoll</title></svelte:head>
+<svelte:head><title>{locale.app.name}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4 pb-10">
 	<header class="px-1">
-		<h1 class="text-3xl font-bold">{data.dog?.name ?? 'Hundkoll'}</h1>
-		<p class="mt-1 text-sm text-gray-500">Daglig logg</p>
+		<h1 class="text-3xl font-bold">{data.dog?.name ?? locale.app.name}</h1>
+		<p class="mt-1 text-sm text-gray-500">{locale.log.subtitle}</p>
 	</header>
 
 	{#if form?.message && !data.detailType}
@@ -49,8 +50,7 @@
 
 	{#if waiting > 0}
 		<p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-			⏳ {waiting}
-			{waiting === 1 ? 'händelse väntar' : 'händelser väntar'} på signal – de skickas automatiskt.
+			{locale.log.waitingBanner(waiting)}
 		</p>
 	{/if}
 
@@ -58,7 +58,7 @@
 		<LogGrid types={data.types} onOfflineTap={openOffline} />
 	</Card>
 
-	<Card title="Senaste händelser">
+	<Card title={locale.log.recentHeading}>
 		<EventList events={data.events} />
 	</Card>
 </main>

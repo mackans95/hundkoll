@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as locale from '$lib/locale';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
 import { insertEvent, parseEventForm, recentEvents } from '$lib/server/events';
@@ -35,7 +36,7 @@ export const actions: Actions = {
 
 		const dog = await currentDog(supabase);
 		if (!dog) {
-			return fail(400, { message: 'Ingen hund hittades. Har seed-SQL:en körts?' });
+			return fail(400, { message: locale.errors.noDog });
 		}
 
 		const parsed = parseEventForm(form, dog.id);

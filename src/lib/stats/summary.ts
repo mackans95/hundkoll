@@ -4,12 +4,13 @@
 // tracked, and an average of a partial history is an estimate. A value that
 // has nothing behind it shows an en dash rather than a zero.
 
+import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import type { Period, StatSummary } from '$lib/types/domain';
 
 export type Tile = { label: string; value: string };
 
-const DASH = '–';
+const DASH = locale.units.missing;
 
 /**
  * Marks a value as an estimate, or reports that there is none. The formatter
@@ -18,7 +19,7 @@ const DASH = '–';
  * (5.66, swedishNumber) → "~5,7", (null, …) → "–"
  */
 function approximately(value: number | null | undefined, write: (value: number) => string): string {
-	return value === null || value === undefined ? DASH : `~${write(value)}`;
+	return value === null || value === undefined ? DASH : locale.units.approximately(write(value));
 }
 
 /**
@@ -49,13 +50,16 @@ export function periodReady(period: Period, tracked: number): boolean {
  */
 export function walkTiles(summary: StatSummary | null): Tile[] {
 	return [
-		{ label: '🚶 per dag', value: approximately(summary?.walks_per_day, format.swedishNumber) },
 		{
-			label: '⏳ mellan promenader',
+			label: locale.stats.walks.perDay,
+			value: approximately(summary?.walks_per_day, format.swedishNumber)
+		},
+		{
+			label: locale.stats.walks.betweenWalks,
 			value: approximately(summary?.avg_walk_gap_min, format.minutesText)
 		},
 		{
-			label: '⏱️ snittlängd',
+			label: locale.stats.walks.averageLength,
 			value: approximately(summary?.avg_walk_duration_min, format.minutesText)
 		}
 	];
@@ -67,9 +71,12 @@ export function walkTiles(summary: StatSummary | null): Tile[] {
  */
 export function mealTiles(summary: StatSummary | null): Tile[] {
 	return [
-		{ label: '⏳ mellan mål', value: approximately(summary?.avg_meal_gap_min, format.minutesText) },
 		{
-			label: '✅ åt upp',
+			label: locale.stats.meals.betweenMeals,
+			value: approximately(summary?.avg_meal_gap_min, format.minutesText)
+		},
+		{
+			label: locale.stats.meals.finishRate,
 			value:
 				summary?.meal_finish_rate == null ? DASH : format.percentageText(summary.meal_finish_rate)
 		}
@@ -82,15 +89,18 @@ export function mealTiles(summary: StatSummary | null): Tile[] {
  */
 export function accidentTiles(summary: StatSummary | null, tracked: number): Tile[] {
 	return [
-		{ label: 'per dag', value: approximately(summary?.accidents_per_day, format.swedishNumber) },
 		{
-			label: 'per vecka',
+			label: locale.stats.accidents.perDay,
+			value: approximately(summary?.accidents_per_day, format.swedishNumber)
+		},
+		{
+			label: locale.stats.accidents.perWeek,
 			value: periodReady('week', tracked)
 				? approximately(summary?.accidents_per_week, format.swedishNumber)
 				: DASH
 		},
 		{
-			label: 'per månad',
+			label: locale.stats.accidents.perMonth,
 			value: periodReady('month', tracked)
 				? approximately(summary?.accidents_per_month, format.swedishNumber)
 				: DASH

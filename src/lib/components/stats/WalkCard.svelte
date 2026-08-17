@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
+	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
 	import { walkBuckets } from '$lib/stats/buckets';
@@ -14,7 +15,7 @@
 	const tiles = $derived(walkTiles(summary));
 </script>
 
-<FoldableCard title="🚶 Promenader">
+<FoldableCard title={locale.stats.walks.heading}>
 	<StackedColumns {buckets} colors={[WALK_COLOR]} />
 	<div class="flex flex-col gap-2">
 		<!-- Walks per day is the headline, so it gets the full width. -->
