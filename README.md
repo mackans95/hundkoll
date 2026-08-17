@@ -64,7 +64,7 @@ Other commands:
 
 ```
 src/lib/
-  types/       database.ts is generated; domain.ts is what the app works with
+  types/       types only; database.ts is generated, domain.ts is what the app uses
   server/      every query, and nothing else — the bundler keeps it off the client
   events/      the detail-field catalogue, shared by the form and the action
   stats/       pure row → chart-column and row → tile logic
@@ -118,6 +118,10 @@ they came from.
 - **Every function gets a doc comment**: a sentence saying what it does, and an example
   underneath when one makes it concrete.
 - **Comments sit next to what they explain**, not in a header block above a group.
+- **A file holds what its name says.** `types/` contains types and no runtime values —
+  a parser that returns a `Period` belongs with whoever parses, not next to the type.
+  Equally, a type shared across folders belongs in `types/`; a type that is one
+  module's own interface stays exported from that module.
 
 ## Data model
 

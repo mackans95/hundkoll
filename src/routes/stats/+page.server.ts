@@ -1,6 +1,21 @@
 import { loadStats } from '$lib/server/stats';
-import { toPeriod } from '$lib/types/domain';
+import type { Period } from '$lib/types/domain';
 import type { PageServerLoad } from './$types';
+
+/**
+ * Reads a period out of a query string, falling back to the daily view when
+ * the parameter is missing or is not one we recognise.
+ * "week" → "week", "fortnight" → "day"
+ */
+function toPeriod(raw: string | null): Period {
+	// A record rather than a list: every Period needs a key here, so adding one
+	// to the union without teaching this function about it is a compile error.
+	const PERIODS: Record<Period, true> = { day: true, week: true, month: true };
+
+	// hasOwn, not `in` — `in` walks the prototype chain, so ?period=toString
+	// would otherwise pass for a period and poison every lookup keyed on it.
+	return raw !== null && Object.hasOwn(PERIODS, raw) ? (raw as Period) : 'day';
+}
 
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	// Both selections live in the URL, so a reload — or a tab switch and back

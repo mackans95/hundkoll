@@ -80,14 +80,4 @@ export type TrendBucket = Pick<
 export type WeightPoint = { occurred_at: string; kg: number };
 
 /** The bucket size the stats screen is showing. */
-export const PERIODS = ['day', 'week', 'month'] as const;
-export type Period = (typeof PERIODS)[number];
-
-/**
- * Reads a period out of a query string, falling back to the daily view when
- * the parameter is missing or is not one we recognise.
- * "week" → "week", "fortnight" → "day"
- */
-export function toPeriod(raw: string | null): Period {
-	return PERIODS.includes(raw as Period) ? (raw as Period) : 'day';
-}
+export type Period = 'day' | 'week' | 'month';

@@ -4,7 +4,7 @@
 // have events, so every builder zero-fills its window first — a gap in the
 // chart has to mean "nothing happened", not "no row".
 
-import type { ColumnBucket } from '$lib/components/charts/types';
+import type { ColumnBucket } from '$lib/types/charts';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';

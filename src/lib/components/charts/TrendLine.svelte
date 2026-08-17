@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as format from '$lib/format';
-	import type { TrendPoint } from './types';
+	import type { TrendPoint } from '$lib/types/charts';
 
 	let {
 		points,

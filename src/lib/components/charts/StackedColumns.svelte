@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ColumnBucket } from './types';
+	import type { ColumnBucket } from '$lib/types/charts';
 
 	let {
 		buckets,
