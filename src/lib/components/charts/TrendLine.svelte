@@ -55,18 +55,58 @@
 	const last = $derived(points[points.length - 1]);
 </script>
 
-<svg viewBox="0 0 {W} {height}" class="w-full" role="img" aria-label={label}>
-	<line x1={PAD.left} x2={W - PAD.right} y1={y(hi)} y2={y(hi)} stroke="#f3f4f6" />
-	<line x1={PAD.left} x2={W - PAD.right} y1={y(lo)} y2={y(lo)} stroke="#e5e7eb" />
-	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{format.swedishNumber(hi)}</text>
-	<text x="0" y={y(lo) + 3} font-size="9" class="fill-gray-400">{format.swedishNumber(lo)}</text>
+<svg
+	viewBox="0 0 {W} {height}"
+	class="w-full"
+	role="img"
+	aria-label={label}
+>
+	<line
+		x1={PAD.left}
+		x2={W - PAD.right}
+		y1={y(hi)}
+		y2={y(hi)}
+		stroke="#f3f4f6"
+	/>
+	<line
+		x1={PAD.left}
+		x2={W - PAD.right}
+		y1={y(lo)}
+		y2={y(lo)}
+		stroke="#e5e7eb"
+	/>
+	<text
+		x="0"
+		y={y(hi) + 3}
+		font-size="9"
+		class="fill-gray-400">{format.swedishNumber(hi)}</text
+	>
+	<text
+		x="0"
+		y={y(lo) + 3}
+		font-size="9"
+		class="fill-gray-400">{format.swedishNumber(lo)}</text
+	>
 
 	{#if points.length > 1}
-		<path d={path} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" />
+		<path
+			d={path}
+			fill="none"
+			stroke={color}
+			stroke-width="2"
+			stroke-linejoin="round"
+		/>
 	{/if}
 
 	{#each points as p (p.t)}
-		<circle cx={x(p.t)} cy={y(p.value)} r="4" fill={color} stroke="#fff" stroke-width="2">
+		<circle
+			cx={x(p.t)}
+			cy={y(p.value)}
+			r="4"
+			fill={color}
+			stroke="#fff"
+			stroke-width="2"
+		>
 			<title>{p.label}: {format.swedishNumber(p.value)} {unit}</title>
 		</circle>
 	{/each}
@@ -82,10 +122,21 @@
 		>
 			{format.swedishNumber(last.value)}{unit ? ` ${unit}` : ''}
 		</text>
-		<text x={PAD.left} y={height - 4} font-size="9" class="fill-gray-400">
+		<text
+			x={PAD.left}
+			y={height - 4}
+			font-size="9"
+			class="fill-gray-400"
+		>
 			{points[0].label}
 		</text>
-		<text x={W - PAD.right} y={height - 4} text-anchor="end" font-size="9" class="fill-gray-400">
+		<text
+			x={W - PAD.right}
+			y={height - 4}
+			text-anchor="end"
+			font-size="9"
+			class="fill-gray-400"
+		>
 			{last.label}
 		</text>
 	{/if}

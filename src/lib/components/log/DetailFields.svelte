@@ -9,10 +9,17 @@
      when parsing — so a new field only has to be declared once. -->
 {#each fields as field (field.name)}
 	{#if field.input === 'count'}
-		<CountStepper name={field.name} label={field.label} />
+		<CountStepper
+			name={field.name}
+			label={field.label}
+		/>
 	{:else if field.input === 'checkbox'}
 		<label class="flex min-h-11 items-center gap-2">
-			<input type="checkbox" name={field.name} class="rounded border-gray-300" />
+			<input
+				type="checkbox"
+				name={field.name}
+				class="rounded border-gray-300"
+			/>
 			<span class="text-sm font-medium text-gray-700">{field.label}</span>
 		</label>
 	{:else}

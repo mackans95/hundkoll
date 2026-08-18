@@ -26,10 +26,9 @@ sw.addEventListener('install', (event) => {
 			const cache = await caches.open(CACHE);
 			await cache.addAll(PRECACHE);
 
-			// The page load that installs this worker is fetched before the
-			// worker controls anything, so the app's own HTML would not be
-			// cached by it — and the first offline launch would have nothing
-			// to show. Fetch the log page here so that launch works.
+			// The page load that installs this worker precedes the worker's
+			// control, so cache the log page here or the first offline launch
+			// has nothing to show.
 			try {
 				const response = await fetch('/', { credentials: 'same-origin' });
 				if (response.status === 200 && !response.redirected) {
@@ -59,7 +58,8 @@ sw.addEventListener('fetch', (event) => {
 	if (DEV) return;
 
 	const { request } = event;
-	// Logging POSTs have to reach the server; queueing them is 5c's job.
+	// Logging POSTs have to reach the server; queueing them is the offline
+	// queue's job, not the worker's.
 	if (request.method !== 'GET') return;
 
 	const url = new URL(request.url);

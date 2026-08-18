@@ -19,7 +19,10 @@
 			<p class="px-1 text-gray-500">{locale.status.noIntervals}</p>
 		{/if}
 		{#each data.timed as row (row.type_id)}
-			<StatusCard {row} now={data.now} />
+			<StatusCard
+				{row}
+				now={data.now}
+			/>
 		{/each}
 	</section>
 

@@ -20,8 +20,6 @@ export async function listEventTypes(db: Db): Promise<EventType[]> {
  * and type, so a row missing either is not a row worth showing.
  */
 function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
-	// The view is grouped by dog and type, so these are never null in
-	// practice; dropping any row that lacks them keeps the promise honest.
 	if (!row.dog_id || !row.type_id) {
 		return null;
 	}

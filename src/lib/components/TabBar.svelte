@@ -1,8 +1,14 @@
-<script lang="ts" module>
+<script
+	lang="ts"
+	module
+>
 	export type Tab<T extends string> = { value: T; label: string };
 </script>
 
-<script lang="ts" generics="T extends string">
+<script
+	lang="ts"
+	generics="T extends string"
+>
 	let {
 		tabs,
 		current,
@@ -20,7 +26,10 @@
 
 <!-- Links rather than buttons: the selected period lives in the URL, so it
      survives a reload and a back button. -->
-<nav class="flex rounded-lg bg-gray-100 p-1" aria-label={label}>
+<nav
+	class="flex rounded-lg bg-gray-100 p-1"
+	aria-label={label}
+>
 	{#each tabs as tab (tab.value)}
 		<a
 			href={href(tab.value)}

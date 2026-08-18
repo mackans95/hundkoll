@@ -26,7 +26,11 @@
 </script>
 
 <FoldableCard title={locale.stats.meals.heading}>
-	<StackedColumns {buckets} colors={MEAL_COLORS} label={locale.stats.meals.heading} />
+	<StackedColumns
+		{buckets}
+		colors={MEAL_COLORS}
+		label={locale.stats.meals.heading}
+	/>
 	<ChartLegend items={legend} />
 	<div class="grid grid-cols-2 gap-2">
 		{#each tiles as tile (tile.label)}

@@ -32,11 +32,7 @@
 		};
 	});
 
-	/**
-	 * The line under the label: when it was last done and how often it is due,
-	 * with whichever of the two is known. The card is only rendered for
-	 * activities that have an interval, but the row type cannot promise that.
-	 */
+	/** The line under the label, from whichever of last-done and interval is known. */
 	const detail = $derived.by(() => {
 		const last = row.last_at ? format.swedishRelative(new Date(row.last_at), now) : null;
 		const interval =
@@ -50,7 +46,10 @@
 </script>
 
 <article class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-	<span class="text-3xl" aria-hidden="true">{row.icon}</span>
+	<span
+		class="text-3xl"
+		aria-hidden="true">{row.icon}</span
+	>
 	<div class="min-w-0 flex-1">
 		<h2 class="font-semibold">{row.label}</h2>
 		<p class="text-sm text-gray-500">{detail}</p>

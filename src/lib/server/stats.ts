@@ -1,9 +1,6 @@
-// The stats queries. Aggregation happens in SQL — see the views in
-// supabase/migrations — so this module only reads and narrows.
-//
-// View columns always generate as nullable, because Postgres cannot prove
-// otherwise through a view. The narrowing to the domain types happens here,
-// once, so that pages never handle a `number | null` that is really a count.
+// The stats queries. Aggregation happens in SQL — see supabase/migrations —
+// so this module only reads and narrows the nullable view columns into the
+// domain types, once, so pages never handle a `number | null` count.
 
 import { trendBucketKeys } from '$lib/stats/trends';
 import * as time from '$lib/time';
@@ -34,9 +31,8 @@ export type Stats = {
 	weights: WeightPoint[];
 };
 
-// The mappers take exactly the columns their query selects, so adding a
-// column to a select without reading it — or reading one it never asked
-// for — is a compile error rather than an empty chart.
+// The mappers take exactly the columns their query selects, so a select and
+// its reader drifting apart is a compile error rather than an empty chart.
 type SelectedDaily = Pick<
 	ViewRow<'stats_daily_counts'>,
 	| 'day'

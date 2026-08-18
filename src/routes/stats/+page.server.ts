@@ -8,18 +8,16 @@ import type { PageServerLoad } from './$types';
  * "week" → "week", "fortnight" → "day"
  */
 function toPeriod(raw: string | null): Period {
-	// A record rather than a list: every Period needs a key here, so adding one
-	// to the union without teaching this function about it is a compile error.
+	// A record: adding a Period without teaching this function is a compile error.
 	const PERIODS: Record<Period, true> = { day: true, week: true, month: true };
 
 	// hasOwn, not `in` — `in` walks the prototype chain, so ?period=toString
-	// would otherwise pass for a period and poison every lookup keyed on it.
+	// would pass for a period.
 	return raw !== null && Object.hasOwn(PERIODS, raw) ? (raw as Period) : 'day';
 }
 
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
-	// Both selections live in the URL, so a reload — or a tab switch and back
-	// — comes back to the same view.
+	// Both selections live in the URL, so a reload comes back to the same view.
 	const period = toPeriod(url.searchParams.get('period'));
 	const trend = toPeriod(url.searchParams.get('trend'));
 

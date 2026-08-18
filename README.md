@@ -237,7 +237,7 @@ schedules without being able to rewrite the catalogue.
 Hundkoll is a PWA: manifest, icons, and standalone display, so it installs to the home
 screen on both phones.
 
-- **`src/service-worker.ts`** precaches the built assets and serves pages network-first
+- **`src/service-worker/index.ts`** precaches the built assets and serves pages network-first
   with a cache fallback, so the app opens without signal showing the last known state. It
   stands down entirely under `vite dev`.
 - **`src/lib/offline/queue.svelte.ts`** holds logs in IndexedDB and sends them in the

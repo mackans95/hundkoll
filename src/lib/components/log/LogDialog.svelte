@@ -26,22 +26,17 @@
 		onClose: () => void;
 	} = $props();
 
-	// Read once, on purpose, which is what untrack states. Svelte re-evaluates a
-	// transition's parameters when the outro runs, and by then the page has already
-	// dropped the dialog this prop came from — reading it again throws, the outro
-	// never starts, and the sheet is left in the DOM swallowing every click. It is
-	// a snapshot of where the dialog came from in any case, so it has no business
-	// being reactive.
+	// Read once, on purpose. Svelte re-evaluates a transition's parameters when
+	// the outro runs, by which point the page has dropped the dialog this prop
+	// came from — reading it again throws and the sheet is left stuck on screen.
 	const openedFrom = untrack(() => origin);
 
 	const fields = $derived(fieldsFor(type.id));
 
-	// Saving closes the dialog the same way Avbryt does — neither waits for the
-	// server, which is what the queue behind createLogSubmit is for.
-	//
-	// use:enhance captures this function once and never sees updates, so the
-	// $derived alone cannot follow a change of `type` — the {#key} around this
-	// dialog in +page.svelte is what remounts form and handler together.
+	// Saving closes the dialog without waiting for the server — that is what
+	// the queue behind createLogSubmit is for. use:enhance captures this
+	// function once: the {#key} around this dialog in +page.svelte is what
+	// remounts form and handler together when the activity changes.
 	const submit = $derived(createLogSubmit(type, onClose));
 
 	/** Closes without leaving the page, but stays a real link without JS. */
@@ -50,10 +45,8 @@
 		onClose();
 	}
 
-	// Where the press that led to a click started. A click's target is the common
-	// ancestor of press and release, so dragging out of the note field and letting
-	// go over the sheet would otherwise read as a tap outside and throw the log
-	// away half-typed.
+	// Where the press that led to a click started: dragging out of the note
+	// field and releasing over the sheet must not read as a tap outside.
 	let pressedOn: EventTarget | null = null;
 
 	/** Closes when both the press and the release landed on the sheet itself. */
@@ -69,11 +62,9 @@
 
 <svelte:window onkeydown={keydown} />
 
-<!-- Opened in place by a tile, or server-rendered from ?detail=<id> when the
-     tap landed before hydration. Every control degrades to plain HTML: the
-     form posts to the action and Avbryt is a link back to "/". -->
-<!-- The sheet is presentational: tapping it is a shortcut for Avbryt, which is
-     still there for anyone using the keyboard, along with Escape. -->
+<!-- Opened by a tile, or server-rendered from ?detail= when the tap landed
+     before hydration; every control degrades to plain HTML. Tapping the
+     sheet is a shortcut for Avbryt, alongside Escape. -->
 <div
 	role="presentation"
 	onpointerdown={(event) => (pressedOn = event.target)}
@@ -94,10 +85,27 @@
 			<p class="mb-3 rounded-lg bg-red-50 p-3 text-red-800">{message}</p>
 		{/if}
 
-		<form method="POST" action="?/log" use:enhance={submit} class="flex flex-col gap-3">
-			<input type="hidden" name="type_id" value={type.id} />
-			<input type="hidden" name="detailed" value="1" />
-			<input type="hidden" name="event_id" value={eventId} />
+		<form
+			method="POST"
+			action="?/log"
+			use:enhance={submit}
+			class="flex flex-col gap-3"
+		>
+			<input
+				type="hidden"
+				name="type_id"
+				value={type.id}
+			/>
+			<input
+				type="hidden"
+				name="detailed"
+				value="1"
+			/>
+			<input
+				type="hidden"
+				name="event_id"
+				value={eventId}
+			/>
 
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.time}</span>
@@ -115,14 +123,24 @@
 
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.note}</span>
-				<textarea name="note" rows="2" class="rounded-lg border-gray-300"></textarea>
+				<textarea
+					name="note"
+					rows="2"
+					class="rounded-lg border-gray-300"></textarea>
 			</label>
 
 			<div class="mt-2 flex gap-2">
-				<a href="/" onclick={cancel} class="flex-1 btn btn-secondary">
+				<a
+					href="/"
+					onclick={cancel}
+					class="flex-1 btn btn-secondary"
+				>
 					{locale.log.dialog.cancel}
 				</a>
-				<button type="submit" class="flex-1 btn btn-primary">{locale.log.dialog.save}</button>
+				<button
+					type="submit"
+					class="flex-1 btn btn-primary">{locale.log.dialog.save}</button
+				>
 			</div>
 		</form>
 	</div>

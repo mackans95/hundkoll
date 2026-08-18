@@ -1,21 +1,15 @@
-// Turning view rows into chart columns.
-//
-// Pure functions: rows in, columns out. The database only returns days that
-// have events, so every builder zero-fills its window first — a gap in the
-// chart has to mean "nothing happened", not "no row".
+// Turning view rows into chart columns: pure functions, rows in, columns out.
+// Every builder zero-fills its window first — a gap in the chart has to mean
+// "nothing happened", not "no row".
 
-import type { ColumnBucket } from '$lib/types/charts';
+import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
-/**
- * How wide each chart is, and how often it labels a column. Shared by the
- * builders below, which all have to agree on them or the charts stop lining
- * up with each other.
- */
+// Window widths and tick spacing, shared so the charts line up with each other.
 const DAILY_WINDOW = 30;
 const PERIOD_COLUMNS = 12;
 const DAY_TICK_EVERY = 7;
@@ -32,10 +26,24 @@ function optionalMinutes(value: number | null): string {
 		: locale.units.approximately(format.minutesText(value));
 }
 
+/** A tooltip cell; coloured when it stands in for a legend entry. */
+function cell(label: string, value: string, color?: string): TooltipCell {
+	return color === undefined ? { label, value } : { label, value, color };
+}
+
+/** A count labelled by an emoji, sized up so the emoji reads at a glance. */
+function countCell(label: string, count: number): TooltipCell {
+	return { label, value: String(count), big: true };
+}
+
+/** A tooltip row, with the cells that had nothing to say left out. */
+function tooltipRow(...cells: (TooltipCell | null)[]): TooltipCell[] {
+	return cells.filter((c): c is TooltipCell => c !== null);
+}
+
 /**
  * Builds the walks-per-day columns for the last 30 days. Each column carries
- * the day's pee and poop counts and its own gap and duration averages, so
- * the tooltip can answer "what happened that day" without another query.
+ * its own counts and averages, so the tooltip needs no further query.
  */
 export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
@@ -51,23 +59,17 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					n === 0
-						? [[{ label: locale.stats.walks.emptyTooltip, value: '0', color: WALK_COLOR }]]
+						? [tooltipRow(cell(locale.stats.walks.emptyTooltip, '0', WALK_COLOR))]
 						: [
-								[
-									{ label: locale.stats.symbols.walk, value: String(n), big: true },
-									{ label: locale.stats.symbols.pee, value: String(row?.pee ?? 0), big: true },
-									{ label: locale.stats.symbols.poop, value: String(row?.poop ?? 0), big: true }
-								],
-								[
-									{
-										label: locale.stats.walks.between,
-										value: optionalMinutes(row?.avg_gap_min ?? null)
-									},
-									{
-										label: locale.stats.walks.length,
-										value: optionalMinutes(row?.avg_duration_min ?? null)
-									}
-								]
+								tooltipRow(
+									countCell(locale.stats.symbols.walk, n),
+									countCell(locale.stats.symbols.pee, row?.pee ?? 0),
+									countCell(locale.stats.symbols.poop, row?.poop ?? 0)
+								),
+								tooltipRow(
+									cell(locale.stats.walks.between, optionalMinutes(row?.avg_gap_min ?? null)),
+									cell(locale.stats.walks.length, optionalMinutes(row?.avg_duration_min ?? null))
+								)
 							]
 			}
 		};
@@ -97,33 +99,19 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					(row?.n ?? 0) === 0
-						? [[{ label: locale.stats.meals.emptyTooltip, value: '0', color: MEAL_COLORS[0] }]]
+						? [tooltipRow(cell(locale.stats.meals.emptyTooltip, '0', MEAL_COLORS[0]))]
 						: [
-								[
-									{ label: locale.stats.symbols.finished, value: String(finished), big: true },
-									{
-										label: locale.stats.symbols.notFinished,
-										value: String(notFinished),
-										big: true
-									},
-									...(unknown > 0
-										? [{ label: locale.stats.symbols.unknown, value: String(unknown), big: true }]
-										: [])
-								],
-								[
-									...(judged > 0
-										? [
-												{
-													label: locale.stats.meals.share,
-													value: format.percentageText(finished / judged)
-												}
-											]
-										: []),
-									{
-										label: locale.stats.walks.between,
-										value: optionalMinutes(row?.avg_gap_min ?? null)
-									}
-								]
+								tooltipRow(
+									countCell(locale.stats.symbols.finished, finished),
+									countCell(locale.stats.symbols.notFinished, notFinished),
+									unknown > 0 ? countCell(locale.stats.symbols.unknown, unknown) : null
+								),
+								tooltipRow(
+									judged > 0
+										? cell(locale.stats.meals.share, format.percentageText(finished / judged))
+										: null,
+									cell(locale.stats.walks.between, optionalMinutes(row?.avg_gap_min ?? null))
+								)
 							]
 			}
 		};
@@ -189,13 +177,11 @@ export function accidentBuckets(
 			tooltip: {
 				heading: tooltipHeading[period](start),
 				rows: [
-					[
-						{ label: locale.stats.symbols.pee, value: String(pee), big: true },
-						{ label: locale.stats.symbols.poop, value: String(poop), big: true },
-						...(other > 0
-							? [{ label: locale.stats.symbols.unknown, value: String(other), big: true }]
-							: [])
-					]
+					tooltipRow(
+						countCell(locale.stats.symbols.pee, pee),
+						countCell(locale.stats.symbols.poop, poop),
+						other > 0 ? countCell(locale.stats.symbols.unknown, other) : null
+					)
 				]
 			}
 		};

@@ -4,13 +4,9 @@ import type { Db } from './db';
 export type SessionResult = { session: Session | null; user: User | null };
 
 /**
- * Reads the session and verifies its user against the Auth server, returning
- * nothing at all if either step fails.
- *
- * getSession() only reads the cookie; it never checks that the cookie is
- * genuine. Reading `session.user` from that result — even implicitly, when
- * SvelteKit serializes page data — is what triggers Supabase's "could be
- * insecure" warning. So the session is rebuilt around a getUser() result.
+ * Reads the session and verifies its user against the Auth server. getSession
+ * only reads the cookie without checking it is genuine — hence Supabase's
+ * "could be insecure" warning — so the session is rebuilt around getUser().
  */
 export async function safeGetSession(db: Db): Promise<SessionResult> {
 	const {

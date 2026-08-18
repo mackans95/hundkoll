@@ -45,9 +45,17 @@
 		tabHref={trendHref}
 	/>
 
-	<WalkCard days={data.walkDays} summary={data.summary} {today} />
+	<WalkCard
+		days={data.walkDays}
+		summary={data.summary}
+		{today}
+	/>
 
-	<MealCard days={data.mealDays} summary={data.summary} {today} />
+	<MealCard
+		days={data.mealDays}
+		summary={data.summary}
+		{today}
+	/>
 
 	<AccidentCard
 		bins={data.accidentBins}

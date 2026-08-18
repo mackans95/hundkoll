@@ -22,15 +22,14 @@
 	};
 
 	/**
-	 * Opens the dialog here rather than letting the link fetch one. The tile
-	 * needs nothing the page has not already loaded — the activity, the current
-	 * time and a fresh row id — so following the href would buy a round trip to
-	 * Stockholm and the same dialog at the end of it.
+	 * Opens the dialog in place: the tile needs nothing the page has not
+	 * already loaded, so following the href would buy a round trip for the
+	 * same dialog.
 	 */
 	function tap(event: MouseEvent & { currentTarget: HTMLElement }, type: EventType) {
 		event.preventDefault();
-		// Measured now rather than by the dialog later: this is the last moment the
-		// tile is certainly still where the thumb found it.
+		// Measured now: the last moment the tile is certainly where the thumb
+		// found it.
 		onOpen(type, event.currentTarget.getBoundingClientRect());
 	}
 </script>
@@ -46,7 +45,10 @@
 				type.category
 			]}"
 		>
-			<span class="text-3xl" aria-hidden="true">{type.icon}</span>
+			<span
+				class="text-3xl"
+				aria-hidden="true">{type.icon}</span
+			>
 			<span class="text-sm font-semibold">{type.label}</span>
 		</a>
 	{/each}

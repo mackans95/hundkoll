@@ -1,8 +1,6 @@
-// Reading the type-specific fields out of a submitted log form.
-//
-// Shared rather than server-only: the action needs this to build the row, and
-// the log page needs it to describe a row it has only queued so far, so that a
-// log looks the same the instant it is saved as it does once it is stored.
+// Reading the type-specific fields out of a submitted log form. Shared rather
+// than server-only: the queue uses it too, so a log looks the same the
+// instant it is saved as it does once it is stored.
 
 import type { EventDetails } from '$lib/types/domain';
 import { fieldsFor } from './fields';
@@ -11,8 +9,8 @@ export type ParsedDetails = { ok: true; details: EventDetails } | { ok: false; f
 
 /**
  * Reads a form's detail fields, following the same DETAIL_FIELDS list the
- * dialog rendered them from. Reports the offending field rather than a message,
- * so the caller decides how to phrase it.
+ * dialog rendered them from. Reports the offending field, not a message, so
+ * the caller decides the phrasing.
  */
 export function parseDetails(form: FormData, typeId: string): ParsedDetails {
 	const details: EventDetails = {};
