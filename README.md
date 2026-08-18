@@ -282,9 +282,29 @@ case shows no waiting state at all. A row the server _rejects_ stays on screen w
 reason and a way to dismiss it — it is deliberately not dropped, since the log came from
 somebody typing.
 
-Switching screens is the one thing left that must reach the server, because each screen
-reads its own rows. That gets the thin progress bar in `layout.css`, which animates in
-after 150 ms so a fast switch never paints it.
+### Switching screens is the one wait left
+
+Each screen reads its own rows, so a tab change has to reach the server. The feedback for
+it is layered by how long the wait turns out to be, so a fast switch stays silent:
+
+- **On touch**, the tapped tab darkens via `active:`. Tailwind puts `hover:` behind
+  `@media (hover: hover)`, so `active:` is the only variant that answers a finger.
+- **On navigation**, the destination tab takes the selected look immediately —
+  `(pending ?? page.url.pathname) === tab.href` in `+layout.svelte`, where `pending` is
+  `navigating.to`. `aria-current` deliberately stays on the screen still showing, and the
+  destination gets `aria-busy` instead.
+- **Past 150 ms**, the progress bar in `layout.css` grows in. A switch that resolves
+  quickly never paints it at all.
+
+Two things make the bar easy to miss, and neither is a fault:
+
+- `data-sveltekit-preload-data="tap"` starts the load on `mousedown`/`touchstart`, so with
+  a slow click the fetch can finish before the click even fires. To see the bar on
+  purpose, throttle the network and activate a tab with the keyboard — that fires no
+  pointer event, so nothing is preloaded.
+- The bar sits at `top: env(safe-area-inset-top)`, not `top: 0`. The installed app is
+  `standalone` with `viewport-fit=cover`, so it draws under the status bar; at `top: 0`
+  those pixels render behind the clock and are never seen on a phone.
 
 ## Conventions
 

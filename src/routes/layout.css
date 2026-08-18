@@ -9,13 +9,17 @@ html {
 
 /* Progress for a screen change, which still has to reach the server.
    The 150ms delay is the point: a switch that resolves quickly never paints
-   the bar at all, so the app does not flicker on every tap. */
+   the bar at all, so the app does not flicker on every tap.
+
+   The top inset is not decoration: the installed app is standalone and draws
+   under the status bar, so at top: 0 the bar renders behind the clock and is
+   never seen on a phone. In a browser tab the inset is 0. */
 .loading-bar {
 	position: fixed;
-	top: 0;
+	top: env(safe-area-inset-top);
 	left: 0;
 	z-index: 30;
-	height: 2px;
+	height: 3px;
 	width: 100%;
 	transform-origin: left;
 	background: var(--color-emerald-600);
