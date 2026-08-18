@@ -46,7 +46,7 @@
 	<TabBar {tabs} current={period} href={tabHref} label={locale.stats.periodPickerLabel} />
 
 	{#if ready}
-		<StackedColumns {buckets} colors={ACCIDENT_COLORS} />
+		<StackedColumns {buckets} colors={ACCIDENT_COLORS} label={locale.stats.accidents.heading} />
 		<ChartLegend items={legend} />
 	{:else}
 		<!-- A bar for a period that has not finished yet would read as a

@@ -6,24 +6,33 @@
 		points,
 		color = '#0284c7',
 		unit = '',
-		height = 150
-	}: { points: TrendPoint[]; color?: string; unit?: string; height?: number } = $props();
+		height = 150,
+		label
+	}: {
+		points: TrendPoint[];
+		color?: string;
+		unit?: string;
+		height?: number;
+		/** Accessible name for the chart, e.g. the card heading. */
+		label?: string;
+	} = $props();
 
 	const W = 340;
 	const PAD = { top: 14, bottom: 16, left: 30, right: 40 };
 
 	// Padded domain: a weight story lives in tenths of a kg, so the axis
 	// hugs the data instead of starting at zero (fine for lines, never bars).
-	const lo = $derived.by(() => {
-		const min = Math.min(...points.map((p) => p.value));
-		const max = Math.max(...points.map((p) => p.value));
-		return min - Math.max((max - min) * 0.15, 0.3);
+	// An empty chart gets a placeholder domain rather than Infinities.
+	const domain = $derived.by(() => {
+		if (points.length === 0) return { lo: 0, hi: 1 };
+		const values = points.map((p) => p.value);
+		const min = Math.min(...values);
+		const max = Math.max(...values);
+		const pad = Math.max((max - min) * 0.15, 0.3);
+		return { lo: min - pad, hi: max + pad };
 	});
-	const hi = $derived.by(() => {
-		const min = Math.min(...points.map((p) => p.value));
-		const max = Math.max(...points.map((p) => p.value));
-		return max + Math.max((max - min) * 0.15, 0.3);
-	});
+	const lo = $derived(domain.lo);
+	const hi = $derived(domain.hi);
 
 	const t0 = $derived(Math.min(...points.map((p) => p.t)));
 	const t1 = $derived(Math.max(...points.map((p) => p.t)));
@@ -46,7 +55,7 @@
 	const last = $derived(points[points.length - 1]);
 </script>
 
-<svg viewBox="0 0 {W} {height}" class="w-full" role="img">
+<svg viewBox="0 0 {W} {height}" class="w-full" role="img" aria-label={label}>
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(hi)} y2={y(hi)} stroke="#f3f4f6" />
 	<line x1={PAD.left} x2={W - PAD.right} y1={y(lo)} y2={y(lo)} stroke="#e5e7eb" />
 	<text x="0" y={y(hi) + 3} font-size="9" class="fill-gray-400">{format.swedishNumber(hi)}</text>

@@ -4,8 +4,15 @@
 	let {
 		buckets,
 		colors,
-		height = 150
-	}: { buckets: ColumnBucket[]; colors: string[]; height?: number } = $props();
+		height = 150,
+		label
+	}: {
+		buckets: ColumnBucket[];
+		colors: string[];
+		height?: number;
+		/** Accessible name for the chart, e.g. the card heading. */
+		label?: string;
+	} = $props();
 
 	const W = 340;
 	const PAD_TOP = 14;
@@ -87,7 +94,8 @@
 	// Hover follows the pointer at the container level: per-bar enter events
 	// don't fire during a touch drag (the first-touched element captures the
 	// pointer), but container pointermove does.
-	let containerEl: HTMLDivElement | undefined = $state();
+	// Only ever read inside event handlers, so it has no need to be reactive.
+	let containerEl: HTMLDivElement | undefined;
 	let containerW = $state(0);
 	let tipW = $state(0);
 
@@ -99,15 +107,21 @@
 		hovered = Math.min(buckets.length - 1, Math.max(0, idx));
 	}
 
+	// Looked up rather than indexed directly where it is used: `hovered` can
+	// outlive a `buckets` swap (switching period tabs replaces the data while
+	// the chart stays mounted), so the index may briefly point past the new
+	// array. A stale index simply means no tooltip.
+	const hoveredBucket = $derived(hovered !== null ? (buckets[hovered] ?? null) : null);
+
 	// Tooltip center in pixels, clamped by the measured tooltip width so the
 	// box never leaves the container (and therefore never the viewport).
 	const tipLeftPx = $derived.by(() => {
-		if (hovered === null || containerW === 0) return 0;
+		if (hovered === null || hoveredBucket === null || containerW === 0) return 0;
 		const ideal = (((hovered + 0.5) * slot) / W) * containerW;
 		const half = tipW / 2;
 		return Math.min(containerW - half - 2, Math.max(half + 2, ideal));
 	});
-	const tipTop = $derived(hovered === null ? 0 : (y(total(buckets[hovered])) * 100) / height);
+	const tipTop = $derived(hoveredBucket === null ? 0 : (y(total(hoveredBucket)) * 100) / height);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -119,13 +133,15 @@
 	onpointerdown={hoverFromEvent}
 	onpointerleave={() => (hovered = null)}
 >
-	<svg viewBox="0 0 {W} {height}" class="w-full" role="img">
+	<svg viewBox="0 0 {W} {height}" class="w-full" role="img" aria-label={label}>
 		<line x1="0" x2={W} y1={y(top)} y2={y(top)} stroke="#f3f4f6" />
 		<line x1="0" x2={W} y1={y(top / 2)} y2={y(top / 2)} stroke="#f3f4f6" />
 		<line x1="0" x2={W} y1={y(0)} y2={y(0)} stroke="#e5e7eb" />
 		<text x="0" y={y(top) - 3} font-size="9" class="fill-gray-400">{top}</text>
 
-		{#each buckets as bucket, i (i)}
+		<!-- Keyed by label, which the builders make unique per column: one
+		     calendar day or period each within the chart's window. -->
+		{#each buckets as bucket, i (bucket.label)}
 			{@const x = i * slot + (slot - barW) / 2}
 			<g>
 				{#if hovered === i}
@@ -164,8 +180,8 @@
 		{/each}
 	</svg>
 
-	{#if hovered !== null}
-		{@const bucket = buckets[hovered]}
+	{#if hoveredBucket !== null}
+		{@const bucket = hoveredBucket}
 		<div
 			bind:clientWidth={tipW}
 			class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
@@ -173,9 +189,12 @@
 		>
 			<p class="font-semibold">{bucket.tooltip.heading}</p>
 			<div class="mt-1 flex flex-col gap-1">
-				{#each bucket.tooltip.rows as row, ri (ri)}
+				<!-- Unkeyed on purpose: rows and cells are positional, with no
+				     identity of their own, and the whole tooltip is rebuilt
+				     whenever the hovered column changes. -->
+				{#each bucket.tooltip.rows as row}
 					<div class="flex items-stretch rounded-md bg-white/10 px-2 py-1">
-						{#each row as cell, ci (ci)}
+						{#each row as cell, ci}
 							{#if ci > 0}
 								<span class="mx-2 w-px shrink-0 self-stretch bg-white/20"></span>
 							{/if}
