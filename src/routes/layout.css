@@ -11,14 +11,15 @@ html {
    The 150ms delay is the point: a switch that resolves quickly never paints
    the bar at all, so the app does not flicker on every tap.
 
-   The top inset is not decoration: the installed app is standalone and draws
-   under the status bar, so at top: 0 the bar renders behind the clock and is
-   never seen on a phone. In a browser tab the inset is 0. */
+   Positioned against the tab row rather than the top of the page: when you tap
+   a tab your eyes are already at the bottom of the screen, and a bar up by the
+   status bar is easy to miss. -1px puts it over the nav's top border, so the
+   line already there appears to fill with colour. */
 .loading-bar {
-	position: fixed;
-	top: env(safe-area-inset-top);
+	position: absolute;
+	top: -1px;
 	left: 0;
-	z-index: 30;
+	z-index: 1;
 	height: 3px;
 	width: 100%;
 	transform-origin: left;
@@ -37,10 +38,41 @@ html {
 	}
 }
 
+/* The tapped tab's icon turns while its screen loads. The colour change alone
+   read as "selected"; turning reads as "working". One keyframe set rather than
+   Tailwind's spin plus pulse, because the two cannot share one animation
+   property. transform needs no display fix: the icon is a flex item, so it is
+   already blockified. */
+.tab-loading {
+	/* 700ms so a warm switch, which is ~265ms, still shows a clear turn rather
+	   than a twitch. Longer reads as sluggish, shorter as frantic. */
+	animation: tab-loading 700ms linear infinite;
+}
+
+@keyframes tab-loading {
+	from {
+		opacity: 1;
+		transform: rotate(0deg);
+	}
+	50% {
+		opacity: 0.4;
+	}
+	to {
+		opacity: 1;
+		transform: rotate(360deg);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.loading-bar {
 		animation: none;
 		opacity: 1;
+	}
+
+	/* Still says "busy", just without moving. */
+	.tab-loading {
+		animation: none;
+		opacity: 0.4;
 	}
 }
 

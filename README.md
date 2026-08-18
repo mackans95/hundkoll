@@ -293,18 +293,35 @@ it is layered by how long the wait turns out to be, so a fast switch stays silen
   `(pending ?? page.url.pathname) === tab.href` in `+layout.svelte`, where `pending` is
   `navigating.to`. `aria-current` deliberately stays on the screen still showing, and the
   destination gets `aria-busy` instead.
+- **Also on navigation**, that tab's icon turns, via `.tab-loading`. The colour change on
+  its own read as "selected"; turning reads as "working". It is one keyframe set rather
+  than Tailwind's `animate-spin` plus `animate-pulse`, since two animations cannot share
+  the one `animation` property.
 - **Past 150 ms**, the progress bar in `layout.css` grows in. A switch that resolves
   quickly never paints it at all.
 
-Two things make the bar easy to miss, and neither is a fault:
+Both animations have a `prefers-reduced-motion` branch; the icon stays dimmed rather than
+turning, so it still reports being busy.
 
-- `data-sveltekit-preload-data="tap"` starts the load on `mousedown`/`touchstart`, so with
-  a slow click the fetch can finish before the click even fires. To see the bar on
-  purpose, throttle the network and activate a tab with the keyboard — that fires no
-  pointer event, so nothing is preloaded.
-- The bar sits at `top: env(safe-area-inset-top)`, not `top: 0`. The installed app is
-  `standalone` with `viewport-fit=cover`, so it draws under the status bar; at `top: 0`
-  those pixels render behind the clock and are never seen on a phone.
+### Where the progress bar sits, and why it looked broken
+
+The bar is positioned against the **tab row**, not the top of the page — `position:
+absolute` at `top: -1px` inside the `relative` row, so it covers the nav's top border and
+that line appears to fill with colour. When you tap a tab your eyes are already at the
+bottom of the screen. (Absolutely positioned children of a flex container are out of flow,
+so the bar never becomes a fifth flex item.)
+
+It first lived at the top of the viewport, where it was almost impossible to see:
+
+- On a phone it was **invisible**, not just easy to miss. The installed app is `standalone`
+  with `viewport-fit=cover`, so it draws under the status bar; at `top: 0` those pixels
+  render behind the clock. Anything anchored to the top of this app needs
+  `env(safe-area-inset-top)`.
+- On a desktop it loses a race with its own preload. `data-sveltekit-preload-data="tap"`
+  starts the load on `mousedown`/`touchstart`, so with anything but a fast click the fetch
+  finishes before the click fires. Throttling makes this _more_ likely, not less. To see
+  the bar deliberately, throttle and activate a tab with the keyboard — no pointer event,
+  so nothing is preloaded.
 
 ## Conventions
 

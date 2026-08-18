@@ -31,13 +31,6 @@
 </script>
 
 {#if data.session}
-	<!-- Switching screens is the one thing left that has to wait for the server,
-	     since each one reads its own rows. The bar animates in after a delay, so
-	     a fast switch never flashes it. -->
-	{#if navigating.to}
-		<div class="loading-bar" role="presentation"></div>
-	{/if}
-
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
 	<div class="pb-[calc(5rem+env(safe-area-inset-bottom))]">
 		{@render children()}
@@ -45,7 +38,18 @@
 	<nav
 		class="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)]"
 	>
-		<div class="mx-auto flex max-w-sm">
+		<!-- relative so the progress bar can sit on this row's top edge, and
+		     spans exactly the tabs rather than the whole viewport. Absolutely
+		     positioned children of a flex container are out of flow, so the bar
+		     never becomes a fifth flex item. -->
+		<div class="relative mx-auto flex max-w-sm">
+			<!-- Switching screens is the one thing left that has to wait for the
+			     server, since each one reads its own rows. The bar animates in after
+			     a delay, so a fast switch never flashes it. -->
+			{#if navigating.to}
+				<div class="loading-bar" role="presentation"></div>
+			{/if}
+
 			{#each tabs as tab (tab.href)}
 				<!-- The tab being navigated to takes the selected look straight away,
 				     so the nav answers the tap instead of waiting for the server.
@@ -64,9 +68,8 @@
 				>
 					<!-- Tailwind's hover: is behind @media (hover: hover), so active:
 					     is what gives a finger any feedback at all on touchdown. -->
-					<span
-						class="text-xl {pending === tab.href ? 'motion-safe:animate-pulse' : ''}"
-						aria-hidden="true">{tab.icon}</span
+					<span class="text-xl {pending === tab.href ? 'tab-loading' : ''}" aria-hidden="true"
+						>{tab.icon}</span
 					>
 					{tab.label}
 				</a>
