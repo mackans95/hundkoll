@@ -32,11 +32,7 @@
 		};
 	});
 
-	/**
-	 * The line under the label: when it was last done and how often it is due,
-	 * with whichever of the two is known. The card is only rendered for
-	 * activities that have an interval, but the row type cannot promise that.
-	 */
+	/** The line under the label, from whichever of last-done and interval is known. */
 	const detail = $derived.by(() => {
 		const last = row.last_at ? format.swedishRelative(new Date(row.last_at), now) : null;
 		const interval =

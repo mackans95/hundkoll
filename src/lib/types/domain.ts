@@ -1,14 +1,8 @@
-// The shapes the app actually works with, derived from the generated
-// schema in ./database.ts rather than written by hand.
-//
-// Two adjustments happen here, both because Postgres cannot tell the type
-// generator everything it knows:
-//
-//  - View columns always generate as nullable, since Postgres cannot prove
-//    non-nullability through a view. The views in this project do promise
-//    non-null keys and counts, so those columns are narrowed below.
-//  - `category` is a text column with a check constraint rather than a real
-//    enum, so it generates as `string`. The union lives here instead.
+// The shapes the app actually works with, derived from the generated schema
+// in ./database.ts. Two adjustments Postgres cannot express to the generator:
+// view columns generate as nullable even when the view promises otherwise
+// (narrowed below), and `category` is a checked text column, so its union
+// lives here.
 
 import type { Database } from './database';
 

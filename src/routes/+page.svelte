@@ -21,9 +21,8 @@
 		origin: DOMRect | null;
 	};
 
-	// Set whenever the page opened the dialog itself, which is every tap once
-	// the page has hydrated. `data.detailType` only comes into it when the tap
-	// happened first — before hydration, or with JavaScript off.
+	// Set when the page opened the dialog itself; `data.detailType` only comes
+	// into it when the tap landed before hydration, or with JavaScript off.
 	let opened = $state<OpenDialog | null>(null);
 	// A dialog that came from ?detail= is closed by ignoring it, not by asking
 	// the server for the page again.
@@ -40,8 +39,8 @@
 			return;
 		}
 		urlDialogClosed = true;
-		// Tidy ?detail= out of the URL so a reload does not reopen the dialog.
-		// replaceState rather than a navigation: there is no new data to fetch.
+		// Tidy ?detail= away so a reload does not reopen the dialog;
+		// replaceState because there is no new data to fetch.
 		replaceState('/', {});
 	}
 
@@ -57,8 +56,7 @@
 				: null)
 	);
 
-	// Only the rows that could not be sent; one still in flight is not something
-	// to warn about.
+	// Only rows that could not be sent; one still in flight is no warning.
 	const waiting = $derived(offlineQueue.items.filter((item) => item.status === 'waiting').length);
 </script>
 
@@ -93,8 +91,7 @@
 </main>
 
 {#if dialog}
-	<!-- Keyed so the detail fields and their stepper state start fresh
-	     whenever a different activity is opened. -->
+	<!-- Keyed so fields reset — and use:enhance rebinds — per activity. -->
 	{#key dialog.type.id}
 		<LogDialog
 			type={dialog.type}

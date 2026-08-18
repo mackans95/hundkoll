@@ -1,12 +1,7 @@
-// What Spara actually does.
-//
-// Nothing here waits for the server. The log is written to IndexedDB, the
-// dialog closes, and the send happens afterwards — so tapping Spara is
-// immediate whether or not the phone has a usable connection, and the two
-// round trips it used to block on now happen with nobody watching.
-//
-// The row id already travels with the form, so sending later cannot duplicate
-// the event; see queue.svelte.ts.
+// What Spara actually does. Nothing here waits for the server: the log is
+// written to IndexedDB, the dialog closes, and the send happens afterwards.
+// The row id already travels with the form, so sending later cannot
+// duplicate the event; see queue.svelte.ts.
 
 import type { SubmitFunction } from '@sveltejs/kit';
 import { parseDetails } from '$lib/events/details';
@@ -20,8 +15,7 @@ type DialogType = Pick<EventType, 'id' | 'label' | 'icon'>;
 /** Builds the `use:enhance` handler for the log form. */
 export function createLogSubmit(type: DialogType, onSaved: () => void): SubmitFunction {
 	return ({ formData, cancel }) => {
-		// The native submission is never used: it would mean waiting for the
-		// action and then for the reload it triggers.
+		// The native submission would wait for the action and its reload.
 		cancel();
 		void save(formData);
 	};
@@ -35,9 +29,8 @@ export function createLogSubmit(type: DialogType, onSaved: () => void): SubmitFu
 		}
 
 		const occurred = time.stockholmInputToUtc(fields.occurred_at ?? '') ?? new Date();
-		// Parsed here as well as on the server, so the row in the list reads the
-		// same before it is stored as it does afterwards. The browser's own
-		// validation already blocks the values this could reject.
+		// Parsed here as well as on the server, so the row reads the same
+		// before it is stored as it does afterwards.
 		const parsed = parseDetails(formData, type.id);
 		const note = (fields.note ?? '').trim();
 

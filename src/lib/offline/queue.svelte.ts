@@ -62,9 +62,8 @@ export const offlineQueue = $state<{ items: QueuedLog[]; sending: boolean }>({
 });
 
 /**
- * Opens the queue database, creating the object store on first run. Keyed by
- * the event's row id, so putting the same log twice replaces it rather than
- * queueing it again.
+ * Opens the queue database, creating the store on first run. Keyed by the
+ * event's row id, so putting the same log twice replaces it.
  */
 function openDb(): Promise<IDBDatabase> {
 	const DB_NAME = 'hundkoll';
@@ -82,11 +81,7 @@ function openDb(): Promise<IDBDatabase> {
 	});
 }
 
-/**
- * Runs one request against the store and resolves with its result, so the
- * callers below can read like ordinary async functions instead of nesting
- * IndexedDB event handlers.
- */
+/** Runs one request against the store as an ordinary promise. */
 function tx<T>(
 	mode: IDBTransactionMode,
 	run: (store: IDBObjectStore) => IDBRequest<T>
@@ -110,9 +105,7 @@ function patch(id: string, changes: Partial<QueuedLog>): void {
 
 /**
  * Reads the queue off disk into the reactive state, newest first. Anything
- * still here at launch failed to send last time, so it starts out waiting. A
- * database that cannot be opened — private mode, or storage denied — is
- * treated as an empty queue, since the app still works online without one.
+ * still here at launch failed to send last time, so it starts out waiting.
  */
 export async function loadQueue(): Promise<void> {
 	try {
@@ -121,6 +114,8 @@ export async function loadQueue(): Promise<void> {
 			.map((item) => ({ ...item, status: 'waiting' as const, error: null }))
 			.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 	} catch {
+		// Private mode, or storage denied: the app still works online without
+		// a queue.
 		offlineQueue.items = [];
 	}
 }

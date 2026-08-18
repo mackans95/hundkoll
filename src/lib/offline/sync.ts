@@ -5,9 +5,8 @@ import { invalidateAll } from '$app/navigation';
 import { flushQueue, pruneLanded } from './queue.svelte';
 
 /**
- * Sends anything waiting and refreshes the page data if something landed.
- * The refresh comes before the placeholder rows are dropped, so a row never
- * disappears between being sent and being read back.
+ * Sends anything waiting and refreshes the page data if something landed —
+ * refresh before pruning, so a row never disappears between send and read-back.
  */
 export async function sendPending(): Promise<void> {
 	if ((await flushQueue()) === 0) {

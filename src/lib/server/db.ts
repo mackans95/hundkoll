@@ -1,6 +1,5 @@
-// The request-scoped Supabase client. Everything under $lib/server is
-// refused by the bundler if a browser module ever imports it, which is the
-// point: queries live here, pages only format what comes back.
+// The request-scoped Supabase client. $lib/server is refused by the bundler
+// in browser code: queries live here, pages only format what comes back.
 
 import { createServerClient } from '@supabase/ssr';
 import { PUBLIC_SUPABASE_PUBLISHABLE_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
@@ -12,9 +11,8 @@ import type { Database } from '$lib/types/database';
 export type Db = SupabaseClient<Database>;
 
 /**
- * Builds a Supabase client for one request, reading and writing the session
- * through that request's cookies. One per request rather than one per process,
- * so two users are never served from the same session.
+ * Builds a Supabase client for one request. One per request rather than one
+ * per process, so two users are never served from the same session.
  */
 export function createRequestClient(cookies: Cookies): Db {
 	return createServerClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {

@@ -1,9 +1,7 @@
-// Per-type detail fields, shared by the dialog form (rendering) and the
-// form action (parsing). Adding a field here is all it takes to collect it.
-//
-// 'count' renders as a checkbox that reveals a stepper when checked; it
-// submits the checkbox under the field name plus the count under
-// "<name>_count" (so a no-JS submission degrades to a count of 1).
+// Per-type detail fields, shared by the dialog form (rendering) and the form
+// action (parsing) — adding a field here is all it takes to collect it.
+// 'count' is a checkbox that reveals a stepper, submitted as the checkbox
+// plus "<name>_count", so a no-JS submission degrades to a count of 1.
 
 import * as locale from '$lib/locale';
 

@@ -1,12 +1,7 @@
-// Time *computation*: timezone conversion and calendar arithmetic.
-// Turning any of this into text is format.ts's job.
-//
-// Europe/Stockholm is the app's wall-clock timezone; the database stores
-// timestamptz (UTC). The server runs in UTC on Vercel, so datetime-local
-// input values must be converted explicitly.
-//
-// As in format.ts, the Intl formatters are module-level because they are
-// expensive to construct; everything else lives in the function that owns it.
+// Time *computation*: timezone conversion and calendar arithmetic; the words
+// live in format.ts. Europe/Stockholm is the app's wall-clock timezone, the
+// database stores UTC, and the server runs in UTC — so datetime-local values
+// must be converted explicitly.
 
 const TZ = 'Europe/Stockholm';
 

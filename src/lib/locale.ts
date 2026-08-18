@@ -1,23 +1,12 @@
-// Every word the app shows, in one place.
+// Every word the app shows, in one place: Swedish in the UI, English in the
+// code. One language, no runtime loading — a plain module the compiler checks.
 //
-// Swedish in the UI, English in the code — so this is where the two meet.
-// There is one language and no plan for a second, so nothing here is keyed by
-// locale or loaded at runtime; it is a plain module the compiler checks.
+// Everything is `as const` so a hover shows the actual words rather than
+// `string`, and anything with a value in it is a function, so the grammar
+// around the value stays next to the words.
 //
-// Everything is `as const`, including the return of every function, so a hover
-// in the editor shows the actual words rather than `string`. That is the whole
-// reason the assertions are here: `subtitle` reads as
-// `Snitt över de senaste ${number} dagarna.` at the call site, not `string`.
-//
-// Anything with a value in it is a function rather than a template with
-// placeholders, so the grammar around the value stays next to the words.
-// Emoji that belong to a label travel with it; standalone icons stay in the
-// component, where they sit next to the markup they decorate.
-//
-// Two pieces of user-facing text deliberately live elsewhere: the activity
-// names (Promenad, Matning …) are rows in the event_types table, and the
-// installed app's name is in static/manifest.webmanifest, which the browser
-// reads without going through the bundler.
+// Deliberately elsewhere: activity names are rows in the event_types table,
+// and the installed app's name is in static/manifest.webmanifest.
 
 import type { Period } from '$lib/types/domain';
 
@@ -174,9 +163,8 @@ const symbols = {
 export const stats = {
 	title: nav.stats,
 	subtitle: (days: number) => `Snitt över de senaste ${days} dagarna.` as const,
-	// `as const satisfies`, in that order: a plain annotation — or `satisfies`
-	// on its own — widens these back to `string`, while this keeps the literals
-	// and still fails if a Period has no label.
+	// `as const satisfies`: keeps the literal types, and still fails if a
+	// Period has no label.
 	periods: { day: 'Dag', week: 'Vecka', month: 'Månad' } as const satisfies Record<Period, string>,
 	periodPickerLabel: 'Periodval',
 	trendPickerLabel: 'Trendperiod',

@@ -16,8 +16,7 @@
 		loadQueue().then(sendPending);
 	});
 
-	// Where a tap is heading, which the nav can highlight before the new screen
-	// has anything to paint. Null unless a navigation is in flight.
+	// Where a tap is heading; null unless a navigation is in flight.
 	const pending = $derived(navigating.to?.url.pathname ?? null);
 
 	const tabs = [
@@ -38,14 +37,10 @@
 	<nav
 		class="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)]"
 	>
-		<!-- relative so the progress bar can sit on this row's top edge, and
-		     spans exactly the tabs rather than the whole viewport. Absolutely
-		     positioned children of a flex container are out of flow, so the bar
-		     never becomes a fifth flex item. -->
+		<!-- relative: the bar sits on this row's top edge and spans exactly the
+		     tabs. Absolute children of a flex container stay out of flow. -->
 		<div class="relative mx-auto flex max-w-sm">
-			<!-- Switching screens is the one thing left that has to wait for the
-			     server, since each one reads its own rows. The bar animates in after
-			     a delay, so a fast switch never flashes it. -->
+			<!-- Animates in after a delay, so a fast switch never flashes it. -->
 			{#if navigating.to}
 				<div
 					class="loading-bar"
@@ -54,12 +49,10 @@
 			{/if}
 
 			{#each tabs as tab (tab.href)}
-				<!-- The tab being navigated to takes the selected look straight away,
-				     so the nav answers the tap instead of waiting for the server.
-				     aria-current stays on the screen actually showing. -->
+				<!-- The target tab looks selected straight away; aria-current stays
+				     on the screen actually showing. -->
 				{@const selected = (pending ?? page.url.pathname) === tab.href}
-				<!-- preload on tap: the load starts on touch rather than on the
-				     click that follows it, which is a free head start on mobile. -->
+				<!-- Preloads on touch: a free head start before the click. -->
 				<a
 					href={tab.href}
 					data-sveltekit-preload-data="tap"
@@ -69,8 +62,7 @@
 						? 'bg-emerald-100 font-semibold text-gray-900'
 						: 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100'}"
 				>
-					<!-- Tailwind's hover: is behind @media (hover: hover), so active:
-					     is what gives a finger any feedback at all on touchdown. -->
+					<!-- active: is the only touchdown feedback; hover: needs a mouse. -->
 					<span
 						class="text-xl {pending === tab.href ? 'tab-loading' : ''}"
 						aria-hidden="true">{tab.icon}</span

@@ -1,10 +1,6 @@
-// Turning values into Swedish text. Nothing here computes anything about
-// time — that lives in time.ts.
-//
-// The Intl formatters sit at module scope on purpose. Constructing one costs
-// 20–60x what formatting with it does, and these run once per chart column,
-// so rebuilding them per call is the one thing in this file worth hoisting
-// for. Everything cheap lives inside the function that owns it.
+// Turning values into Swedish text; time *computation* lives in time.ts.
+// The Intl formatters sit at module scope because constructing one costs
+// 20–60x what formatting with it does.
 
 import * as locale from '$lib/locale';
 import * as time from '$lib/time';
@@ -64,8 +60,8 @@ export function eventTime(date: Date): string {
  * "2026-08-14" → "14/8"
  */
 export function dayLabel(iso: string): string {
-	// Read back in UTC: the date is already a Stockholm day, so letting the
-	// local timezone touch it again would shift it a second time.
+	// Read in UTC: the date is already a Stockholm day; a second timezone
+	// shift would move it.
 	const day = new Date(`${iso}T00:00:00Z`);
 	return `${day.getUTCDate()}/${day.getUTCMonth() + 1}`;
 }
@@ -96,16 +92,10 @@ export function weekHeading(iso: string): string {
 	return locale.units.weekLong(time.isoWeek(iso));
 }
 
-/**
- * The units these two functions step through, taken from locale so the list
- * and the Swedish words for it cannot drift apart — a unit with no words, or
- * words with no unit, is now a compile error. `Intl.RelativeTimeFormatUnit`
- * would also accept the plural spellings, which have no entry in locale.
- */
+/** Keyed by locale's duration words, so unit and wording cannot drift apart. */
 type DurationUnit = keyof typeof locale.units.durationNames;
 
-// Largest unit first: both functions below take the first one the value
-// reaches, so a five-week gap reads as weeks rather than 35 days.
+// Largest unit first: a five-week gap reads as weeks rather than 35 days.
 const RELATIVE_UNITS: [DurationUnit, number][] = [
 	['year', 365 * 86_400_000],
 	['month', 30 * 86_400_000],

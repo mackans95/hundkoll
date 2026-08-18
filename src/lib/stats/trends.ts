@@ -58,10 +58,9 @@ type TrendMetric = {
 export type TrendRow = { label: string; from: string; to: string; badge: string };
 
 /**
- * Writes the change between two values as a percentage, neutrally — whether
- * more is better depends on the metric, so nothing here is coloured or
- * signed as good. Returns an en dash when there is no change to express,
- * including when the earlier value was zero and every change is infinite.
+ * Writes the change between two values as a neutral percentage — whether more
+ * is better depends on the metric. An en dash when there is nothing to
+ * compare, including a zero base, where every change is infinite.
  * (4, 5) → "↑ 25 %"
  */
 function changeBadge(from: number | null, to: number | null): string {

@@ -58,8 +58,7 @@
 		/>
 		<ChartLegend items={legend} />
 	{:else}
-		<!-- A bar for a period that has not finished yet would read as a
-		     complete one, so the chart waits rather than showing a stub. -->
+		<!-- An unfinished period would read as a complete one, so the chart waits. -->
 		<p class="py-6 text-center text-sm text-gray-500">
 			{locale.stats.accidents.pending(period)}
 		</p>

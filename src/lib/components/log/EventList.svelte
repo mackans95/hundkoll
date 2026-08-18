@@ -7,9 +7,8 @@
 
 	let { events }: { events: EventRow[] } = $props();
 
-	// A row that has been stored takes precedence over the copy still sitting in
-	// the queue, which can overlap for the moment between a send landing and the
-	// reload that follows it.
+	// A stored row takes precedence over its queued copy, which can overlap
+	// for the moment between a send landing and the reload that follows.
 	const stored = $derived(new Set(events.map((event) => event.id)));
 	const queued = $derived(offlineQueue.items.filter((item) => !stored.has(item.id)));
 
@@ -25,9 +24,8 @@
 	<p class="text-gray-500">{locale.log.empty}</p>
 {:else}
 	<ul class="divide-y divide-gray-200">
-		<!-- Queued rows sit on top, so the list shows what has been logged rather
-		     than only what has been stored. One still in flight looks like any
-		     other row; only a row that could not be sent says so. -->
+		<!-- Queued rows sit on top: the list shows what has been logged, not
+		     only what has been stored. -->
 		{#each queued as item (item.id)}
 			{@const extra = summarise(item.typeId, item.details, item.note)}
 			<li

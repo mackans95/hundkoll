@@ -16,8 +16,7 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 		.order('occurred_at', { ascending: false })
 		.limit(limit);
 
-	// `details` is jsonb, so the generated type is the whole Json union; the
-	// keys it actually holds are the ones DETAIL_FIELDS wrote.
+	// `details` is jsonb; the keys it holds are the ones DETAIL_FIELDS wrote.
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
 }
 
@@ -52,9 +51,8 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	const typeId = String(form.get('type_id') ?? '');
 	const row: EventInsert = { dog_id: dogId, type_id: typeId };
 
-	// The row id is generated when the dialog renders and travels with the
-	// form, so a resubmit collides on the primary key instead of logging the
-	// same walk twice.
+	// Generated when the dialog rendered, so a resubmit collides on the
+	// primary key instead of logging the same walk twice.
 	const eventId = String(form.get('event_id') ?? '');
 	if (UUID_RE.test(eventId)) {
 		row.id = eventId;

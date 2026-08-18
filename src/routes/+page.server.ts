@@ -23,8 +23,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		events,
 		detailType: types.find((type) => type.id === detailParam) ?? null,
 		nowLocal: time.stockholmNowForInput(),
-		// The row id travels with the form so a resubmit — a double tap, or a
-		// retry after a response was lost — collides on the primary key
+		// Travels with the form so a resubmit collides on the primary key
 		// instead of inserting the same walk twice.
 		eventId: crypto.randomUUID()
 	};

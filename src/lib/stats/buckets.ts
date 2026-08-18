@@ -1,8 +1,6 @@
-// Turning view rows into chart columns.
-//
-// Pure functions: rows in, columns out. The database only returns days that
-// have events, so every builder zero-fills its window first — a gap in the
-// chart has to mean "nothing happened", not "no row".
+// Turning view rows into chart columns: pure functions, rows in, columns out.
+// Every builder zero-fills its window first — a gap in the chart has to mean
+// "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
 import * as locale from '$lib/locale';
@@ -11,11 +9,7 @@ import * as time from '$lib/time';
 import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
-/**
- * How wide each chart is, and how often it labels a column. Shared by the
- * builders below, which all have to agree on them or the charts stop lining
- * up with each other.
- */
+// Window widths and tick spacing, shared so the charts line up with each other.
 const DAILY_WINDOW = 30;
 const PERIOD_COLUMNS = 12;
 const DAY_TICK_EVERY = 7;
@@ -49,8 +43,7 @@ function tooltipRow(...cells: (TooltipCell | null)[]): TooltipCell[] {
 
 /**
  * Builds the walks-per-day columns for the last 30 days. Each column carries
- * the day's pee and poop counts and its own gap and duration averages, so
- * the tooltip can answer "what happened that day" without another query.
+ * its own counts and averages, so the tooltip needs no further query.
  */
 export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
