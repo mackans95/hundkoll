@@ -94,10 +94,27 @@
 			<p class="mb-3 rounded-lg bg-red-50 p-3 text-red-800">{message}</p>
 		{/if}
 
-		<form method="POST" action="?/log" use:enhance={submit} class="flex flex-col gap-3">
-			<input type="hidden" name="type_id" value={type.id} />
-			<input type="hidden" name="detailed" value="1" />
-			<input type="hidden" name="event_id" value={eventId} />
+		<form
+			method="POST"
+			action="?/log"
+			use:enhance={submit}
+			class="flex flex-col gap-3"
+		>
+			<input
+				type="hidden"
+				name="type_id"
+				value={type.id}
+			/>
+			<input
+				type="hidden"
+				name="detailed"
+				value="1"
+			/>
+			<input
+				type="hidden"
+				name="event_id"
+				value={eventId}
+			/>
 
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.time}</span>
@@ -115,14 +132,24 @@
 
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.note}</span>
-				<textarea name="note" rows="2" class="rounded-lg border-gray-300"></textarea>
+				<textarea
+					name="note"
+					rows="2"
+					class="rounded-lg border-gray-300"></textarea>
 			</label>
 
 			<div class="mt-2 flex gap-2">
-				<a href="/" onclick={cancel} class="flex-1 btn btn-secondary">
+				<a
+					href="/"
+					onclick={cancel}
+					class="flex-1 btn btn-secondary"
+				>
 					{locale.log.dialog.cancel}
 				</a>
-				<button type="submit" class="flex-1 btn btn-primary">{locale.log.dialog.save}</button>
+				<button
+					type="submit"
+					class="flex-1 btn btn-primary">{locale.log.dialog.save}</button
+				>
 			</div>
 		</form>
 	</div>

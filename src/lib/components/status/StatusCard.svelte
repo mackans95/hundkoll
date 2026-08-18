@@ -50,7 +50,10 @@
 </script>
 
 <article class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-	<span class="text-3xl" aria-hidden="true">{row.icon}</span>
+	<span
+		class="text-3xl"
+		aria-hidden="true">{row.icon}</span
+	>
 	<div class="min-w-0 flex-1">
 		<h2 class="font-semibold">{row.label}</h2>
 		<p class="text-sm text-gray-500">{detail}</p>

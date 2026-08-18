@@ -133,11 +133,39 @@
 	onpointerdown={hoverFromEvent}
 	onpointerleave={() => (hovered = null)}
 >
-	<svg viewBox="0 0 {W} {height}" class="w-full" role="img" aria-label={label}>
-		<line x1="0" x2={W} y1={y(top)} y2={y(top)} stroke="#f3f4f6" />
-		<line x1="0" x2={W} y1={y(top / 2)} y2={y(top / 2)} stroke="#f3f4f6" />
-		<line x1="0" x2={W} y1={y(0)} y2={y(0)} stroke="#e5e7eb" />
-		<text x="0" y={y(top) - 3} font-size="9" class="fill-gray-400">{top}</text>
+	<svg
+		viewBox="0 0 {W} {height}"
+		class="w-full"
+		role="img"
+		aria-label={label}
+	>
+		<line
+			x1="0"
+			x2={W}
+			y1={y(top)}
+			y2={y(top)}
+			stroke="#f3f4f6"
+		/>
+		<line
+			x1="0"
+			x2={W}
+			y1={y(top / 2)}
+			y2={y(top / 2)}
+			stroke="#f3f4f6"
+		/>
+		<line
+			x1="0"
+			x2={W}
+			y1={y(0)}
+			y2={y(0)}
+			stroke="#e5e7eb"
+		/>
+		<text
+			x="0"
+			y={y(top) - 3}
+			font-size="9"
+			class="fill-gray-400">{top}</text
+		>
 
 		<!-- Keyed by label, which the builders make unique per column: one
 		     calendar day or period each within the chart's window. -->
@@ -145,9 +173,22 @@
 			{@const x = i * slot + (slot - barW) / 2}
 			<g>
 				{#if hovered === i}
-					<rect x={i * slot} y={PAD_TOP} width={slot} height={plotH} fill="#f3f4f6" rx="3" />
+					<rect
+						x={i * slot}
+						y={PAD_TOP}
+						width={slot}
+						height={plotH}
+						fill="#f3f4f6"
+						rx="3"
+					/>
 				{:else}
-					<rect x={i * slot} y={PAD_TOP} width={slot} height={plotH} fill="transparent" />
+					<rect
+						x={i * slot}
+						y={PAD_TOP}
+						width={slot}
+						height={plotH}
+						fill="transparent"
+					/>
 				{/if}
 				<!-- Hovered bar keeps its color and gains a dark outline; the
 				     rest of the chart fades back. -->
@@ -159,9 +200,18 @@
 				>
 					{#each stack(bucket.segments) as seg (seg.idx)}
 						{#if seg.isTop}
-							<path d={roundedTop(x, seg.y, barW, seg.h)} fill={colors[seg.idx]} />
+							<path
+								d={roundedTop(x, seg.y, barW, seg.h)}
+								fill={colors[seg.idx]}
+							/>
 						{:else}
-							<rect {x} y={seg.y} width={barW} height={seg.h} fill={colors[seg.idx]} />
+							<rect
+								{x}
+								y={seg.y}
+								width={barW}
+								height={seg.h}
+								fill={colors[seg.idx]}
+							/>
 						{/if}
 					{/each}
 				</g>
@@ -204,7 +254,9 @@
 									: 'justify-between'}"
 							>
 								{#if cell.color}
-									<span class="h-2 w-2 shrink-0 rounded-full" style="background:{cell.color}"
+									<span
+										class="h-2 w-2 shrink-0 rounded-full"
+										style="background:{cell.color}"
 									></span>
 								{/if}
 								{#if cell.label}

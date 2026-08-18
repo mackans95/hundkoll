@@ -47,7 +47,10 @@
 			     server, since each one reads its own rows. The bar animates in after
 			     a delay, so a fast switch never flashes it. -->
 			{#if navigating.to}
-				<div class="loading-bar" role="presentation"></div>
+				<div
+					class="loading-bar"
+					role="presentation"
+				></div>
 			{/if}
 
 			{#each tabs as tab (tab.href)}
@@ -68,8 +71,9 @@
 				>
 					<!-- Tailwind's hover: is behind @media (hover: hover), so active:
 					     is what gives a finger any feedback at all on touchdown. -->
-					<span class="text-xl {pending === tab.href ? 'tab-loading' : ''}" aria-hidden="true"
-						>{tab.icon}</span
+					<span
+						class="text-xl {pending === tab.href ? 'tab-loading' : ''}"
+						aria-hidden="true">{tab.icon}</span
 					>
 					{tab.label}
 				</a>

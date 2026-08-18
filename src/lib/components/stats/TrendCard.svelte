@@ -29,7 +29,12 @@
 
 <FoldableCard title={locale.stats.trends.heading}>
 	<p class="text-sm text-gray-500">{trendCaption(period, prevBucket, latestBucket)}</p>
-	<TabBar {tabs} current={period} href={tabHref} label={locale.stats.trendPickerLabel} />
+	<TabBar
+		{tabs}
+		current={period}
+		href={tabHref}
+		label={locale.stats.trendPickerLabel}
+	/>
 
 	{#if complete}
 		<ul class="divide-y divide-gray-100">

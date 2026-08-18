@@ -81,7 +81,10 @@
 	{/if}
 
 	<Card padding="p-3">
-		<LogGrid types={data.types} onOpen={open} />
+		<LogGrid
+			types={data.types}
+			onOpen={open}
+		/>
 	</Card>
 
 	<Card title={locale.log.recentHeading}>

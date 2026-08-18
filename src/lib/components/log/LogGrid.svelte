@@ -46,7 +46,10 @@
 				type.category
 			]}"
 		>
-			<span class="text-3xl" aria-hidden="true">{type.icon}</span>
+			<span
+				class="text-3xl"
+				aria-hidden="true">{type.icon}</span
+			>
 			<span class="text-sm font-semibold">{type.label}</span>
 		</a>
 	{/each}

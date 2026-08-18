@@ -25,7 +25,12 @@
 			{locale.settings.intervalsHeading}
 		</h2>
 		<p class="px-1 text-sm text-gray-500">{locale.settings.intervalsHelp}</p>
-		<form method="POST" action="?/save" use:enhance class="flex flex-col gap-2">
+		<form
+			method="POST"
+			action="?/save"
+			use:enhance
+			class="flex flex-col gap-2"
+		>
 			{#each data.types as type (type.id)}
 				<label
 					class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3"
@@ -44,13 +49,23 @@
 					</span>
 				</label>
 			{/each}
-			<button type="submit" class="mt-2 btn btn-primary">{locale.settings.save}</button>
+			<button
+				type="submit"
+				class="mt-2 btn btn-primary">{locale.settings.save}</button
+			>
 		</form>
 	</section>
 
 	<section class="mt-auto flex flex-col gap-2">
-		<form method="POST" action="?/logout" use:enhance>
-			<button type="submit" class="w-full btn btn-secondary">{locale.settings.logout}</button>
+		<form
+			method="POST"
+			action="?/logout"
+			use:enhance
+		>
+			<button
+				type="submit"
+				class="w-full btn btn-secondary">{locale.settings.logout}</button
+			>
 		</form>
 	</section>
 </main>

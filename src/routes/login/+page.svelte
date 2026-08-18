@@ -18,7 +18,11 @@
 		<p class="rounded-lg bg-red-50 p-4 text-red-800">{form.message}</p>
 	{/if}
 
-	<form method="POST" use:enhance class="flex flex-col gap-3">
+	<form
+		method="POST"
+		use:enhance
+		class="flex flex-col gap-3"
+	>
 		<label class="flex flex-col gap-1">
 			<span class="text-sm font-medium text-gray-700">{locale.login.email}</span>
 			<input
@@ -40,6 +44,9 @@
 				class="rounded-lg border-gray-300"
 			/>
 		</label>
-		<button type="submit" class="btn btn-primary">{locale.login.submit}</button>
+		<button
+			type="submit"
+			class="btn btn-primary">{locale.login.submit}</button
+		>
 	</form>
 </main>

@@ -28,6 +28,11 @@
 	{#if points.length === 0}
 		<p class="text-sm text-gray-500">{locale.stats.weight.empty}</p>
 	{:else}
-		<TrendLine {points} color={WEIGHT_COLOR} unit="kg" label={locale.stats.weight.heading} />
+		<TrendLine
+			{points}
+			color={WEIGHT_COLOR}
+			unit="kg"
+			label={locale.stats.weight.heading}
+		/>
 	{/if}
 </FoldableCard>

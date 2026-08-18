@@ -48,7 +48,11 @@
 			>
 				+
 			</button>
-			<input type="hidden" name="{name}_count" value={count} />
+			<input
+				type="hidden"
+				name="{name}_count"
+				value={count}
+			/>
 		</div>
 	{/if}
 </div>

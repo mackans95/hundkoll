@@ -56,7 +56,10 @@
 						{locale.log.dismissFailed}
 					</button>
 				{:else}
-					<time datetime={item.occurredAt} class="shrink-0 text-sm text-gray-500">
+					<time
+						datetime={item.occurredAt}
+						class="shrink-0 text-sm text-gray-500"
+					>
 						{format.eventTime(new Date(item.occurredAt))}
 					</time>
 				{/if}
@@ -72,7 +75,10 @@
 						<span class="block truncate text-sm text-gray-500">{extra}</span>
 					{/if}
 				</span>
-				<time datetime={event.occurred_at} class="shrink-0 text-sm text-gray-500">
+				<time
+					datetime={event.occurred_at}
+					class="shrink-0 text-sm text-gray-500"
+				>
 					{format.eventTime(new Date(event.occurred_at))}
 				</time>
 			</li>

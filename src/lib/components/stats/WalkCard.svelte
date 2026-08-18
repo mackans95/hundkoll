@@ -16,7 +16,11 @@
 </script>
 
 <FoldableCard title={locale.stats.walks.heading}>
-	<StackedColumns {buckets} colors={[WALK_COLOR]} label={locale.stats.walks.heading} />
+	<StackedColumns
+		{buckets}
+		colors={[WALK_COLOR]}
+		label={locale.stats.walks.heading}
+	/>
 	<div class="flex flex-col gap-2">
 		<!-- Walks per day is the headline, so it gets the full width. -->
 		<StatTile tile={tiles[0]} />
