@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { ColumnBucket } from '$lib/types/charts';
+	import ColumnTooltip from './ColumnTooltip.svelte';
+	import { niceCeil, roundedTop, stack, total } from './geometry';
 
 	let {
 		buckets,
@@ -19,28 +21,7 @@
 	const PAD_BOTTOM = 16;
 	const plotH = $derived(height - PAD_TOP - PAD_BOTTOM);
 
-	let hovered = $state<number | null>(null);
-
-	/**
-	 * Rounds an axis maximum up to a number a reader can divide by eye, so the
-	 * gridline halfway up means something.
-	 * 7 → 10, 23 → 25
-	 */
-	function niceCeil(v: number): number {
-		if (v <= 5) return Math.ceil(v);
-		const pow = 10 ** Math.floor(Math.log10(v));
-		for (const m of [1, 2, 2.5, 5, 10]) {
-			if (v <= m * pow) return m * pow;
-		}
-		return 10 * pow;
-	}
-
-	/** Adds a column's segments up to the height the whole bar reaches. */
-	function total(bucket: ColumnBucket): number {
-		return bucket.segments.reduce((a, v) => a + v, 0);
-	}
-
-	const top = $derived(niceCeil(Math.max(1, ...buckets.map(total))));
+	const top = $derived(niceCeil(Math.max(1, ...buckets.map((bucket) => total(bucket.segments)))));
 	const slot = $derived(W / Math.max(1, buckets.length));
 	const barW = $derived(Math.max(2, Math.min(16, slot - 2)));
 
@@ -49,55 +30,13 @@
 		return PAD_TOP + plotH * (1 - value / top);
 	}
 
-	/**
-	 * Works out where each segment of a stacked bar sits, bottom-up, skipping
-	 * the zeroes and leaving a 2px gap between fills so the colours read as
-	 * separate bands rather than one block.
-	 */
-	function stack(segments: number[]): { idx: number; y: number; h: number; isTop: boolean }[] {
-		const nonZero = segments.map((v, idx) => ({ v, idx })).filter((s) => s.v > 0);
-		const out: { idx: number; y: number; h: number; isTop: boolean }[] = [];
-		let cum = 0;
-		nonZero.forEach(({ v, idx }, k) => {
-			const y0 = y(cum);
-			const y1 = y(cum + v);
-			const isTop = k === nonZero.length - 1;
-			let segY = y1;
-			let segH = y0 - y1;
-			if (!isTop && segH > 3) {
-				segY += 2;
-				segH -= 2;
-			}
-			out.push({ idx, y: segY, h: segH, isTop });
-			cum += v;
-		});
-		return out;
-	}
-
-	/**
-	 * Draws a bar with rounded top corners and a flat baseline, since the top is
-	 * the end that carries the value.
-	 */
-	function roundedTop(x: number, yy: number, w: number, h: number): string {
-		const r = Math.min(3, h / 2, w / 2);
-		return [
-			`M${x},${yy + h}`,
-			`V${yy + r}`,
-			`Q${x},${yy} ${x + r},${yy}`,
-			`H${x + w - r}`,
-			`Q${x + w},${yy} ${x + w},${yy + r}`,
-			`V${yy + h}`,
-			'Z'
-		].join('');
-	}
-
 	// Hover follows the pointer at the container level: per-bar enter events
 	// don't fire during a touch drag (the first-touched element captures the
 	// pointer), but container pointermove does.
+	let hovered = $state<number | null>(null);
 	// Only ever read inside event handlers, so it has no need to be reactive.
 	let containerEl: HTMLDivElement | undefined;
 	let containerW = $state(0);
-	let tipW = $state(0);
 
 	/** Picks the column under the pointer from its position across the chart. */
 	function hoverFromEvent(e: PointerEvent) {
@@ -113,15 +52,12 @@
 	// array. A stale index simply means no tooltip.
 	const hoveredBucket = $derived(hovered !== null ? (buckets[hovered] ?? null) : null);
 
-	// Tooltip center in pixels, clamped by the measured tooltip width so the
-	// box never leaves the container (and therefore never the viewport).
-	const tipLeftPx = $derived.by(() => {
-		if (hovered === null || hoveredBucket === null || containerW === 0) return 0;
-		const ideal = (((hovered + 0.5) * slot) / W) * containerW;
-		const half = tipW / 2;
-		return Math.min(containerW - half - 2, Math.max(half + 2, ideal));
-	});
-	const tipTop = $derived(hoveredBucket === null ? 0 : (y(total(hoveredBucket)) * 100) / height);
+	// Where the tooltip points: centred over the hovered column, just above
+	// the top of its bar. The tooltip clamps the centre itself.
+	const tipCenterPx = $derived(hovered === null ? 0 : (((hovered + 0.5) * slot) / W) * containerW);
+	const tipTop = $derived(
+		hoveredBucket === null ? 0 : (y(total(hoveredBucket.segments)) * 100) / height
+	);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -198,7 +134,7 @@
 					opacity={hovered !== null && hovered !== i ? 0.35 : 1}
 					style="transition: opacity 120ms"
 				>
-					{#each stack(bucket.segments) as seg (seg.idx)}
+					{#each stack(bucket.segments, y) as seg (seg.idx)}
 						{#if seg.isTop}
 							<path
 								d={roundedTop(x, seg.y, barW, seg.h)}
@@ -231,45 +167,11 @@
 	</svg>
 
 	{#if hoveredBucket !== null}
-		{@const bucket = hoveredBucket}
-		<div
-			bind:clientWidth={tipW}
-			class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
-			style="left: {tipLeftPx}px; top: calc({tipTop}% - 6px)"
-		>
-			<p class="font-semibold">{bucket.tooltip.heading}</p>
-			<div class="mt-1 flex flex-col gap-1">
-				<!-- Unkeyed on purpose: rows and cells are positional, with no
-				     identity of their own, and the whole tooltip is rebuilt
-				     whenever the hovered column changes. -->
-				{#each bucket.tooltip.rows as row}
-					<div class="flex items-stretch rounded-md bg-white/10 px-2 py-1">
-						{#each row as cell, ci}
-							{#if ci > 0}
-								<span class="mx-2 w-px shrink-0 self-stretch bg-white/20"></span>
-							{/if}
-							<span
-								class="flex flex-1 items-center gap-1.5 {row.length > 1
-									? 'justify-center'
-									: 'justify-between'}"
-							>
-								{#if cell.color}
-									<span
-										class="h-2 w-2 shrink-0 rounded-full"
-										style="background:{cell.color}"
-									></span>
-								{/if}
-								{#if cell.label}
-									<span class={cell.big ? 'text-lg leading-none' : 'text-gray-300'}>
-										{cell.label}
-									</span>
-								{/if}
-								<span class="font-semibold">{cell.value}</span>
-							</span>
-						{/each}
-					</div>
-				{/each}
-			</div>
-		</div>
+		<ColumnTooltip
+			bucket={hoveredBucket}
+			centerPx={tipCenterPx}
+			topPercent={tipTop}
+			{containerW}
+		/>
 	{/if}
 </div>
