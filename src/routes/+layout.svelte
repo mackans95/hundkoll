@@ -4,8 +4,7 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
-	import { loadQueue } from '$lib/offline/queue.svelte';
-	import { sendPending } from '$lib/offline/sync';
+	import { loadQueue, sendPending } from '$lib/offline/queue.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();

@@ -10,6 +10,7 @@
 // logging the walk twice.
 
 import { deserialize } from '$app/forms';
+import { invalidateAll } from '$app/navigation';
 import type { EventDetails } from '$lib/types/domain';
 
 const STORE = 'queue';
@@ -142,8 +143,23 @@ async function forget(id: string): Promise<void> {
 }
 
 /** Drops the rows the page data has now caught up with. */
-export function pruneLanded(): void {
+function pruneLanded(): void {
 	offlineQueue.items = offlineQueue.items.filter((item) => item.status !== 'landed');
+}
+
+/**
+ * Sends anything waiting and refreshes the page data if something landed —
+ * refresh before pruning, so a row never disappears between send and
+ * read-back. The one place that decides when the queue gets sent, so the
+ * layout, the log form and the `online` event all agree.
+ */
+export async function sendPending(): Promise<void> {
+	if ((await flushQueue()) === 0) {
+		return;
+	}
+
+	await invalidateAll();
+	pruneLanded();
 }
 
 /** Clears a rejected row once the user has read why it failed. */
@@ -209,10 +225,10 @@ async function sendOne(log: QueuedLog): Promise<SendOutcome> {
 
 /**
  * Sends everything waiting, oldest first so the list keeps its order once the
- * rows land. Returns how many reached the server, which tells the caller
- * whether the page data it is showing is now stale.
+ * rows land. Returns how many reached the server, which is what tells
+ * sendPending whether the page data is now stale.
  */
-export async function flushQueue(): Promise<number> {
+async function flushQueue(): Promise<number> {
 	const MAX_ATTEMPTS = 5;
 
 	if (offlineQueue.sending) {

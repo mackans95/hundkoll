@@ -7,8 +7,7 @@ import type { SubmitFunction } from '@sveltejs/kit';
 import { parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
 import type { EventType } from '$lib/types/domain';
-import { enqueue } from './queue.svelte';
-import { sendPending } from './sync';
+import { enqueue, sendPending } from './queue.svelte';
 
 type DialogType = Pick<EventType, 'id' | 'label' | 'icon'>;
 
