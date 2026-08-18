@@ -38,28 +38,30 @@ html {
 	}
 }
 
-/* The tapped tab's icon turns while its screen loads. The colour change alone
-   read as "selected"; turning reads as "working". One keyframe set rather than
-   Tailwind's spin plus pulse, because the two cannot share one animation
-   property. transform needs no display fix: the icon is a flex item, so it is
-   already blockified. */
+/* The tapped tab's icon breathes while its screen loads. The colour change alone
+   read as "selected"; a size change reads as "working", and unlike a spin it has
+   no orientation to look wrong at — an emoji part-way through a rotation reads
+   as broken rather than busy. transform needs no display fix: the icon is a flex
+   item, so it is already blockified, and items-center keeps it glyph-width so
+   the scale is centred on the icon itself. */
 .tab-loading {
-	/* 700ms so a warm switch, which is ~265ms, still shows a clear turn rather
-	   than a twitch. Longer reads as sluggish, shorter as frantic. */
-	animation: tab-loading 700ms linear infinite;
+	/* ease-in-out with the turn at the halfway point, so it eases at both ends
+	   of the squeeze rather than snapping back. */
+	animation: tab-loading 800ms ease-in-out infinite;
 }
 
 @keyframes tab-loading {
 	from {
 		opacity: 1;
-		transform: rotate(0deg);
+		transform: scale(1);
 	}
 	50% {
-		opacity: 0.4;
+		opacity: 0.5;
+		transform: scale(0.72);
 	}
 	to {
 		opacity: 1;
-		transform: rotate(360deg);
+		transform: scale(1);
 	}
 }
 

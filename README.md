@@ -282,6 +282,35 @@ case shows no waiting state at all. A row the server _rejects_ stays on screen w
 reason and a way to dismiss it — it is deliberately not dropped, since the log came from
 somebody typing.
 
+### Opening and closing the dialog
+
+The dialog grows out of the tile that was tapped and shrinks back into it, via `growFrom`
+in `$lib/transitions.ts`. `LogGrid` measures the tile in its click handler — the last
+moment it is certainly still under the thumb — and the rect travels through `+page.svelte`
+to the dialog. A `?detail=` dialog has no tile to grow from, so it rises from slightly
+small instead.
+
+Three things about that file are load-bearing:
+
+- Both transitions carry **`|global`**. Transitions are local by default, and a local one
+  only plays when its _own_ block is created or destroyed. The `{#if dialog}` lives in
+  `+page.svelte` while the directives are inside `LogDialog`, so without `|global` the
+  close would not animate at all.
+- The sheet fade is written by hand rather than using `svelte/transition`'s `fade`, so its
+  duration cannot drift from the panel's. If one outlasted the other, one would be left on
+  screen alone.
+- It asks `matchMedia` directly instead of importing `prefersReducedMotion` from
+  `svelte/motion`. That builds a `MediaQuery` at module scope, and `MediaQuery`'s
+  constructor calls `window.matchMedia` — so importing it into a component the server
+  renders, which `LogDialog` is, would break SSR. Transition functions only ever run in the
+  browser, so asking there is safe.
+
+Tapping the shaded sheet closes the dialog, and so does Escape; Avbryt stays for the
+keyboard and stays a real link for the no-JavaScript path. The sheet requires the press
+_and_ the release to land on it, because a click's target is the common ancestor of the
+two — without that check, dragging a selection out of the note field and letting go over
+the sheet would throw away a half-typed log.
+
 ### Switching screens is the one wait left
 
 Each screen reads its own rows, so a tab change has to reach the server. The feedback for
@@ -293,9 +322,11 @@ it is layered by how long the wait turns out to be, so a fast switch stays silen
   `(pending ?? page.url.pathname) === tab.href` in `+layout.svelte`, where `pending` is
   `navigating.to`. `aria-current` deliberately stays on the screen still showing, and the
   destination gets `aria-busy` instead.
-- **Also on navigation**, that tab's icon turns, via `.tab-loading`. The colour change on
-  its own read as "selected"; turning reads as "working". It is one keyframe set rather
-  than Tailwind's `animate-spin` plus `animate-pulse`, since two animations cannot share
+- **Also on navigation**, that tab's icon breathes — shrinks and grows — via
+  `.tab-loading`. The colour change on its own read as "selected"; a size change reads as
+  "working". It was a spin first, which looked broken rather than busy: an emoji has an
+  orientation, so any frame part-way round is just a wrong-way-up icon. It is one keyframe
+  set rather than Tailwind's `animate-pulse` plus a spin, since two animations cannot share
   the one `animation` property.
 - **Past 150 ms**, the progress bar in `layout.css` grows in. A switch that resolves
   quickly never paints it at all.

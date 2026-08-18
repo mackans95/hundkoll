@@ -3,6 +3,7 @@
 	import { fieldsFor } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import { createLogSubmit } from '$lib/offline/submit';
+	import { growFrom, sheet } from '$lib/transitions';
 	import type { EventType } from '$lib/types/domain';
 	import DetailFields from './DetailFields.svelte';
 
@@ -11,12 +12,15 @@
 		nowLocal,
 		eventId,
 		message,
+		origin,
 		onClose
 	}: {
 		type: Pick<EventType, 'id' | 'label' | 'icon'>;
 		nowLocal: string;
 		eventId: string;
 		message: string | null;
+		/** The tile this was opened from, so it can grow out of it. */
+		origin: DOMRect | null;
 		/** Closes the dialog. The page owns this, since it opened it. */
 		onClose: () => void;
 	} = $props();
@@ -32,16 +36,43 @@
 		event.preventDefault();
 		onClose();
 	}
+
+	// Where the press that led to a click started. A click's target is the common
+	// ancestor of press and release, so dragging out of the note field and letting
+	// go over the sheet would otherwise read as a tap outside and throw the log
+	// away half-typed.
+	let pressedOn: EventTarget | null = null;
+
+	/** Closes when both the press and the release landed on the sheet itself. */
+	function tapOutside(event: MouseEvent & { currentTarget: EventTarget }) {
+		const sheetItself = event.currentTarget;
+		if (event.target === sheetItself && pressedOn === sheetItself) onClose();
+	}
+
+	function keydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') onClose();
+	}
 </script>
+
+<svelte:window onkeydown={keydown} />
 
 <!-- Opened in place by a tile, or server-rendered from ?detail=<id> when the
      tap landed before hydration. Every control degrades to plain HTML: the
      form posts to the action and Avbryt is a link back to "/". -->
-<div class="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center">
+<!-- The sheet is presentational: tapping it is a shortcut for Avbryt, which is
+     still there for anyone using the keyboard, along with Escape. -->
+<div
+	role="presentation"
+	onpointerdown={(event) => (pressedOn = event.target)}
+	onclick={tapOutside}
+	transition:sheet|global
+	class="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center"
+>
 	<div
 		role="dialog"
 		aria-modal="true"
 		aria-label={locale.log.dialog.ariaLabel(type.label)}
+		transition:growFrom|global={{ origin }}
 		class="w-full max-w-sm rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
 	>
 		<h2 class="mb-4 text-xl font-bold">{type.icon} {type.label}</h2>
