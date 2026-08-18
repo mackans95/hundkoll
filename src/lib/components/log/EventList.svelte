@@ -31,23 +31,24 @@
 		{#each queued as item (item.id)}
 			{@const extra = summarise(item.typeId, item.details, item.note)}
 			<li
-				class="flex items-baseline justify-between gap-3 py-2 {item.waiting || item.error
+				class="flex items-baseline justify-between gap-3 py-2 {item.status === 'waiting' ||
+				item.status === 'failed'
 					? 'opacity-60'
 					: ''}"
 			>
 				<span class="min-w-0">
 					<span class="font-medium">{item.icon} {item.label}</span>
-					{#if item.error !== null}
+					{#if item.status === 'failed'}
 						<span class="block truncate text-sm text-red-700">
 							{locale.log.failedRow(item.error || locale.log.sendFailed)}
 						</span>
-					{:else if item.waiting}
+					{:else if item.status === 'waiting'}
 						<span class="block truncate text-sm text-gray-500">{locale.log.waitingRow}</span>
 					{:else if extra}
 						<span class="block truncate text-sm text-gray-500">{extra}</span>
 					{/if}
 				</span>
-				{#if item.error !== null}
+				{#if item.status === 'failed'}
 					<button
 						type="button"
 						onclick={() => dismiss(item.id)}

@@ -59,7 +59,7 @@
 
 	// Only the rows that could not be sent; one still in flight is not something
 	// to warn about.
-	const waiting = $derived(offlineQueue.items.filter((item) => item.waiting).length);
+	const waiting = $derived(offlineQueue.items.filter((item) => item.status === 'waiting').length);
 </script>
 
 <svelte:head><title>{locale.app.name}</title></svelte:head>

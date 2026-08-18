@@ -1,20 +1,31 @@
 // Where a log lives between being tapped and being stored.
 //
-// Every log goes through here, not just the ones made without signal. The
-// point is that saving never blocks on the network: the row is written to
-// IndexedDB, shown in the list, and sent in the background. Two sequential
-// requests to Stockholm are what used to make Spara feel dead for a second
-// or two on a phone whose radio had gone to sleep.
+// Every log goes through here, not just the ones made without signal, so that
+// saving never blocks on the network: the row is written to IndexedDB, shown
+// in the list, and sent in the background.
 //
-// Replaying is safe because every queued log already carries the row id
-// generated when the dialog rendered: a send that reached the server but lost
-// its response collides on the primary key, which the action reports as
-// success rather than logging the walk twice.
+// Replaying is safe because every queued log carries the row id generated when
+// the dialog rendered: a send that reached the server but lost its response
+// collides on the primary key, which the action reports as success rather than
+// logging the walk twice.
 
 import { deserialize } from '$app/forms';
 import type { EventDetails } from '$lib/types/domain';
 
 const STORE = 'queue';
+
+/**
+ * Where a queued log stands.
+ *
+ *  - sending: on its way, or about to be. Looks like a saved row in the UI,
+ *    so the common case shows no waiting state at all.
+ *  - waiting: a send was tried and could not get through. Earns an hourglass;
+ *    retried when the connection comes back.
+ *  - failed:  the server rejected the log outright. Retrying cannot help.
+ *  - landed:  stored, but the page data has not caught up yet. Kept in the
+ *    list until it has, otherwise the row would vanish and reappear.
+ */
+export type QueueStatus = 'sending' | 'waiting' | 'failed' | 'landed';
 
 export type QueuedLog = {
 	/** The events row id — also the queue key, which makes replays safe. */
@@ -32,19 +43,9 @@ export type QueuedLog = {
 	note: string | null;
 	/** Server failures that might still succeed. Network outages do not count. */
 	attempts: number;
-	/**
-	 * True once a send has been tried and could not get through, which is what
-	 * earns a row the hourglass. A log still in flight looks like a saved one,
-	 * so the common case shows no waiting state at all.
-	 */
-	waiting: boolean;
-	/** Set when the server rejected the log outright; retrying cannot help. */
+	status: QueueStatus;
+	/** Why the server rejected it; only set alongside status 'failed'. */
 	error: string | null;
-	/**
-	 * Stored, but the page data has not caught up yet. Kept in the list until
-	 * it has, otherwise the row would vanish and reappear.
-	 */
-	landed: boolean;
 };
 
 /**
@@ -117,7 +118,7 @@ export async function loadQueue(): Promise<void> {
 	try {
 		const items = await tx<QueuedLog[]>('readonly', (store) => store.getAll());
 		offlineQueue.items = items
-			.map((item) => ({ ...item, waiting: true, landed: false }))
+			.map((item) => ({ ...item, status: 'waiting' as const, error: null }))
 			.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 	} catch {
 		offlineQueue.items = [];
@@ -134,7 +135,7 @@ export type NewLog = Pick<
  * dialog without waiting for Stockholm.
  */
 export async function enqueue(log: NewLog): Promise<void> {
-	const queued: QueuedLog = { ...log, attempts: 0, waiting: false, error: null, landed: false };
+	const queued: QueuedLog = { ...log, attempts: 0, status: 'sending', error: null };
 	offlineQueue.items = [queued, ...offlineQueue.items.filter((item) => item.id !== queued.id)];
 	// Written after the list updates: the point is not to block the dialog.
 	await tx('readwrite', (store) => store.put(queued));
@@ -147,7 +148,7 @@ async function forget(id: string): Promise<void> {
 
 /** Drops the rows the page data has now caught up with. */
 export function pruneLanded(): void {
-	offlineQueue.items = offlineQueue.items.filter((item) => !item.landed);
+	offlineQueue.items = offlineQueue.items.filter((item) => item.status !== 'landed');
 }
 
 /** Clears a rejected row once the user has read why it failed. */
@@ -156,11 +157,59 @@ export async function dismiss(id: string): Promise<void> {
 	offlineQueue.items = offlineQueue.items.filter((item) => item.id !== id);
 }
 
-/** Marks everything undelivered as waiting, after a pass that got nowhere. */
+/** Marks everything still undelivered as waiting, after a pass that got nowhere. */
 function markWaiting(): void {
 	offlineQueue.items = offlineQueue.items.map((item) =>
-		item.landed || item.error ? item : { ...item, waiting: true }
+		item.status === 'sending' ? { ...item, status: 'waiting' } : item
 	);
+}
+
+/** What one send attempt came back with. */
+type SendOutcome =
+	/** No signal; the fetch itself failed. */
+	| { kind: 'offline' }
+	/** Bounced to the login page: the session expired. The log is still good. */
+	| { kind: 'no-session' }
+	| { kind: 'stored' }
+	/** The server rejected the log itself; retrying cannot help. */
+	| { kind: 'rejected'; message: string | null }
+	/** The server misbehaved; the log might still get through later. */
+	| { kind: 'server-error'; message: string | null };
+
+/** Posts one queued log to the form action and classifies the answer. */
+async function sendOne(log: QueuedLog): Promise<SendOutcome> {
+	const body = new FormData();
+	for (const [name, value] of Object.entries(log.fields)) {
+		body.append(name, value);
+	}
+
+	let response: Response;
+	try {
+		response = await fetch('/?/log', {
+			method: 'POST',
+			body,
+			credentials: 'same-origin',
+			// Ask for the action result rather than a rendered page: a form
+			// action answers 200 with a JSON body either way, so the status
+			// alone cannot tell success from a bounce to /login.
+			headers: { accept: 'application/json' }
+		});
+	} catch {
+		return { kind: 'offline' };
+	}
+
+	const result = await readResult(response);
+
+	if (result?.type === 'redirect' && result.location?.startsWith('/login')) {
+		return { kind: 'no-session' };
+	}
+	if (response.ok && (result?.type === 'redirect' || result?.type === 'success')) {
+		return { kind: 'stored' };
+	}
+	if (result?.type === 'failure' || (response.status >= 400 && response.status < 500)) {
+		return { kind: 'rejected', message: result?.message ?? null };
+	}
+	return { kind: 'server-error', message: result?.message ?? null };
 }
 
 /**
@@ -174,7 +223,9 @@ export async function flushQueue(): Promise<number> {
 	if (offlineQueue.sending) {
 		return 0;
 	}
-	const pending = offlineQueue.items.filter((item) => !item.landed && !item.error);
+	const pending = offlineQueue.items.filter(
+		(item) => item.status === 'sending' || item.status === 'waiting'
+	);
 	if (pending.length === 0) {
 		return 0;
 	}
@@ -184,55 +235,29 @@ export async function flushQueue(): Promise<number> {
 
 	try {
 		for (const log of [...pending].reverse()) {
-			const body = new FormData();
-			for (const [name, value] of Object.entries(log.fields)) {
-				body.append(name, value);
-			}
+			const outcome = await sendOne(log);
 
-			let response: Response;
-			try {
-				response = await fetch('/?/log', {
-					method: 'POST',
-					body,
-					credentials: 'same-origin',
-					// Ask for the action result rather than a rendered page: a
-					// form action answers 200 with a JSON body either way, so the
-					// status alone cannot tell success from a bounce to /login.
-					headers: { accept: 'application/json' }
-				});
-			} catch {
-				// No signal. Everything still queued keeps waiting.
+			// Nothing can get through right now — whether for want of signal or
+			// of a session. Everything still queued keeps waiting.
+			if (outcome.kind === 'offline' || outcome.kind === 'no-session') {
 				markWaiting();
 				break;
 			}
 
-			const result = await readResult(response);
-
-			// Bounced to the login page: the session expired. The log is still
-			// good, so hold everything until there is a session again.
-			if (result?.type === 'redirect' && result.location?.startsWith('/login')) {
-				markWaiting();
-				break;
-			}
-
-			if (response.ok && (result?.type === 'redirect' || result?.type === 'success')) {
+			if (outcome.kind === 'stored') {
 				await forget(log.id);
 				// Kept in the list, without its hourglass, until the reload that
 				// follows brings back the stored row to replace it.
-				patch(log.id, { landed: true, waiting: false });
+				patch(log.id, { status: 'landed' });
 				sent += 1;
-			} else if (result?.type === 'failure' || (response.status >= 400 && response.status < 500)) {
-				// The server rejected the log itself; retrying cannot help, so say
-				// so rather than discarding what was typed.
+			} else if (outcome.kind === 'rejected' || log.attempts + 1 >= MAX_ATTEMPTS) {
+				// Say so rather than discarding what was typed.
 				await forget(log.id);
-				patch(log.id, { error: result?.message ?? null, waiting: false });
-			} else if (log.attempts + 1 >= MAX_ATTEMPTS) {
-				await forget(log.id);
-				patch(log.id, { error: result?.message ?? null, waiting: false });
+				patch(log.id, { status: 'failed', error: outcome.message });
 			} else {
 				const attempts = log.attempts + 1;
-				await tx('readwrite', (store) => store.put({ ...log, attempts, waiting: true }));
-				patch(log.id, { attempts, waiting: true });
+				await tx('readwrite', (store) => store.put({ ...log, attempts, status: 'waiting' }));
+				patch(log.id, { attempts, status: 'waiting' });
 			}
 		}
 	} finally {
