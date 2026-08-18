@@ -1,0 +1,22 @@
+{
+	// The service worker is excluded from the generated .svelte-kit/tsconfig.json
+	// because it runs in a webworker global scope, not the DOM — without this
+	// file it belongs to no project, so the editor cannot resolve $lib.
+	"compilerOptions": {
+		"lib": ["esnext", "webworker"],
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"types": ["@sveltejs/kit"],
+		"paths": {
+			"$lib": ["../lib"],
+			"$lib/*": ["../lib/*"]
+		}
+	},
+	"include": ["./**/*.ts"]
+}
