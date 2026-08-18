@@ -10,12 +10,10 @@
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	// Anything not yet stored is sent as soon as it can be — on launch, and the
-	// moment the connection comes back.
+	// Anything not yet stored is sent as soon as it can be — on launch here,
+	// and the moment the connection comes back via <svelte:window> below.
 	onMount(() => {
 		loadQueue().then(sendPending);
-		addEventListener('online', sendPending);
-		return () => removeEventListener('online', sendPending);
 	});
 
 	// Where a tap is heading, which the nav can highlight before the new screen
@@ -29,6 +27,8 @@
 		{ href: '/settings', label: locale.nav.settings, icon: '⚙️' }
 	];
 </script>
+
+<svelte:window ononline={sendPending} />
 
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->

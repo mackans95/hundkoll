@@ -47,7 +47,14 @@ export type QueuedLog = {
 	landed: boolean;
 };
 
-/** Reactive view of the queue, for the pending rows and the banner. */
+/**
+ * Reactive view of the queue, for the pending rows and the banner.
+ *
+ * Module-level state is safe here only because it is populated exclusively in
+ * the browser — from IndexedDB, after mount. The server always renders the
+ * initial empty queue, so nothing can leak between users during SSR. Keep it
+ * that way: nothing running on the server may write to this.
+ */
 export const offlineQueue = $state<{ items: QueuedLog[]; sending: boolean }>({
 	items: [],
 	sending: false

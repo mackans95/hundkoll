@@ -38,6 +38,10 @@
 
 	// Saving closes the dialog the same way Avbryt does — neither waits for the
 	// server, which is what the queue behind createLogSubmit is for.
+	//
+	// use:enhance captures this function once and never sees updates, so the
+	// $derived alone cannot follow a change of `type` — the {#key} around this
+	// dialog in +page.svelte is what remounts form and handler together.
 	const submit = $derived(createLogSubmit(type, onClose));
 
 	/** Closes without leaving the page, but stays a real link without JS. */
