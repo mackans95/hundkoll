@@ -3,11 +3,11 @@
 
 	let {
 		types,
-		onOfflineTap
+		onOpen
 	}: {
 		types: EventType[];
-		/** Called instead of navigating when there is no connection. */
-		onOfflineTap: (type: EventType) => void;
+		/** Opens the dialog from data the page already has. */
+		onOpen: (type: EventType) => void;
 	} = $props();
 
 	// Category identity is carried by the tile colours alone — one grid, no
@@ -19,20 +19,21 @@
 	};
 
 	/**
-	 * Lets the link navigate when there is signal, and asks the page to open a
-	 * dialog itself when there is not.
+	 * Opens the dialog here rather than letting the link fetch one. The tile
+	 * needs nothing the page has not already loaded — the activity, the current
+	 * time and a fresh row id — so following the href would buy a round trip to
+	 * Stockholm and the same dialog at the end of it.
 	 */
 	function tap(event: MouseEvent, type: EventType) {
-		if (navigator.onLine) {
-			return;
-		}
 		event.preventDefault();
-		onOfflineTap(type);
+		onOpen(type);
 	}
 </script>
 
 <div class="grid grid-cols-3 gap-2">
 	{#each types as type (type.id)}
+		<!-- The href is what makes a tap work before hydration and with no
+		     JavaScript at all: ?detail= renders the same dialog on the server. -->
 		<a
 			href="?detail={type.id}"
 			onclick={(event) => tap(event, type)}

@@ -3,6 +3,7 @@
 	import EventList from '$lib/components/log/EventList.svelte';
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
+	import { replaceState } from '$app/navigation';
 	import * as locale from '$lib/locale';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
@@ -14,26 +15,40 @@
 	/** Everything the dialog needs, whoever opened it. */
 	type OpenDialog = { type: EventType; eventId: string; nowLocal: string };
 
-	// Set only when the page opened the dialog itself, which happens offline
-	// because the tiles cannot fetch a server-rendered one.
-	let offline = $state<OpenDialog | null>(null);
+	// Set whenever the page opened the dialog itself, which is every tap once
+	// the page has hydrated. `data.detailType` only comes into it when the tap
+	// happened first — before hydration, or with JavaScript off.
+	let opened = $state<OpenDialog | null>(null);
+	// A dialog that came from ?detail= is closed by ignoring it, not by asking
+	// the server for the page again.
+	let urlDialogClosed = $state(false);
 
-	/**
-	 * Opens a dialog from data already on the page, with a fresh row id, for
-	 * when the server cannot be asked for one.
-	 */
-	function openOffline(type: EventType) {
-		offline = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput() };
+	/** Opens a dialog from data already on the page, with a fresh row id. */
+	function open(type: EventType) {
+		opened = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput() };
+	}
+
+	function close() {
+		if (opened) {
+			opened = null;
+			return;
+		}
+		urlDialogClosed = true;
+		// Tidy ?detail= out of the URL so a reload does not reopen the dialog.
+		// replaceState rather than a navigation: there is no new data to fetch.
+		replaceState('/', {});
 	}
 
 	const dialog = $derived<OpenDialog | null>(
-		offline ??
-			(data.detailType
+		opened ??
+			(data.detailType && !urlDialogClosed
 				? { type: data.detailType, eventId: data.eventId, nowLocal: data.nowLocal }
 				: null)
 	);
 
-	const waiting = $derived(offlineQueue.items.length);
+	// Only the rows that could not be sent; one still in flight is not something
+	// to warn about.
+	const waiting = $derived(offlineQueue.items.filter((item) => item.waiting).length);
 </script>
 
 <svelte:head><title>{locale.app.name}</title></svelte:head>
@@ -55,7 +70,7 @@
 	{/if}
 
 	<Card padding="p-3">
-		<LogGrid types={data.types} onOfflineTap={openOffline} />
+		<LogGrid types={data.types} onOpen={open} />
 	</Card>
 
 	<Card title={locale.log.recentHeading}>
@@ -72,7 +87,7 @@
 			nowLocal={dialog.nowLocal}
 			eventId={dialog.eventId}
 			message={form?.message ?? null}
-			onClose={offline ? () => (offline = null) : undefined}
+			onClose={close}
 		/>
 	{/key}
 {/if}

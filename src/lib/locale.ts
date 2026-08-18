@@ -41,8 +41,13 @@ export const log = {
 	subtitle: 'Daglig logg',
 	recentHeading: 'Senaste händelser',
 	empty: 'Inget loggat ännu.',
-	/** Sits under a queued row, in place of its details. */
+	/** Sits under a row that has been tried and could not get through. */
 	waitingRow: '⏳ väntar på signal',
+	/** Sits under a row the server refused, in place of its details. */
+	failedRow: (reason: string) => `⚠️ ${reason}` as const,
+	/** When the server refused without saying why. */
+	sendFailed: 'Kunde inte sparas.',
+	dismissFailed: 'Ta bort',
 	waitingBanner: (count: number) =>
 		`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal – de skickas automatiskt.` as const,
 	dialog: {

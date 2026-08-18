@@ -7,6 +7,39 @@ html {
 	overflow-x: clip;
 }
 
+/* Progress for a screen change, which still has to reach the server.
+   The 150ms delay is the point: a switch that resolves quickly never paints
+   the bar at all, so the app does not flicker on every tap. */
+.loading-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 30;
+	height: 2px;
+	width: 100%;
+	transform-origin: left;
+	background: var(--color-emerald-600);
+	animation: loading-bar-grow 6s cubic-bezier(0.1, 0.6, 0.2, 1) 150ms both;
+}
+
+@keyframes loading-bar-grow {
+	from {
+		opacity: 1;
+		transform: scaleX(0);
+	}
+	to {
+		opacity: 1;
+		transform: scaleX(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.loading-bar {
+		animation: none;
+		opacity: 1;
+	}
+}
+
 /* Buttons are utilities rather than a component because the same styling
    has to sit on a <button>, a submit, and an <a> — the dialog's Avbryt is
    a link when the page can navigate and a button when it cannot. */

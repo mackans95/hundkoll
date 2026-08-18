@@ -17,26 +17,26 @@
 		nowLocal: string;
 		eventId: string;
 		message: string | null;
-		/** Set when the page opened the dialog itself, which it does offline. */
-		onClose?: () => void;
+		/** Closes the dialog. The page owns this, since it opened it. */
+		onClose: () => void;
 	} = $props();
 
 	const fields = $derived(fieldsFor(type.id));
 
-	// Closing means whatever opening meant. A dialog the page opened is
-	// closed by the page; a dialog that came from ?detail= is closed by
-	// navigating, which the service worker answers from cache when offline.
-	const dismiss = $derived(
-		onClose ??
-			(() => {
-				location.href = '/';
-			})
-	);
-	const submit = $derived(createLogSubmit(type, dismiss));
+	// Saving closes the dialog the same way Avbryt does — neither waits for the
+	// server, which is what the queue behind createLogSubmit is for.
+	const submit = $derived(createLogSubmit(type, onClose));
+
+	/** Closes without leaving the page, but stays a real link without JS. */
+	function cancel(event: MouseEvent) {
+		event.preventDefault();
+		onClose();
+	}
 </script>
 
-<!-- Server-rendered dialog: opened by ?detail=<id>, closed by a plain link
-     back to "/", so it works without JavaScript. -->
+<!-- Opened in place by a tile, or server-rendered from ?detail=<id> when the
+     tap landed before hydration. Every control degrades to plain HTML: the
+     form posts to the action and Avbryt is a link back to "/". -->
 <div class="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center">
 	<div
 		role="dialog"
@@ -75,13 +75,9 @@
 			</label>
 
 			<div class="mt-2 flex gap-2">
-				{#if onClose}
-					<button type="button" onclick={onClose} class="flex-1 btn btn-secondary"
-						>{locale.log.dialog.cancel}</button
-					>
-				{:else}
-					<a href="/" class="flex-1 btn btn-secondary">{locale.log.dialog.cancel}</a>
-				{/if}
+				<a href="/" onclick={cancel} class="flex-1 btn btn-secondary">
+					{locale.log.dialog.cancel}
+				</a>
 				<button type="submit" class="flex-1 btn btn-primary">{locale.log.dialog.save}</button>
 			</div>
 		</form>

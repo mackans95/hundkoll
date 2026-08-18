@@ -1,34 +1,46 @@
-// Where the log form decides between sending and keeping.
+// What Spara actually does.
 //
-// Without signal the submission is held on the phone instead of failing.
-// The row id already travels with the form, so sending it later cannot
-// duplicate the event — see queue.svelte.ts.
+// Nothing here waits for the server. The log is written to IndexedDB, the
+// dialog closes, and the send happens afterwards — so tapping Spara is
+// immediate whether or not the phone has a usable connection, and the two
+// round trips it used to block on now happen with nobody watching.
+//
+// The row id already travels with the form, so sending later cannot duplicate
+// the event; see queue.svelte.ts.
 
 import type { SubmitFunction } from '@sveltejs/kit';
+import { parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
 import type { EventType } from '$lib/types/domain';
 import { enqueue } from './queue.svelte';
+import { sendPending } from './sync';
 
 type DialogType = Pick<EventType, 'id' | 'label' | 'icon'>;
 
-/**
- * Builds the `use:enhance` handler for the log form: it posts normally when
- * there is signal, and keeps the submission on the phone when there is not,
- * either because the network was already gone or because the send failed.
- */
-export function createLogSubmit(type: DialogType, onQueued: () => void): SubmitFunction {
-	/**
-	 * Copies the submitted form into the queue and closes the dialog, so the
-	 * log can be replayed later exactly as it would have been posted.
-	 */
-	async function queue(formData: FormData) {
+/** Builds the `use:enhance` handler for the log form. */
+export function createLogSubmit(type: DialogType, onSaved: () => void): SubmitFunction {
+	return ({ formData, cancel }) => {
+		// The native submission is never used: it would mean waiting for the
+		// action and then for the reload it triggers.
+		cancel();
+		void save(formData);
+	};
+
+	async function save(formData: FormData) {
 		const fields: Record<string, string> = {};
 		for (const [name, value] of formData.entries()) {
 			if (typeof value === 'string') {
 				fields[name] = value;
 			}
 		}
+
 		const occurred = time.stockholmInputToUtc(fields.occurred_at ?? '') ?? new Date();
+		// Parsed here as well as on the server, so the row in the list reads the
+		// same before it is stored as it does afterwards. The browser's own
+		// validation already blocks the values this could reject.
+		const parsed = parseDetails(formData, type.id);
+		const note = (fields.note ?? '').trim();
+
 		await enqueue({
 			id: fields.event_id,
 			typeId: type.id,
@@ -36,24 +48,11 @@ export function createLogSubmit(type: DialogType, onQueued: () => void): SubmitF
 			icon: type.icon,
 			occurredAt: occurred.toISOString(),
 			fields,
-			attempts: 0
+			details: parsed.ok ? parsed.details : {},
+			note: note || null
 		});
-		onQueued();
-	}
 
-	return ({ formData, cancel }) => {
-		if (!navigator.onLine) {
-			cancel();
-			queue(formData);
-			return;
-		}
-		return async ({ result, update }) => {
-			// The connection dropped between opening the dialog and saving.
-			if (result.type === 'error') {
-				await queue(formData);
-				return;
-			}
-			await update();
-		};
-	};
+		onSaved();
+		await sendPending();
+	}
 }
