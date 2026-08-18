@@ -6,8 +6,11 @@
 		onOpen
 	}: {
 		types: EventType[];
-		/** Opens the dialog from data the page already has. */
-		onOpen: (type: EventType) => void;
+		/**
+		 * Opens the dialog from data the page already has. `origin` is the tile
+		 * that was tapped, so the dialog can grow out of it.
+		 */
+		onOpen: (type: EventType, origin: DOMRect) => void;
 	} = $props();
 
 	// Category identity is carried by the tile colours alone — one grid, no
@@ -24,9 +27,11 @@
 	 * time and a fresh row id — so following the href would buy a round trip to
 	 * Stockholm and the same dialog at the end of it.
 	 */
-	function tap(event: MouseEvent, type: EventType) {
+	function tap(event: MouseEvent & { currentTarget: HTMLElement }, type: EventType) {
 		event.preventDefault();
-		onOpen(type);
+		// Measured now rather than by the dialog later: this is the last moment the
+		// tile is certainly still where the thumb found it.
+		onOpen(type, event.currentTarget.getBoundingClientRect());
 	}
 </script>
 

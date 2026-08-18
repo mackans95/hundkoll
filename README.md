@@ -282,9 +282,84 @@ case shows no waiting state at all. A row the server _rejects_ stays on screen w
 reason and a way to dismiss it — it is deliberately not dropped, since the log came from
 somebody typing.
 
-Switching screens is the one thing left that must reach the server, because each screen
-reads its own rows. That gets the thin progress bar in `layout.css`, which animates in
-after 150 ms so a fast switch never paints it.
+### Opening and closing the dialog
+
+The dialog grows out of the tile that was tapped and shrinks back into it, via `growFrom`
+in `$lib/transitions.ts`. `LogGrid` measures the tile in its click handler — the last
+moment it is certainly still under the thumb — and the rect travels through `+page.svelte`
+to the dialog. A `?detail=` dialog has no tile to grow from, so it rises from slightly
+small instead.
+
+`LogDialog` reads `origin` **once**, through `untrack`, and that is not a style choice.
+Svelte re-evaluates a transition's parameters when the outro runs, and by then the page has
+set `dialog` to null — so a reactive read throws inside the transition function, the outro
+never starts, and the sheet is left in the DOM as an invisible `fixed inset-0` layer eating
+every click. The dialog looks frozen and nothing can close it. Any value a transition
+depends on has to outlive the state that opened it.
+
+Three things about `transitions.ts` are load-bearing:
+
+- Both transitions carry **`|global`**. Transitions are local by default, and a local one
+  only plays when its _own_ block is created or destroyed. The `{#if dialog}` lives in
+  `+page.svelte` while the directives are inside `LogDialog`, so without `|global` the
+  close would not animate at all.
+- The sheet fade is written by hand rather than using `svelte/transition`'s `fade`, so its
+  duration cannot drift from the panel's. If one outlasted the other, one would be left on
+  screen alone.
+- It asks `matchMedia` directly instead of importing `prefersReducedMotion` from
+  `svelte/motion`. That builds a `MediaQuery` at module scope, and `MediaQuery`'s
+  constructor calls `window.matchMedia` — so importing it into a component the server
+  renders, which `LogDialog` is, would break SSR. Transition functions only ever run in the
+  browser, so asking there is safe.
+
+Tapping the shaded sheet closes the dialog, and so does Escape; Avbryt stays for the
+keyboard and stays a real link for the no-JavaScript path. The sheet requires the press
+_and_ the release to land on it, because a click's target is the common ancestor of the
+two — without that check, dragging a selection out of the note field and letting go over
+the sheet would throw away a half-typed log.
+
+### Switching screens is the one wait left
+
+Each screen reads its own rows, so a tab change has to reach the server. The feedback for
+it is layered by how long the wait turns out to be, so a fast switch stays silent:
+
+- **On touch**, the tapped tab darkens via `active:`. Tailwind puts `hover:` behind
+  `@media (hover: hover)`, so `active:` is the only variant that answers a finger.
+- **On navigation**, the destination tab takes the selected look immediately —
+  `(pending ?? page.url.pathname) === tab.href` in `+layout.svelte`, where `pending` is
+  `navigating.to`. `aria-current` deliberately stays on the screen still showing, and the
+  destination gets `aria-busy` instead.
+- **Also on navigation**, that tab's icon breathes — shrinks and grows — via
+  `.tab-loading`. The colour change on its own read as "selected"; a size change reads as
+  "working". It was a spin first, which looked broken rather than busy: an emoji has an
+  orientation, so any frame part-way round is just a wrong-way-up icon. It is one keyframe
+  set rather than Tailwind's `animate-pulse` plus a spin, since two animations cannot share
+  the one `animation` property.
+- **Past 150 ms**, the progress bar in `layout.css` grows in. A switch that resolves
+  quickly never paints it at all.
+
+Both animations have a `prefers-reduced-motion` branch; the icon stays dimmed rather than
+turning, so it still reports being busy.
+
+### Where the progress bar sits, and why it looked broken
+
+The bar is positioned against the **tab row**, not the top of the page — `position:
+absolute` at `top: -1px` inside the `relative` row, so it covers the nav's top border and
+that line appears to fill with colour. When you tap a tab your eyes are already at the
+bottom of the screen. (Absolutely positioned children of a flex container are out of flow,
+so the bar never becomes a fifth flex item.)
+
+It first lived at the top of the viewport, where it was almost impossible to see:
+
+- On a phone it was **invisible**, not just easy to miss. The installed app is `standalone`
+  with `viewport-fit=cover`, so it draws under the status bar; at `top: 0` those pixels
+  render behind the clock. Anything anchored to the top of this app needs
+  `env(safe-area-inset-top)`.
+- On a desktop it loses a race with its own preload. `data-sveltekit-preload-data="tap"`
+  starts the load on `mousedown`/`touchstart`, so with anything but a fast click the fetch
+  finishes before the click fires. Throttling makes this _more_ likely, not less. To see
+  the bar deliberately, throttle and activate a tab with the keyboard — no pointer event,
+  so nothing is preloaded.
 
 ## Conventions
 

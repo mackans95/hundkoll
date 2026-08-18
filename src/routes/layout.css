@@ -9,13 +9,18 @@ html {
 
 /* Progress for a screen change, which still has to reach the server.
    The 150ms delay is the point: a switch that resolves quickly never paints
-   the bar at all, so the app does not flicker on every tap. */
+   the bar at all, so the app does not flicker on every tap.
+
+   Positioned against the tab row rather than the top of the page: when you tap
+   a tab your eyes are already at the bottom of the screen, and a bar up by the
+   status bar is easy to miss. -1px puts it over the nav's top border, so the
+   line already there appears to fill with colour. */
 .loading-bar {
-	position: fixed;
-	top: 0;
+	position: absolute;
+	top: -1px;
 	left: 0;
-	z-index: 30;
-	height: 2px;
+	z-index: 1;
+	height: 3px;
 	width: 100%;
 	transform-origin: left;
 	background: var(--color-emerald-600);
@@ -33,10 +38,43 @@ html {
 	}
 }
 
+/* The tapped tab's icon breathes while its screen loads. The colour change alone
+   read as "selected"; a size change reads as "working", and unlike a spin it has
+   no orientation to look wrong at — an emoji part-way through a rotation reads
+   as broken rather than busy. transform needs no display fix: the icon is a flex
+   item, so it is already blockified, and items-center keeps it glyph-width so
+   the scale is centred on the icon itself. */
+.tab-loading {
+	/* ease-in-out with the turn at the halfway point, so it eases at both ends
+	   of the squeeze rather than snapping back. */
+	animation: tab-loading 800ms ease-in-out infinite;
+}
+
+@keyframes tab-loading {
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.5;
+		transform: scale(0.72);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.loading-bar {
 		animation: none;
 		opacity: 1;
+	}
+
+	/* Still says "busy", just without moving. */
+	.tab-loading {
+		animation: none;
+		opacity: 0.4;
 	}
 }
 

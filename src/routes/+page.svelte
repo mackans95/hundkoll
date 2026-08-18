@@ -13,7 +13,13 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	/** Everything the dialog needs, whoever opened it. */
-	type OpenDialog = { type: EventType; eventId: string; nowLocal: string };
+	type OpenDialog = {
+		type: EventType;
+		eventId: string;
+		nowLocal: string;
+		/** Null when ?detail= opened it, since then no tile was tapped. */
+		origin: DOMRect | null;
+	};
 
 	// Set whenever the page opened the dialog itself, which is every tap once
 	// the page has hydrated. `data.detailType` only comes into it when the tap
@@ -24,8 +30,8 @@
 	let urlDialogClosed = $state(false);
 
 	/** Opens a dialog from data already on the page, with a fresh row id. */
-	function open(type: EventType) {
-		opened = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput() };
+	function open(type: EventType, origin: DOMRect) {
+		opened = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput(), origin };
 	}
 
 	function close() {
@@ -42,7 +48,12 @@
 	const dialog = $derived<OpenDialog | null>(
 		opened ??
 			(data.detailType && !urlDialogClosed
-				? { type: data.detailType, eventId: data.eventId, nowLocal: data.nowLocal }
+				? {
+						type: data.detailType,
+						eventId: data.eventId,
+						nowLocal: data.nowLocal,
+						origin: null
+					}
 				: null)
 	);
 
@@ -86,6 +97,7 @@
 			type={dialog.type}
 			nowLocal={dialog.nowLocal}
 			eventId={dialog.eventId}
+			origin={dialog.origin}
 			message={form?.message ?? null}
 			onClose={close}
 		/>
