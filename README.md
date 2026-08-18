@@ -290,7 +290,14 @@ moment it is certainly still under the thumb — and the rect travels through `+
 to the dialog. A `?detail=` dialog has no tile to grow from, so it rises from slightly
 small instead.
 
-Three things about that file are load-bearing:
+`LogDialog` reads `origin` **once**, through `untrack`, and that is not a style choice.
+Svelte re-evaluates a transition's parameters when the outro runs, and by then the page has
+set `dialog` to null — so a reactive read throws inside the transition function, the outro
+never starts, and the sheet is left in the DOM as an invisible `fixed inset-0` layer eating
+every click. The dialog looks frozen and nothing can close it. Any value a transition
+depends on has to outlive the state that opened it.
+
+Three things about `transitions.ts` are load-bearing:
 
 - Both transitions carry **`|global`**. Transitions are local by default, and a local one
   only plays when its _own_ block is created or destroyed. The `{#if dialog}` lives in

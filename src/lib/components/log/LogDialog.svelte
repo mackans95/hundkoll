@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { fieldsFor } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
@@ -24,6 +25,14 @@
 		/** Closes the dialog. The page owns this, since it opened it. */
 		onClose: () => void;
 	} = $props();
+
+	// Read once, on purpose, which is what untrack states. Svelte re-evaluates a
+	// transition's parameters when the outro runs, and by then the page has already
+	// dropped the dialog this prop came from — reading it again throws, the outro
+	// never starts, and the sheet is left in the DOM swallowing every click. It is
+	// a snapshot of where the dialog came from in any case, so it has no business
+	// being reactive.
+	const openedFrom = untrack(() => origin);
 
 	const fields = $derived(fieldsFor(type.id));
 
@@ -72,7 +81,7 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label={locale.log.dialog.ariaLabel(type.label)}
-		transition:growFrom|global={{ origin }}
+		transition:growFrom|global={{ origin: openedFrom }}
 		class="w-full max-w-sm rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
 	>
 		<h2 class="mb-4 text-xl font-bold">{type.icon} {type.label}</h2>
