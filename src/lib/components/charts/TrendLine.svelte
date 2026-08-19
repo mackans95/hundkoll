@@ -4,7 +4,7 @@
 
 	let {
 		points,
-		color = '#0284c7',
+		color = 'var(--chart-weight)',
 		unit = '',
 		height = 150,
 		label
@@ -66,14 +66,14 @@
 		x2={W - PAD.right}
 		y1={y(hi)}
 		y2={y(hi)}
-		stroke="#f3f4f6"
+		style="stroke: var(--chart-grid)"
 	/>
 	<line
 		x1={PAD.left}
 		x2={W - PAD.right}
 		y1={y(lo)}
 		y2={y(lo)}
-		stroke="#e5e7eb"
+		style="stroke: var(--chart-baseline)"
 	/>
 	<text
 		x="0"
@@ -92,7 +92,7 @@
 		<path
 			d={path}
 			fill="none"
-			stroke={color}
+			style="stroke: {color}"
 			stroke-width="2"
 			stroke-linejoin="round"
 		/>
@@ -103,8 +103,7 @@
 			cx={x(p.t)}
 			cy={y(p.value)}
 			r="4"
-			fill={color}
-			stroke="#fff"
+			style="fill: {color}; stroke: var(--chart-point-ring)"
 			stroke-width="2"
 		>
 			<title>{p.label}: {format.swedishNumber(p.value)} {unit}</title>
