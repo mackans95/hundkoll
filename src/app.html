@@ -26,8 +26,25 @@
 		/>
 		<meta
 			name="theme-color"
+			media="(prefers-color-scheme: light)"
 			content="#059669"
 		/>
+		<meta
+			name="theme-color"
+			media="(prefers-color-scheme: dark)"
+			content="#0b0f1a"
+		/>
+		<!-- Applies the stored theme before the stylesheet paints, so a dark
+		     launch never flashes light. Must stay inline and ahead of the CSS;
+		     the app's own code takes over in $lib/theme.svelte.ts. -->
+		<script>
+			try {
+				var theme = localStorage.getItem('hundkoll:theme');
+				if (theme === 'light' || theme === 'dark') {
+					document.documentElement.dataset.theme = theme;
+				}
+			} catch (e) {}
+		</script>
 		<meta
 			name="mobile-web-app-capable"
 			content="yes"

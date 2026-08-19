@@ -19,9 +19,9 @@ theme-aware:
 
 1. **`dark:` variants everywhere** — every color class gets a twin
    (`bg-white dark:bg-gray-800`). Incremental, but permanently doubles the
-   class soup, and every *future* component must remember both halves;
+   class soup, and every _future_ component must remember both halves;
    a missed one is invisible until someone toggles. Rejected.
-2. **Semantic tokens** — one sweep renames literals to *roles*
+2. **Semantic tokens** — one sweep renames literals to _roles_
    (`bg-surface-raised`, `text-muted`, `border-default`), and each role is
    defined once with a light and a dark value. New components use roles and
    are theme-correct by construction. **Chosen.**
@@ -54,18 +54,18 @@ fixes native UI (inputs, scrollbars, the `datetime-local` picker) for free.
 
 From a sweep of every color literal in the components:
 
-| Token | Light | Dark | Used for (today's literals) |
-| --- | --- | --- | --- |
-| `surface` | `gray-50` | `#0b0f1a` | page body |
-| `surface-raised` | `white` | `gray-900` | cards, nav, dialog panel |
-| `surface-sunken` | `gray-50` | `gray-950` | foldable headers, stat tiles, tab-bar track |
-| `surface-hover` | `gray-100` | `gray-800` | hover/active/hovered-column fills |
-| `border-default` | `gray-200` | `gray-800` | card & nav borders, dividers |
-| `border-strong` | `gray-300` | `gray-700` | inputs, stat tiles |
-| `text-default` | `gray-900` | `gray-100` | headings, values |
-| `text-muted` | `gray-500` | `gray-400` | subtitles, axis labels (as `fill-*` too) |
-| `text-faint` | `gray-400` | `gray-500` | chart tick text, chevrons |
-| `scrim` | `black/40` | `black/60` | dialog backdrop |
+| Token                              | Light                | Dark                    | Used for (today's literals)                                            |
+| ---------------------------------- | -------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| `surface`                          | `gray-50`            | `#0b0f1a`               | page body                                                              |
+| `surface-raised`                   | `white`              | `gray-900`              | cards, nav, dialog panel                                               |
+| `surface-sunken`                   | `gray-50`            | `gray-950`              | foldable headers, stat tiles, tab-bar track                            |
+| `surface-hover`                    | `gray-100`           | `gray-800`              | hover/active/hovered-column fills                                      |
+| `border-default`                   | `gray-200`           | `gray-800`              | card & nav borders, dividers                                           |
+| `border-strong`                    | `gray-300`           | `gray-700`              | inputs, stat tiles                                                     |
+| `text-default`                     | `gray-900`           | `gray-100`              | headings, values                                                       |
+| `text-muted`                       | `gray-500`           | `gray-400`              | subtitles, axis labels (as `fill-*` too)                               |
+| `text-faint`                       | `gray-400`           | `gray-500`              | chart tick text, chevrons                                              |
+| `scrim`                            | `black/40`           | `black/60`              | dialog backdrop                                                        |
 | `tooltip-surface` / `tooltip-text` | `gray-900` / `white` | `gray-100` / `gray-900` | chart tooltip (inverts in dark: a dark box on a dark chart disappears) |
 
 Status colors (banners, badges) keep hue, flip lightness — e.g.
@@ -82,16 +82,16 @@ sit fine on dark, and they are the app's identity.
 The current palette already does the right thing for red-green
 color-blindness: pairs differ in **lightness**, not just hue — kiss/bajs is
 amber-600 vs amber-800, meals is emerald vs two grays. The dark variants
-must keep those lightness *deltas* while brightening against the dark
+must keep those lightness _deltas_ while brightening against the dark
 surface:
 
-| Constant | Light (today) | Dark |
-| --- | --- | --- |
-| `WALK_COLOR` | `#059669` | `#34d399` (emerald-400) |
-| `WEIGHT_COLOR` | `#0284c7` | `#38bdf8` (sky-400) |
+| Constant          | Light (today)                   | Dark                                                    |
+| ----------------- | ------------------------------- | ------------------------------------------------------- |
+| `WALK_COLOR`      | `#059669`                       | `#34d399` (emerald-400)                                 |
+| `WEIGHT_COLOR`    | `#0284c7`                       | `#38bdf8` (sky-400)                                     |
 | `ACCIDENT_COLORS` | `#d97706`, `#92400e`, `#9ca3af` | `#fbbf24` (amber-400), `#b45309` (amber-700), `#6b7280` |
-| `MEAL_COLORS` | `#059669`, `#9ca3af`, `#d1d5db` | `#34d399`, `#6b7280`, `#4b5563` |
-| gridlines | `#f3f4f6` / `#e5e7eb` | `gray-800` / `gray-700` |
+| `MEAL_COLORS`     | `#059669`, `#9ca3af`, `#d1d5db` | `#34d399`, `#6b7280`, `#4b5563`                         |
+| gridlines         | `#f3f4f6` / `#e5e7eb`           | `gray-800` / `gray-700`                                 |
 
 Mechanically: `palette.ts` stops exporting hex and exports CSS variable
 references (`export const WALK_COLOR = 'var(--chart-walk)'`) with the
@@ -122,17 +122,17 @@ Deuteranopia filter as a sanity pass.
 
 ## Changes, file by file
 
-| File | Change |
-| --- | --- |
-| `src/routes/layout.css` | `color-scheme` rules, `@theme inline` token block (the tables above), chart variables. The single place both palettes live. |
-| ~24 components | Mechanical literal→token rename per the inventory table. Zero visual change in light mode — verifiable by pixel-diffing light-mode screenshots before/after. |
-| `src/lib/stats/palette.ts` | Hex → `var()` references; comment pointing at layout.css. |
-| `StackedColumns.svelte`, `TrendLine.svelte` | The two gridline/baseline hexes → tokens. |
-| `src/app.html` | FOUC script + theme-color metas. |
-| `src/lib/theme.svelte.ts` **(new)** | Tiny module: `$state` for the choice, load/apply/persist. |
-| `src/routes/settings/+page.svelte` | The three-way control. |
-| `src/lib/locale.ts` | `settings.theme` strings (Tema, System, Ljust, Mörkt). |
-| Service worker | No change — CSS handles theming; the offline fallback page gets `color-scheme: light dark` and system colors in its inline styles. |
+| File                                        | Change                                                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/routes/layout.css`                     | `color-scheme` rules, `@theme inline` token block (the tables above), chart variables. The single place both palettes live.                                  |
+| ~24 components                              | Mechanical literal→token rename per the inventory table. Zero visual change in light mode — verifiable by pixel-diffing light-mode screenshots before/after. |
+| `src/lib/stats/palette.ts`                  | Hex → `var()` references; comment pointing at layout.css.                                                                                                    |
+| `StackedColumns.svelte`, `TrendLine.svelte` | The two gridline/baseline hexes → tokens.                                                                                                                    |
+| `src/app.html`                              | FOUC script + theme-color metas.                                                                                                                             |
+| `src/lib/theme.svelte.ts` **(new)**         | Tiny module: `$state` for the choice, load/apply/persist.                                                                                                    |
+| `src/routes/settings/+page.svelte`          | The three-way control.                                                                                                                                       |
+| `src/lib/locale.ts`                         | `settings.theme` strings (Tema, System, Ljust, Mörkt).                                                                                                       |
+| Service worker                              | No change — CSS handles theming; the offline fallback page gets `color-scheme: light dark` and system colors in its inline styles.                           |
 
 ## Sequencing (each step ships alone, light mode never breaks)
 
@@ -180,6 +180,6 @@ can stop after step 2 and skip the toggle entirely.
 ## Effort
 
 Medium. Steps 1–2 are one focused evening (mechanical sweep + one CSS
-block); steps 3–4 are small. Best done *before* Plans 1 and 3 add new
+block); steps 3–4 are small. Best done _before_ Plans 1 and 3 add new
 components, so those are written token-native — otherwise their surfaces
 join the sweep list.

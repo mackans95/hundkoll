@@ -9,7 +9,7 @@
 	let { items }: { items: LegendItem[] } = $props();
 </script>
 
-<div class="flex gap-4 text-sm text-gray-600">
+<div class="flex gap-4 text-sm text-ink-soft">
 	{#each items as item (item.label)}
 		<span class="flex items-center gap-1.5">
 			<span

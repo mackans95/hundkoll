@@ -6,7 +6,7 @@
 
 Tapping the Promenad tile starts a **live walk**: the start time is recorded
 immediately, the log page shows an active-walk card with pee/poop steppers, a
-note field, and a ticking elapsed time. Tapping *Avsluta & spara* computes
+note field, and a ticking elapsed time. Tapping _Avsluta & spara_ computes
 `duration_min = end − start` and submits through the existing offline queue.
 Backdating stays available and unchanged. **No database changes at all** —
 the walk row that comes out is identical in shape to one logged today.
@@ -16,7 +16,7 @@ the walk row that comes out is identical in shape to one logged today.
 Your instinct in the problem statement is right: a running timer would not
 survive the phone. Mobile browsers freeze/kill background tabs and PWAs
 within seconds of locking the screen — `setInterval` simply stops. So the
-design never *runs* anything:
+design never _runs_ anything:
 
 - On start, persist `startedAt` (an ISO instant) to `localStorage`.
 - Every stepper tap and note keystroke updates the same persisted object.
@@ -30,12 +30,12 @@ not from anything that had to stay alive.
 
 ### Why localStorage and not…
 
-| Option | Verdict |
-| --- | --- |
-| `localStorage` | **Chosen.** Synchronous, survives reload/kill/reboot, zero deps. |
-| The existing IndexedDB queue | Async ceremony for one small object; the queue's schema is about *finished* logs. Not worth it. |
+| Option                               | Verdict                                                                                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `localStorage`                       | **Chosen.** Synchronous, survives reload/kill/reboot, zero deps.                                                                                               |
+| The existing IndexedDB queue         | Async ceremony for one small object; the queue's schema is about _finished_ logs. Not worth it.                                                                |
 | A server-side "walk in progress" row | Survives switching phones mid-walk, but requires network at walk start — breaks the app's offline-first core promise — and needs a schema migration. Rejected. |
-| SvelteKit page state / URL | Dies with the tab. Rejected. |
+| SvelteKit page state / URL           | Dies with the tab. Rejected.                                                                                                                                   |
 
 ## UX flows
 
@@ -55,7 +55,7 @@ not from anything that had to stay alive.
 
 ### Finishing
 
-*Avsluta & spara* builds exactly the fields the `?/log` action already
+_Avsluta & spara_ builds exactly the fields the `?/log` action already
 parses and hands them to the existing queue:
 
 - `occurred_at` = the **start** time (this matches today's semantics — the
@@ -66,7 +66,7 @@ parses and hands them to the existing queue:
 - `event_id` = a UUID generated **at walk start**, so a lost response and a
   resend collide on the primary key exactly like dialog submissions do
 
-The card disappears, the row appears in *Senaste händelser* instantly (via
+The card disappears, the row appears in _Senaste händelser_ instantly (via
 the queue), and sending happens in the background — same as today.
 
 ### Backdating (kept, one layer down)
@@ -75,15 +75,15 @@ the queue), and sending happens in the background — same as today.
   is untouched — the server-rendered dialog still opens. Live mode is a
   JS-only enhancement by nature (localStorage), so this degradation is free.
 - **With JavaScript:** the active-walk card gets a quiet text link
-  *"Logga i efterhand istället"* which discards the live walk and opens the
+  _"Logga i efterhand istället"_ which discards the live walk and opens the
   existing LogDialog. So: forgot yesterday's walk → tap Promenad, tap the
   link — two taps to the old flow, zero taps to the new default.
 
 ### Edge cases
 
 - **Forgot to finish** (walk "active" for 9 hours): the elapsed time is
-  loudly visible on the card, and *Justera starttid* exists — but add a
-  guard: when elapsed > 4 h, *Avsluta* first shows the computed duration in
+  loudly visible on the card, and _Justera starttid_ exists — but add a
+  guard: when elapsed > 4 h, _Avsluta_ first shows the computed duration in
   an editable minutes input instead of saving blind.
 - **Clock changes mid-walk** (DST, manual adjustment): duration is
   wall-clock delta; DST is irrelevant for instants (ISO/UTC math). A user
@@ -94,7 +94,7 @@ the queue), and sending happens in the background — same as today.
   the database like every other log. (Documented limitation, see Cons.)
 - **Second walk started by mistake**: prevented — one active walk max.
 
-## UI redesign of the logging controls (dialog *and* live card)
+## UI redesign of the logging controls (dialog _and_ live card)
 
 Two control changes, applying everywhere counts and notes are logged — the
 backdating dialog and the live-walk card get the same components:
@@ -143,8 +143,11 @@ this (`FoldableCard`): a `<details>` element —
 
 ```svelte
 <details>
-  <summary>Anteckning</summary>
-  <textarea name="note" ... />
+	<summary>Anteckning</summary>
+	<textarea
+		name="note"
+		...
+	/>
 </details>
 ```
 
@@ -155,20 +158,20 @@ implies it will be submitted as data; a disclosure just says "more here".)
 
 ## Changes, file by file
 
-| File | Change |
-| --- | --- |
-| `src/lib/offline/activeWalk.svelte.ts` **(new)** | The persisted state module. `activeWalk = $state<{ current: ActiveWalk \| null }>`, with `start()`, `update(patch)`, `adjustStart(isoLocal)`, `discard()`, `finish()`. Every mutation writes through to `localStorage` (key `hundkoll:active-walk:v1`). `finish()` builds the fields object and calls the same `enqueue` + `sendPending` the dialog path uses. Storage access wrapped in try/catch like the queue (private mode ⇒ live mode still works, just doesn't survive reload — and `console.warn`s). |
-| `src/lib/components/log/ActiveWalkCard.svelte` **(new)** | The card described above. Ticking display via a 1 s interval attached with `{@attach ...}` (auto-cleans on unmount); counts and note via the redesigned `CountStepper` and `NoteField`, shared with the dialog. |
-| `src/lib/components/log/CountStepper.svelte` | Rewritten: checkbox removed, always-visible full-width stepper around a real number input, default 0, `bind:`-able so the live card can persist each tap. |
-| `src/lib/components/log/NoteField.svelte` **(new)** | The `<details>`-folded note textarea; `LogDialog` and the live card both use it. |
-| `src/lib/events/details.ts` | `'count'` parsing reads `<name>=N` directly (default 0), keeps accepting the legacy `on`/`_count` shape for pre-deploy queued rows. |
-| `src/lib/offline/submit.ts` | Extract the tail of `save()` into an exported `queueLog({ id, type, occurredAt, fields, details, note })` used by both the dialog path and `finish()` — the enqueue-then-sendPending sequence should exist once. |
-| `src/lib/events/fields.ts` | `export const LIVE_TYPE_IDS = new Set(['walk'])` — declaring liveness next to the other per-type declarations, so a future timed type (playtime? training?) is one line. |
-| `src/lib/components/log/LogGrid.svelte` | In `tap()`: if the type is live and hydrated, call `onStartLive(type)` instead of `onOpen(...)`. Tile shows the active state when a walk is running. |
-| `src/routes/+page.svelte` | Render `ActiveWalkCard` when `activeWalk.current` is set; load persisted state on mount; wire `onStartLive`. |
-| `src/lib/time.ts` | Generalize `stockholmNowForInput()` to `stockholmForInput(date: Date)` (the existing name stays as a thin wrapper) — needed to render `startedAt` into the adjust-start input and into `occurred_at`. |
-| `src/lib/locale.ts` | New strings under `log.liveWalk`: pågår, avsluta, avbryt (+ confirm), justera starttid, logga i efterhand istället, the >4 h duration prompt. |
-| `tests/` | Unit tests for the pure parts: fields built by `finish()` (counts in the new `<name>=N` shape, min-1-minute clamp, negative-delta clamp), `stockholmForInput` round-trip with `stockholmInputToUtc`, storage round-trip with an injected fake `Storage`. `details.test.ts` count cases updated to the new format + one legacy-shape case. |
+| File                                                     | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/offline/activeWalk.svelte.ts` **(new)**         | The persisted state module. `activeWalk = $state<{ current: ActiveWalk \| null }>`, with `start()`, `update(patch)`, `adjustStart(isoLocal)`, `discard()`, `finish()`. Every mutation writes through to `localStorage` (key `hundkoll:active-walk:v1`). `finish()` builds the fields object and calls the same `enqueue` + `sendPending` the dialog path uses. Storage access wrapped in try/catch like the queue (private mode ⇒ live mode still works, just doesn't survive reload — and `console.warn`s). |
+| `src/lib/components/log/ActiveWalkCard.svelte` **(new)** | The card described above. Ticking display via a 1 s interval attached with `{@attach ...}` (auto-cleans on unmount); counts and note via the redesigned `CountStepper` and `NoteField`, shared with the dialog.                                                                                                                                                                                                                                                                                              |
+| `src/lib/components/log/CountStepper.svelte`             | Rewritten: checkbox removed, always-visible full-width stepper around a real number input, default 0, `bind:`-able so the live card can persist each tap.                                                                                                                                                                                                                                                                                                                                                    |
+| `src/lib/components/log/NoteField.svelte` **(new)**      | The `<details>`-folded note textarea; `LogDialog` and the live card both use it.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `src/lib/events/details.ts`                              | `'count'` parsing reads `<name>=N` directly (default 0), keeps accepting the legacy `on`/`_count` shape for pre-deploy queued rows.                                                                                                                                                                                                                                                                                                                                                                          |
+| `src/lib/offline/submit.ts`                              | Extract the tail of `save()` into an exported `queueLog({ id, type, occurredAt, fields, details, note })` used by both the dialog path and `finish()` — the enqueue-then-sendPending sequence should exist once.                                                                                                                                                                                                                                                                                             |
+| `src/lib/events/fields.ts`                               | `export const LIVE_TYPE_IDS = new Set(['walk'])` — declaring liveness next to the other per-type declarations, so a future timed type (playtime? training?) is one line.                                                                                                                                                                                                                                                                                                                                     |
+| `src/lib/components/log/LogGrid.svelte`                  | In `tap()`: if the type is live and hydrated, call `onStartLive(type)` instead of `onOpen(...)`. Tile shows the active state when a walk is running.                                                                                                                                                                                                                                                                                                                                                         |
+| `src/routes/+page.svelte`                                | Render `ActiveWalkCard` when `activeWalk.current` is set; load persisted state on mount; wire `onStartLive`.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `src/lib/time.ts`                                        | Generalize `stockholmNowForInput()` to `stockholmForInput(date: Date)` (the existing name stays as a thin wrapper) — needed to render `startedAt` into the adjust-start input and into `occurred_at`.                                                                                                                                                                                                                                                                                                        |
+| `src/lib/locale.ts`                                      | New strings under `log.liveWalk`: pågår, avsluta, avbryt (+ confirm), justera starttid, logga i efterhand istället, the >4 h duration prompt.                                                                                                                                                                                                                                                                                                                                                                |
+| `tests/`                                                 | Unit tests for the pure parts: fields built by `finish()` (counts in the new `<name>=N` shape, min-1-minute clamp, negative-delta clamp), `stockholmForInput` round-trip with `stockholmInputToUtc`, storage round-trip with an injected fake `Storage`. `details.test.ts` count cases updated to the new format + one legacy-shape case.                                                                                                                                                                    |
 
 ## Pros of this approach
 
@@ -187,7 +190,7 @@ implies it will be submitted as data; a disclosure just says "more here".)
   Fixing this needs a server-side in-progress row and conflicts with
   offline-first; explicitly out of scope.
 - Instant-start means a fat-fingered tile tap starts a walk — cost is one
-  *Avbryt* tap. (The alternative — a dialog with a Starta button — adds a
+  _Avbryt_ tap. (The alternative — a dialog with a Starta button — adds a
   tap to every real walk forever; rejected.)
 - Live mode is JS-only. Already true of the whole offline queue.
 - A user-adjusted phone clock mid-walk skews the duration. Clamped, not
@@ -195,7 +198,7 @@ implies it will be submitted as data; a disclosure just says "more here".)
 - The count-submission format change means `parseDetails` carries a small
   legacy branch (for rows queued before the deploy) indefinitely. Two
   lines, documented in place.
-- The note now costs one extra tap when you *do* want it — the accepted
+- The note now costs one extra tap when you _do_ want it — the accepted
   price for reclaiming the space on every other log.
 
 ## Open questions (defaults chosen, cheap to change)

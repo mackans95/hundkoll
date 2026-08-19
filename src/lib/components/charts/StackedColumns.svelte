@@ -80,27 +80,27 @@
 			x2={W}
 			y1={y(top)}
 			y2={y(top)}
-			stroke="#f3f4f6"
+			style="stroke: var(--chart-grid)"
 		/>
 		<line
 			x1="0"
 			x2={W}
 			y1={y(top / 2)}
 			y2={y(top / 2)}
-			stroke="#f3f4f6"
+			style="stroke: var(--chart-grid)"
 		/>
 		<line
 			x1="0"
 			x2={W}
 			y1={y(0)}
 			y2={y(0)}
-			stroke="#e5e7eb"
+			style="stroke: var(--chart-baseline)"
 		/>
 		<text
 			x="0"
 			y={y(top) - 3}
 			font-size="9"
-			class="fill-gray-400">{top}</text
+			class="fill-ink-faint">{top}</text
 		>
 
 		<!-- Keyed by label, which the builders make unique per column: one
@@ -114,7 +114,7 @@
 						y={PAD_TOP}
 						width={slot}
 						height={plotH}
-						fill="#f3f4f6"
+						style="fill: var(--chart-grid)"
 						rx="3"
 					/>
 				{:else}
@@ -129,16 +129,17 @@
 				<!-- Hovered bar keeps its color and gains a dark outline; the
 				     rest of the chart fades back. -->
 				<g
-					stroke={hovered === i ? '#111827' : 'none'}
 					stroke-opacity="0.4"
 					opacity={hovered !== null && hovered !== i ? 0.35 : 1}
-					style="transition: opacity 120ms"
+					style="transition: opacity 120ms; stroke: {hovered === i
+						? 'var(--chart-outline)'
+						: 'none'}"
 				>
 					{#each stack(bucket.segments, y) as seg (seg.idx)}
 						{#if seg.isTop}
 							<path
 								d={roundedTop(x, seg.y, barW, seg.h)}
-								fill={colors[seg.idx]}
+								style="fill: {colors[seg.idx]}"
 							/>
 						{:else}
 							<rect
@@ -146,7 +147,7 @@
 								y={seg.y}
 								width={barW}
 								height={seg.h}
-								fill={colors[seg.idx]}
+								style="fill: {colors[seg.idx]}"
 							/>
 						{/if}
 					{/each}
@@ -157,7 +158,7 @@
 						y={height - 4}
 						text-anchor="middle"
 						font-size="9"
-						class="fill-gray-400"
+						class="fill-ink-faint"
 					>
 						{bucket.label}
 					</text>

@@ -28,7 +28,7 @@
 </script>
 
 <FoldableCard title={locale.stats.trends.heading}>
-	<p class="text-sm text-gray-500">{trendCaption(period, prevBucket, latestBucket)}</p>
+	<p class="text-sm text-ink-muted">{trendCaption(period, prevBucket, latestBucket)}</p>
 	<TabBar
 		{tabs}
 		current={period}
@@ -37,14 +37,14 @@
 	/>
 
 	{#if complete}
-		<ul class="divide-y divide-gray-100">
+		<ul class="divide-y divide-edge-soft">
 			{#each rows as row (row.label)}
 				<li class="flex items-center gap-2 py-2">
 					<span class="text-sm font-medium">{row.label}</span>
-					<span class="ml-auto text-sm text-gray-500">{row.from} → {row.to}</span>
+					<span class="ml-auto text-sm text-ink-muted">{row.from} → {row.to}</span>
 					<!-- Neutral badge: whether "more" is good depends on the metric. -->
 					<span
-						class="w-16 shrink-0 rounded-full bg-gray-100 px-1 py-0.5 text-center text-xs font-semibold text-gray-700"
+						class="w-16 shrink-0 rounded-full bg-surface-hover px-1 py-0.5 text-center text-xs font-semibold text-ink-label"
 					>
 						{row.badge}
 					</span>
@@ -52,6 +52,6 @@
 			{/each}
 		</ul>
 	{:else}
-		<p class="py-6 text-center text-sm text-gray-500">{trendPending(period)}</p>
+		<p class="py-6 text-center text-sm text-ink-muted">{trendPending(period)}</p>
 	{/if}
 </FoldableCard>

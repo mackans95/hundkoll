@@ -4,7 +4,7 @@
 
 	let {
 		points,
-		color = '#0284c7',
+		color = 'var(--chart-weight)',
 		unit = '',
 		height = 150,
 		label
@@ -66,33 +66,33 @@
 		x2={W - PAD.right}
 		y1={y(hi)}
 		y2={y(hi)}
-		stroke="#f3f4f6"
+		style="stroke: var(--chart-grid)"
 	/>
 	<line
 		x1={PAD.left}
 		x2={W - PAD.right}
 		y1={y(lo)}
 		y2={y(lo)}
-		stroke="#e5e7eb"
+		style="stroke: var(--chart-baseline)"
 	/>
 	<text
 		x="0"
 		y={y(hi) + 3}
 		font-size="9"
-		class="fill-gray-400">{format.swedishNumber(hi)}</text
+		class="fill-ink-faint">{format.swedishNumber(hi)}</text
 	>
 	<text
 		x="0"
 		y={y(lo) + 3}
 		font-size="9"
-		class="fill-gray-400">{format.swedishNumber(lo)}</text
+		class="fill-ink-faint">{format.swedishNumber(lo)}</text
 	>
 
 	{#if points.length > 1}
 		<path
 			d={path}
 			fill="none"
-			stroke={color}
+			style="stroke: {color}"
 			stroke-width="2"
 			stroke-linejoin="round"
 		/>
@@ -103,8 +103,7 @@
 			cx={x(p.t)}
 			cy={y(p.value)}
 			r="4"
-			fill={color}
-			stroke="#fff"
+			style="fill: {color}; stroke: var(--chart-point-ring)"
 			stroke-width="2"
 		>
 			<title>{p.label}: {format.swedishNumber(p.value)} {unit}</title>
@@ -118,7 +117,7 @@
 			y={y(last.value) + 3}
 			font-size="10"
 			font-weight="600"
-			class="fill-gray-700"
+			class="fill-ink-label"
 		>
 			{format.swedishNumber(last.value)}{unit ? ` ${unit}` : ''}
 		</text>
@@ -126,7 +125,7 @@
 			x={PAD.left}
 			y={height - 4}
 			font-size="9"
-			class="fill-gray-400"
+			class="fill-ink-faint"
 		>
 			{points[0].label}
 		</text>
@@ -135,7 +134,7 @@
 			y={height - 4}
 			text-anchor="end"
 			font-size="9"
-			class="fill-gray-400"
+			class="fill-ink-faint"
 		>
 			{last.label}
 		</text>

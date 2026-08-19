@@ -24,9 +24,9 @@
 			{name}
 			{checked}
 			onchange={(e) => toggle(e.currentTarget.checked)}
-			class="rounded border-gray-300"
+			class="rounded border-edge-strong"
 		/>
-		<span class="text-sm font-medium text-gray-700">{label}</span>
+		<span class="text-sm font-medium text-ink-label">{label}</span>
 	</label>
 
 	{#if checked}
@@ -35,7 +35,7 @@
 				type="button"
 				aria-label={locale.log.dialog.fewer(label)}
 				onclick={() => (count = Math.max(1, count - 1))}
-				class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
+				class="h-9 w-9 rounded-full border border-edge-strong text-lg leading-none transition-colors hover:bg-surface-hover active:bg-surface-hover"
 			>
 				−
 			</button>
@@ -44,7 +44,7 @@
 				type="button"
 				aria-label={locale.log.dialog.more(label)}
 				onclick={() => (count += 1)}
-				class="h-9 w-9 rounded-full border border-gray-300 text-lg leading-none transition-colors hover:bg-gray-100 active:bg-gray-100"
+				class="h-9 w-9 rounded-full border border-edge-strong text-lg leading-none transition-colors hover:bg-surface-hover active:bg-surface-hover"
 			>
 				+
 			</button>

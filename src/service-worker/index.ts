@@ -127,11 +127,15 @@ function offlineResponse(): Response {
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>${locale.offline.title} – ${locale.app.name}</title>
 		<style>
+			/* Standalone page: it cannot read the stored theme choice, so it
+			   follows the device and uses the app's surface/ink values. */
+			:root { color-scheme: light dark; }
 			body { font-family: system-ui, sans-serif; margin: 0; min-height: 100dvh;
 				display: flex; flex-direction: column; align-items: center;
-				justify-content: center; gap: 0.5rem; padding: 2rem; text-align: center; }
+				justify-content: center; gap: 0.5rem; padding: 2rem; text-align: center;
+				background: light-dark(#ffffff, #0b0f1a); color: light-dark(#111827, #f3f4f6); }
 			h1 { font-size: 1.25rem; margin: 0; }
-			p { color: #6b7280; margin: 0; }
+			p { color: light-dark(#6b7280, #9ca3af); margin: 0; }
 		</style>
 	</head>
 	<body>

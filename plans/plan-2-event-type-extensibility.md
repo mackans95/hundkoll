@@ -5,11 +5,11 @@
 ## Summary
 
 Good news first: **the app is already much closer to this than the problem
-statement assumes.** A new event type with no detail fields is *purely a
-database row today* — the log grid, status screen, settings intervals, the
+statement assumes.** A new event type with no detail fields is _purely a
+database row today_ — the log grid, status screen, settings intervals, the
 offline queue, and the recent-events list all render from `event_types`
 rows with zero component changes. The redesign therefore isn't a rewrite;
-it is three targeted fixes for the places that *don't* scale, plus the
+it is three targeted fixes for the places that _don't_ scale, plus the
 documentation that makes the easy path visible:
 
 1. a grid layout that absorbs any number of tiles gracefully,
@@ -26,14 +26,14 @@ Deliberately **not** included: a generic config-driven stats card (see
 
 ## What already scales (verified against the code)
 
-| Surface | Why a new type is free |
-| --- | --- |
-| Log grid | `LogGrid` maps `data.types` from the DB; colors come from `CATEGORY_COLORS[type.category]`. |
-| Log dialog | Renders `fieldsFor(type.id)` — empty for unknown types, giving the time + note dialog. |
-| Form action | `parseEventForm`/`parseDetails` follow the same `DETAIL_FIELDS`; a type without fields just stores a timestamp. |
-| Status screen | Driven entirely by the `dog_care_status` view; interval vs. last-done split is data. |
-| Settings | Iterates `data.types`; a new row gets an interval input automatically. |
-| Offline queue | Carries `typeId`/`label`/`icon` from the tapped tile; type-agnostic. |
+| Surface       | Why a new type is free                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------------------- |
+| Log grid      | `LogGrid` maps `data.types` from the DB; colors come from `CATEGORY_COLORS[type.category]`.                     |
+| Log dialog    | Renders `fieldsFor(type.id)` — empty for unknown types, giving the time + note dialog.                          |
+| Form action   | `parseEventForm`/`parseDetails` follow the same `DETAIL_FIELDS`; a type without fields just stores a timestamp. |
+| Status screen | Driven entirely by the `dog_care_status` view; interval vs. last-done split is data.                            |
+| Settings      | Iterates `data.types`; a new row gets an interval input automatically.                                          |
+| Offline queue | Carries `typeId`/`label`/`icon` from the tapped tile; type-agnostic.                                            |
 
 ## What doesn't scale, and the fixes
 
@@ -46,14 +46,14 @@ flexbox does natively, no JavaScript and no arithmetic:
 
 ```svelte
 <div class="flex flex-wrap gap-2">
-  <a class="basis-[30%] min-w-[30%] flex-1 ..."> ... </a>
+	<a class="min-w-[30%] flex-1 basis-[30%] ..."> ... </a>
 </div>
 ```
 
 `basis 30%` forces at most three per row; `flex-1` makes whatever lands on
 the final row grow to fill it. 6 → 3+3, 7 → 3+3+1(full width), 8 →
 3+3+2(halves). One class change in one file; the tap-target only ever gets
-*bigger*.
+_bigger_.
 
 Rejected alternative: keeping CSS grid and computing `col-span` for the
 remainder in script — same result, but it's arithmetic that flexbox already
@@ -63,19 +63,19 @@ does, and it re-runs on every types change for nothing.
 
 `src/lib/events/summary.ts` (`detailSummary`) is an `if (typeId === 'walk'
 || ...)` chain — the one place left where a new type with detail fields
-needs code that *knows about the type* rather than data that describes it.
+needs code that _knows about the type_ rather than data that describes it.
 Fix: make the summary declarative on the field definition, which is already
 the single source for rendering and parsing:
 
 ```ts
 export type DetailField = {
-  name: string;
-  label: string;
-  input: 'number' | 'checkbox' | 'count';
-  step?: string;
-  required?: boolean;
-  /** How the value reads in the events list; null hides it. */
-  summarize?: (value: unknown) => string | null;
+	name: string;
+	label: string;
+	input: 'number' | 'checkbox' | 'count';
+	step?: string;
+	required?: boolean;
+	/** How the value reads in the events list; null hides it. */
+	summarize?: (value: unknown) => string | null;
 };
 ```
 
@@ -123,7 +123,7 @@ implementation.
 
 ### 3b. A fourth category: Övrigt (`other`)
 
-Adding a *category* is the one step that can't be data-driven — it needs a
+Adding a _category_ is the one step that can't be data-driven — it needs a
 check-constraint migration, a type-union entry, and a tile color. So do it
 **once, now**, with a catch-all: everything added from here on lands in
 `other` unless it obviously belongs to routine/care/health. Three touches:
@@ -141,9 +141,9 @@ check-constraint migration, a type-union entry, and a tile color. So do it
   swap to violet is one line if slate feels too quiet in practice.)
 
 No locale strings needed: category names are never shown as text — the
-tile color *is* the category UI. Övrigt types cluster at the end of the
+tile color _is_ the category UI. Övrigt types cluster at the end of the
 grid naturally, since new types get the highest `sort_order`. With this in
-place, a genuinely new *named* category should be a rare, deliberate event
+place, a genuinely new _named_ category should be a rare, deliberate event
 — and it stays a documented manual step (the same three touches).
 
 ### 4. The CLI: `npm run new-event`
@@ -172,12 +172,12 @@ line):
 
 **What it writes:**
 
-| Artifact | How |
-| --- | --- |
-| `supabase/migrations/<timestamp>_add_<id>_event_type.sql` | The one insert, `sort_order` defaulted to max + 10 (overridable). |
-| `DETAIL_FIELDS` entry in `fields.ts` | Inserted at a marker comment, with a default `summarize` per input type (number → its unit prompt, count → `countText`, checkbox → word pair) — possible precisely because item 2 made summaries declarative. |
-| Locale strings in `locale.ts` | Field labels under `activities.fields`; card heading/strings if stats chosen. Marker-inserted. |
-| Stats scaffold (if chosen) | A card component rendered from a template (composing `FoldableCard` + chart + `StatTile`s), a select + narrowing mapper in `server/stats.ts`, the card's slot in `stats/+page.svelte`, a palette constant — all at markers. For `counts-per-day` **no new SQL is generated**: `stats_daily_counts` is already grouped per `type_id`, which is exactly how the walk and meal cards read it. To keep generated code small, add one shared `simpleCountBuckets(days, today, label)` builder to `buckets.ts` that generated cards call instead of each getting a bespoke builder. |
+| Artifact                                                  | How                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/<timestamp>_add_<id>_event_type.sql` | The one insert, `sort_order` defaulted to max + 10 (overridable).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `DETAIL_FIELDS` entry in `fields.ts`                      | Inserted at a marker comment, with a default `summarize` per input type (number → its unit prompt, count → `countText`, checkbox → word pair) — possible precisely because item 2 made summaries declarative.                                                                                                                                                                                                                                                                                                                                                                 |
+| Locale strings in `locale.ts`                             | Field labels under `activities.fields`; card heading/strings if stats chosen. Marker-inserted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Stats scaffold (if chosen)                                | A card component rendered from a template (composing `FoldableCard` + chart + `StatTile`s), a select + narrowing mapper in `server/stats.ts`, the card's slot in `stats/+page.svelte`, a palette constant — all at markers. For `counts-per-day` **no new SQL is generated**: `stats_daily_counts` is already grouped per `type_id`, which is exactly how the walk and meal cards read it. To keep generated code small, add one shared `simpleCountBuckets(days, today, label)` builder to `buckets.ts` that generated cards call instead of each getting a bespoke builder. |
 
 **How it edits existing files:** marker comments
 (`/* codegen:detail-fields */` and kin) at the insertion points, with the
@@ -187,7 +187,7 @@ package could do surgical inserts, but the code for that dwarfs the
 generator itself, and markers in five stable files are easy to protect
 with the smoke test below.
 
-**What it deliberately does not do:** touch the database. It *generates*
+**What it deliberately does not do:** touch the database. It _generates_
 the migration and ends by printing the house checklist — review the diff,
 `npm run check && npm test`, feature-branch PR, and `db push` only after
 merge — because the repo rule is that migrations never ship from unmerged
@@ -202,7 +202,7 @@ generator can't silently rot; and since its output lands in files covered
 by `npm run check` and the summary tests, a drifted template fails the
 normal pipeline anyway.
 
-## What I recommend *not* building: the generic stats card
+## What I recommend _not_ building: the generic stats card
 
 The temptation is a `<GenericStatsCard config={...}>` that renders any
 metric from a config object. Recommendation: **don't.** The existing cards
@@ -211,32 +211,32 @@ two-column tiles, meals have a conditional third legend entry, accidents
 have a period picker and a readiness gate, weight is a line chart with an
 aside. A config object expressive enough to cover that is a worse
 programming language than Svelte. The building blocks (`FoldableCard`,
-`StackedColumns`, `TrendLine`, `StatTile`, `ChartLegend`, `TabBar`) *are*
+`StackedColumns`, `TrendLine`, `StatTile`, `ChartLegend`, `TabBar`) _are_
 the generic layer, and they already exist; composition beats configuration
 at this component size (a full card is 30–60 lines). The recipe doc is
 what makes this repeatable — a template to copy, not a framework to feed —
-and the CLI is exactly that template being copied *for* you: generated
+and the CLI is exactly that template being copied _for_ you: generated
 cards are ordinary checked-in components you can edit freely afterwards,
 not config interpreted by a mega-component at runtime.
 
 ## Changes, file by file
 
-| File | Change |
-| --- | --- |
-| `src/lib/components/log/LogGrid.svelte` | Grid → wrapping flex with stretching remainder rows; `other: slate` added to `CATEGORY_COLORS`. |
-| `supabase/migrations/…_other_category.sql` **(new)** | Category check constraint recreated to include `'other'`. |
-| `src/lib/types/domain.ts` | `EventCategory` union gains `'other'`. |
-| `src/lib/events/fields.ts` | `summarize` added per field; `LEGACY_SUMMARIES` map. |
-| `src/lib/events/summary.ts` | `detailSummary` becomes a fold over `fieldsFor` + legacy map; type branches deleted. |
-| `README.md` | "Adding an event type" + "Adding a stats card" sections, plus a short "`npm run new-event`" section pointing at them. |
-| `scripts/new-event.ts` **(new)** | The generator: pure spec→snippets core + prompt/filesystem shell, `--dry-run`, zero new dependencies. |
-| `scripts/templates/` **(new)** | The stats-card component template(s). |
-| `package.json` | `"new-event": "node scripts/new-event.ts"`. |
-| `src/lib/events/fields.ts`, `src/lib/locale.ts`, `src/lib/stats/buckets.ts`, `src/lib/server/stats.ts`, `src/routes/stats/+page.svelte`, `src/lib/stats/palette.ts` | `codegen:` marker comments at the insertion points; `buckets.ts` gains the shared `simpleCountBuckets` builder. |
-| `tests/summary.test.ts` **(new)** | Summary line via the declarative path: counts, duration, finished/not, kg comma, legacy `portion_g`, unknown type → ''. Locks the refactor to current behavior. |
-| `tests/new-event.test.ts` **(new)** | The generator core against a fixture spec: id validation, collision detection, snippet and migration shapes. |
+| File                                                                                                                                                                | Change                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/components/log/LogGrid.svelte`                                                                                                                             | Grid → wrapping flex with stretching remainder rows; `other: slate` added to `CATEGORY_COLORS`.                                                                 |
+| `supabase/migrations/…_other_category.sql` **(new)**                                                                                                                | Category check constraint recreated to include `'other'`.                                                                                                       |
+| `src/lib/types/domain.ts`                                                                                                                                           | `EventCategory` union gains `'other'`.                                                                                                                          |
+| `src/lib/events/fields.ts`                                                                                                                                          | `summarize` added per field; `LEGACY_SUMMARIES` map.                                                                                                            |
+| `src/lib/events/summary.ts`                                                                                                                                         | `detailSummary` becomes a fold over `fieldsFor` + legacy map; type branches deleted.                                                                            |
+| `README.md`                                                                                                                                                         | "Adding an event type" + "Adding a stats card" sections, plus a short "`npm run new-event`" section pointing at them.                                           |
+| `scripts/new-event.ts` **(new)**                                                                                                                                    | The generator: pure spec→snippets core + prompt/filesystem shell, `--dry-run`, zero new dependencies.                                                           |
+| `scripts/templates/` **(new)**                                                                                                                                      | The stats-card component template(s).                                                                                                                           |
+| `package.json`                                                                                                                                                      | `"new-event": "node scripts/new-event.ts"`.                                                                                                                     |
+| `src/lib/events/fields.ts`, `src/lib/locale.ts`, `src/lib/stats/buckets.ts`, `src/lib/server/stats.ts`, `src/routes/stats/+page.svelte`, `src/lib/stats/palette.ts` | `codegen:` marker comments at the insertion points; `buckets.ts` gains the shared `simpleCountBuckets` builder.                                                 |
+| `tests/summary.test.ts` **(new)**                                                                                                                                   | Summary line via the declarative path: counts, duration, finished/not, kg comma, legacy `portion_g`, unknown type → ''. Locks the refactor to current behavior. |
+| `tests/new-event.test.ts` **(new)**                                                                                                                                 | The generator core against a fixture spec: id validation, collision detection, snippet and migration shapes.                                                    |
 
-One migration (the Övrigt category); the CLI *writes* the per-type ones.
+One migration (the Övrigt category); the CLI _writes_ the per-type ones.
 No visual change for the current six types (6 = 3+3 in both layouts, all in
 existing categories) — verifiable by screenshot diff.
 
@@ -244,14 +244,14 @@ existing categories) — verifiable by screenshot diff.
 
 - New basic type: **one SQL insert, nothing else.** New type with fields:
   insert + one `DETAIL_FIELDS` entry + locale strings. The promise becomes
-  true *and written down*.
+  true _and written down_.
 - With the CLI, all of the above collapses to **one command and a PR** —
   including a working stats card — while every generated artifact is
   ordinary reviewable code, safety-netted by the existing check/test
   pipeline.
 - The grid handles 1–∞ tiles with pure CSS; tap targets grow, never shrink.
 - Deletes the last type-switch (`detailSummary`) instead of adding
-  abstraction — net code *removed*.
+  abstraction — net code _removed_.
 - Recipe docs turn tribal knowledge into a checklist.
 
 ## Cons / trade-offs

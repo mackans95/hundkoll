@@ -6,13 +6,13 @@
 
 Two phases sharing one edit mechanism:
 
-- **Phase 1:** every stored event in *Senaste händelser* becomes tappable →
+- **Phase 1:** every stored event in _Senaste händelser_ becomes tappable →
   a bottom sheet shows everything that was logged, with **Ändra** (time,
   detail fields, note) and **Ta bort** (with confirm). Server gains
   `?/update` and `?/delete` form actions.
 - **Phase 2:** a new `/history` route — a Monday-first month calendar,
   URL-driven (`?month=2026-08&day=2026-08-14`), day tap → that day's full
-  event list → the same edit sheet. Reached via a *"Visa alla →"* link on
+  event list → the same edit sheet. Reached via a _"Visa alla →"_ link on
   the recent-events card, **not** a fifth nav tab.
 
 One migration is required, and it's not obvious: **the current RLS policy
@@ -23,7 +23,7 @@ blocks editing your partner's events.**
 The `events` table has a single `member_access for all` policy. Its
 `using` clause (household membership) governs SELECT/UPDATE/DELETE row
 visibility — so **deletes by either of you already pass**. But its
-`with check` clause — which validates the *new* row state on INSERT and
+`with check` clause — which validates the _new_ row state on INSERT and
 UPDATE — requires `created_by = auth.uid()`. Updating an event your partner
 logged would fail that check, because `created_by` stays theirs.
 
@@ -47,7 +47,7 @@ Permissive policies OR together, so `member_update`'s check passing is
 enough even though `member_access`'s stricter check fails. The column
 grants make `id`, `dog_id`, `type_id`, `created_by` immutable at the
 database level — an edit can never reassign a row or launder authorship,
-whatever the app code does. (Changing an event's *type* is deliberately not
+whatever the app code does. (Changing an event's _type_ is deliberately not
 supported: delete + relog is the honest operation, and it keeps
 `details` always consistent with the type's field list.)
 
@@ -106,7 +106,7 @@ every chart automatically, nothing to invalidate by hand**).
 
 ### Deliberate scope decision: edits are online-only
 
-Creation goes through the offline queue because logging happens *on walks*.
+Creation goes through the offline queue because logging happens _on walks_.
 Fixing a mistake is a couch activity. Edit/delete are plain `use:enhance`
 form actions — offline they fail with the normal failure message. Queueing
 edits would mean reconciling edits-of-queued-rows, ordering edits against
@@ -139,33 +139,33 @@ have dismiss. Their rows simply don't get the tap affordance.
   `data-sveltekit-noscroll`) — selection lives in the URL like the stats
   period pickers, so back/reload behave.
 - Month navigation: ‹ › links (`?month=` prev/next). No infinite scroll.
-- Selected day → event list below the grid, same rows as *Senaste
-  händelser*, same `?event=` sheet.
+- Selected day → event list below the grid, same rows as _Senaste
+  händelser_, same `?event=` sheet.
 
 ### Entry point: link, not a fifth tab
 
 The nav's four tabs are daily-use screens; history is an occasional repair
-and lookup tool. A *"Visa alla →"* link in the recent-events card header
+and lookup tool. A _"Visa alla →"_ link in the recent-events card header
 keeps the thumb bar uncrowded. Con: less discoverable — acceptable for a
 two-user app where both users will read this plan. (Flipping to a fifth
 tab later is a five-line change in `+layout.svelte`.)
 
 ## Changes, file by file
 
-| File | Change |
-| --- | --- |
-| `supabase/migrations/…_event_update_policy.sql` **(new)** | The policy + column grants above. |
-| `src/lib/server/events.ts` | `getEvent`, `updateEvent`, `deleteEvent`, `parseEventEdit`. |
-| `src/routes/+page.server.ts` | `?event=` lookup in load; `update`/`delete` actions. |
-| `src/lib/components/ModalSheet.svelte` **(new)** | Extracted sheet chrome (backdrop, tap-outside, Escape, transitions); LogDialog refactored onto it. |
-| `src/lib/components/log/EventSheet.svelte` **(new)** | View/edit/delete states. |
-| `src/lib/components/log/EventList.svelte` | Stored rows become buttons/links opening `?event=`; queued rows unchanged. |
-| `src/lib/components/log/DetailFields.svelte`, `CountStepper.svelte` | Optional `initial` values for prefilling (near-free after Plan 1's stepper redesign). |
-| `src/routes/history/+page.server.ts`, `+page.svelte` **(new)** | Phase 2 route. |
-| `src/lib/components/history/MonthCalendar.svelte` **(new)** | The grid. |
-| `src/lib/time.ts` | `monthBoundsUtc`, `calendarDays`, `stockholmForInput`. |
-| `src/lib/locale.ts` | history/edit/delete strings. |
-| `tests/` | `calendarDays` (Monday alignment, Feb/leap, year turn), `monthBoundsUtc` across DST, `parseEventEdit`. |
+| File                                                                | Change                                                                                                 |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `supabase/migrations/…_event_update_policy.sql` **(new)**           | The policy + column grants above.                                                                      |
+| `src/lib/server/events.ts`                                          | `getEvent`, `updateEvent`, `deleteEvent`, `parseEventEdit`.                                            |
+| `src/routes/+page.server.ts`                                        | `?event=` lookup in load; `update`/`delete` actions.                                                   |
+| `src/lib/components/ModalSheet.svelte` **(new)**                    | Extracted sheet chrome (backdrop, tap-outside, Escape, transitions); LogDialog refactored onto it.     |
+| `src/lib/components/log/EventSheet.svelte` **(new)**                | View/edit/delete states.                                                                               |
+| `src/lib/components/log/EventList.svelte`                           | Stored rows become buttons/links opening `?event=`; queued rows unchanged.                             |
+| `src/lib/components/log/DetailFields.svelte`, `CountStepper.svelte` | Optional `initial` values for prefilling (near-free after Plan 1's stepper redesign).                  |
+| `src/routes/history/+page.server.ts`, `+page.svelte` **(new)**      | Phase 2 route.                                                                                         |
+| `src/lib/components/history/MonthCalendar.svelte` **(new)**         | The grid.                                                                                              |
+| `src/lib/time.ts`                                                   | `monthBoundsUtc`, `calendarDays`, `stockholmForInput`.                                                 |
+| `src/lib/locale.ts`                                                 | history/edit/delete strings.                                                                           |
+| `tests/`                                                            | `calendarDays` (Monday alignment, Feb/leap, year turn), `monthBoundsUtc` across DST, `parseEventEdit`. |
 
 ## Edge cases
 
@@ -175,7 +175,7 @@ tab later is a five-line change in `+layout.svelte`.)
   affects zero rows → action returns the generic Swedish failure; reload
   shows the truth. No locking needed at this scale.
 - A legacy row whose `details` hold fields no longer in `DETAIL_FIELDS`
-  (e.g. `portion_g`): the edit form shows the *current* field list; saving
+  (e.g. `portion_g`): the edit form shows the _current_ field list; saving
   writes only parsed fields. Decision needed (open question 2).
 - The weight chart drops any row whose `kg` gets removed — already handled
   by `weightHistory`'s filter.

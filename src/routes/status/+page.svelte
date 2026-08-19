@@ -16,7 +16,7 @@
 
 	<section class="flex flex-col gap-2">
 		{#if data.timed.length === 0}
-			<p class="px-1 text-gray-500">{locale.status.noIntervals}</p>
+			<p class="px-1 text-ink-muted">{locale.status.noIntervals}</p>
 		{/if}
 		{#each data.timed as row (row.type_id)}
 			<StatusCard
@@ -27,14 +27,14 @@
 	</section>
 
 	<section class="flex flex-col gap-2">
-		<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">
+		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
 			{locale.status.lastLoggedHeading}
 		</h2>
-		<ul class="divide-y divide-gray-200 px-1">
+		<ul class="divide-y divide-edge px-1">
 			{#each data.untimed as row (row.type_id)}
 				<li class="flex items-baseline justify-between gap-3 py-2">
 					<span class="font-medium">{row.icon} {row.label}</span>
-					<span class="shrink-0 text-sm text-gray-500">
+					<span class="shrink-0 text-sm text-ink-muted">
 						{row.last_at
 							? format.swedishRelative(new Date(row.last_at), data.now)
 							: locale.status.never}

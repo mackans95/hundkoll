@@ -30,7 +30,7 @@
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">{locale.stats.title}</h1>
-		<p class="mt-1 text-sm text-gray-500">{locale.stats.subtitle(tracked || 30)}</p>
+		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30)}</p>
 	</header>
 
 	<TrendCard

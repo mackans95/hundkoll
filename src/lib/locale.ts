@@ -70,7 +70,13 @@ export const settings = {
 	intervalsHelp: 'Antal dagar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
 	days: 'dagar',
 	save: 'Spara',
-	logout: 'Logga ut'
+	logout: 'Logga ut',
+	theme: {
+		heading: 'Tema',
+		system: 'System',
+		light: 'Ljust',
+		dark: 'Mörkt'
+	}
 } as const;
 
 export const login = {
