@@ -5,13 +5,17 @@
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
 	import { loadQueue, sendPending } from '$lib/offline/queue.svelte';
+	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	// Anything not yet stored is sent as soon as it can be — on launch here,
 	// and the moment the connection comes back via <svelte:window> below.
+	// The theme attribute is already on <html> (app.html); loadTheme reads
+	// the choice into state and lines up the theme-color metas.
 	onMount(() => {
+		loadTheme();
 		loadQueue().then(sendPending);
 	});
 
