@@ -65,15 +65,15 @@
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4 pb-10">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">{data.dog?.name ?? locale.app.name}</h1>
-		<p class="mt-1 text-sm text-gray-500">{locale.log.subtitle}</p>
+		<p class="mt-1 text-sm text-ink-muted">{locale.log.subtitle}</p>
 	</header>
 
 	{#if form?.message && !data.detailType}
-		<p class="rounded-lg bg-red-50 p-4 text-red-800">{form.message}</p>
+		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
 
 	{#if waiting > 0}
-		<p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+		<p class="rounded-lg bg-warn-surface p-3 text-sm text-warn-ink">
 			{locale.log.waitingBanner(waiting)}
 		</p>
 	{/if}

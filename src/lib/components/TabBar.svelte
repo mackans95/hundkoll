@@ -27,7 +27,7 @@
 <!-- Links rather than buttons: the selected period lives in the URL, so it
      survives a reload and a back button. -->
 <nav
-	class="flex rounded-lg bg-gray-100 p-1"
+	class="flex rounded-lg bg-surface-hover p-1"
 	aria-label={label}
 >
 	{#each tabs as tab (tab.value)}
@@ -36,8 +36,8 @@
 			data-sveltekit-noscroll
 			aria-current={current === tab.value ? 'true' : undefined}
 			class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {current === tab.value
-				? 'bg-white text-gray-900 shadow-sm'
-				: 'text-gray-500 hover:text-gray-900'}"
+				? 'bg-surface-raised text-ink shadow-sm'
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			{tab.label}
 		</a>

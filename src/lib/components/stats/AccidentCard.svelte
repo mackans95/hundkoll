@@ -59,7 +59,7 @@
 		<ChartLegend items={legend} />
 	{:else}
 		<!-- An unfinished period would read as a complete one, so the chart waits. -->
-		<p class="py-6 text-center text-sm text-gray-500">
+		<p class="py-6 text-center text-sm text-ink-muted">
 			{locale.stats.accidents.pending(period)}
 		</p>
 	{/if}

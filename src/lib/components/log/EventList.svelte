@@ -21,9 +21,9 @@
 </script>
 
 {#if events.length === 0 && queued.length === 0}
-	<p class="text-gray-500">{locale.log.empty}</p>
+	<p class="text-ink-muted">{locale.log.empty}</p>
 {:else}
-	<ul class="divide-y divide-gray-200">
+	<ul class="divide-y divide-edge">
 		<!-- Queued rows sit on top: the list shows what has been logged, not
 		     only what has been stored. -->
 		{#each queued as item (item.id)}
@@ -37,27 +37,27 @@
 				<span class="min-w-0">
 					<span class="font-medium">{item.icon} {item.label}</span>
 					{#if item.status === 'failed'}
-						<span class="block truncate text-sm text-red-700">
+						<span class="block truncate text-sm text-danger-accent">
 							{locale.log.failedRow(item.error || locale.log.sendFailed)}
 						</span>
 					{:else if item.status === 'waiting'}
-						<span class="block truncate text-sm text-gray-500">{locale.log.waitingRow}</span>
+						<span class="block truncate text-sm text-ink-muted">{locale.log.waitingRow}</span>
 					{:else if extra}
-						<span class="block truncate text-sm text-gray-500">{extra}</span>
+						<span class="block truncate text-sm text-ink-muted">{extra}</span>
 					{/if}
 				</span>
 				{#if item.status === 'failed'}
 					<button
 						type="button"
 						onclick={() => dismiss(item.id)}
-						class="shrink-0 text-sm font-medium text-red-700 underline decoration-dotted"
+						class="shrink-0 text-sm font-medium text-danger-accent underline decoration-dotted"
 					>
 						{locale.log.dismissFailed}
 					</button>
 				{:else}
 					<time
 						datetime={item.occurredAt}
-						class="shrink-0 text-sm text-gray-500"
+						class="shrink-0 text-sm text-ink-muted"
 					>
 						{format.eventTime(new Date(item.occurredAt))}
 					</time>
@@ -71,12 +71,12 @@
 				<span class="min-w-0">
 					<span class="font-medium">{event.type?.icon} {event.type?.label ?? event.type_id}</span>
 					{#if extra}
-						<span class="block truncate text-sm text-gray-500">{extra}</span>
+						<span class="block truncate text-sm text-ink-muted">{extra}</span>
 					{/if}
 				</span>
 				<time
 					datetime={event.occurred_at}
-					class="shrink-0 text-sm text-gray-500"
+					class="shrink-0 text-sm text-ink-muted"
 				>
 					{format.eventTime(new Date(event.occurred_at))}
 				</time>

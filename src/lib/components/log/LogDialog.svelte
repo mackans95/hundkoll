@@ -70,19 +70,19 @@
 	onpointerdown={(event) => (pressedOn = event.target)}
 	onclick={tapOutside}
 	transition:sheet|global
-	class="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center"
+	class="fixed inset-0 z-30 flex items-end justify-center bg-scrim sm:items-center"
 >
 	<div
 		role="dialog"
 		aria-modal="true"
 		aria-label={locale.log.dialog.ariaLabel(type.label)}
 		transition:growFrom|global={{ origin: openedFrom }}
-		class="w-full max-w-sm rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
+		class="w-full max-w-sm rounded-t-2xl bg-surface-raised p-6 shadow-xl sm:rounded-2xl"
 	>
 		<h2 class="mb-4 text-xl font-bold">{type.icon} {type.label}</h2>
 
 		{#if message}
-			<p class="mb-3 rounded-lg bg-red-50 p-3 text-red-800">{message}</p>
+			<p class="mb-3 rounded-lg bg-danger-surface p-3 text-danger-ink">{message}</p>
 		{/if}
 
 		<form
@@ -108,25 +108,25 @@
 			/>
 
 			<label class="flex flex-col gap-1">
-				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.time}</span>
+				<span class="text-sm font-medium text-ink-label">{locale.log.dialog.time}</span>
 				<input
 					type="datetime-local"
 					name="occurred_at"
 					value={nowLocal}
 					max={nowLocal}
 					required
-					class="rounded-lg border-gray-300"
+					class="rounded-lg border-edge-strong"
 				/>
 			</label>
 
 			<DetailFields {fields} />
 
 			<label class="flex flex-col gap-1">
-				<span class="text-sm font-medium text-gray-700">{locale.log.dialog.note}</span>
+				<span class="text-sm font-medium text-ink-label">{locale.log.dialog.note}</span>
 				<textarea
 					name="note"
 					rows="2"
-					class="rounded-lg border-gray-300"></textarea>
+					class="rounded-lg border-edge-strong"></textarea>
 			</label>
 
 			<div class="mt-2 flex gap-2">

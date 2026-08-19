@@ -100,7 +100,7 @@
 			x="0"
 			y={y(top) - 3}
 			font-size="9"
-			class="fill-gray-400">{top}</text
+			class="fill-ink-faint">{top}</text
 		>
 
 		<!-- Keyed by label, which the builders make unique per column: one
@@ -157,7 +157,7 @@
 						y={height - 4}
 						text-anchor="middle"
 						font-size="9"
-						class="fill-gray-400"
+						class="fill-ink-faint"
 					>
 						{bucket.label}
 					</text>

@@ -14,17 +14,17 @@
 	</header>
 
 	{#if data.saved}
-		<p class="rounded-lg bg-green-50 p-4 text-green-800">{locale.settings.saved}</p>
+		<p class="rounded-lg bg-success-surface p-4 text-success-ink">{locale.settings.saved}</p>
 	{/if}
 	{#if form?.message}
-		<p class="rounded-lg bg-red-50 p-4 text-red-800">{form.message}</p>
+		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
 
 	<section class="flex flex-col gap-2">
-		<h2 class="px-1 text-sm font-semibold tracking-wide text-gray-500 uppercase">
+		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
 			{locale.settings.intervalsHeading}
 		</h2>
-		<p class="px-1 text-sm text-gray-500">{locale.settings.intervalsHelp}</p>
+		<p class="px-1 text-sm text-ink-muted">{locale.settings.intervalsHelp}</p>
 		<form
 			method="POST"
 			action="?/save"
@@ -33,7 +33,7 @@
 		>
 			{#each data.types as type (type.id)}
 				<label
-					class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3"
+					class="flex items-center justify-between gap-3 rounded-2xl border border-edge bg-surface-raised px-4 py-3"
 				>
 					<span class="font-medium">{type.icon} {type.label}</span>
 					<span class="flex items-center gap-2">
@@ -43,9 +43,9 @@
 							value={type.interval_days ?? ''}
 							min="1"
 							inputmode="numeric"
-							class="w-20 rounded-lg border-gray-300 text-right"
+							class="w-20 rounded-lg border-edge-strong text-right"
 						/>
-						<span class="text-sm text-gray-500">{locale.settings.days}</span>
+						<span class="text-sm text-ink-muted">{locale.settings.days}</span>
 					</span>
 				</label>
 			{/each}

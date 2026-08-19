@@ -26,7 +26,7 @@
 	{/snippet}
 
 	{#if points.length === 0}
-		<p class="text-sm text-gray-500">{locale.stats.weight.empty}</p>
+		<p class="text-sm text-ink-muted">{locale.stats.weight.empty}</p>
 	{:else}
 		<TrendLine
 			{points}

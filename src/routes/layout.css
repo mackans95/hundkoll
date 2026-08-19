@@ -1,6 +1,67 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 
+/* The app's palette, as roles rather than colors. Components never name a
+   gray: they say what the surface or text *is*, and the value lives here.
+   `inline` makes the utilities carry the value directly. */
+@theme inline {
+	/* Surfaces. surface and surface-raised coincide in light mode; the
+	   sunken/hover-soft pair share a light value but are separate tokens
+	   because dark mode needs them to move in opposite directions. */
+	--color-surface: #ffffff;
+	--color-surface-raised: #ffffff;
+	--color-surface-sunken: #f9fafb;
+	--color-surface-hover: #f3f4f6;
+	--color-surface-hover-soft: #f9fafb;
+
+	--color-edge: #e5e7eb;
+	--color-edge-soft: #f3f4f6;
+	--color-edge-strong: #d1d5db;
+
+	/* Text, strongest to faintest. */
+	--color-ink: #111827;
+	--color-ink-label: #374151;
+	--color-ink-soft: #4b5563;
+	--color-ink-muted: #6b7280;
+	--color-ink-faint: #9ca3af;
+
+	--color-scrim: rgb(0 0 0 / 0.4);
+
+	/* The chart tooltip is a high-contrast inversion of the page. */
+	--color-tooltip: #111827;
+	--color-tooltip-ink: #ffffff;
+	--color-tooltip-ink-muted: #d1d5db;
+	--color-tooltip-tint: rgb(255 255 255 / 0.1);
+	--color-tooltip-edge: rgb(255 255 255 / 0.2);
+
+	/* The selected tab's fill. */
+	--color-selected: #d1fae5;
+
+	/* Status feedback: banner surface, badge surface, and their text. */
+	--color-danger-surface: #fef2f2;
+	--color-danger-badge: #fee2e2;
+	--color-danger-ink: #991b1b;
+	--color-danger-accent: #b91c1c;
+	--color-warn-surface: #fffbeb;
+	--color-warn-badge: #fef3c7;
+	--color-warn-ink: #78350f;
+	--color-success-surface: #f0fdf4;
+	--color-success-badge: #dcfce7;
+	--color-success-ink: #166534;
+
+	--color-btn-primary: #111827;
+	--color-btn-primary-ink: #ffffff;
+	--color-btn-primary-hover: #1f2937;
+	--color-btn-primary-active: #374151;
+}
+
+/* The page's own ground: the viewer paints behind the app, so the body must
+   never be transparent. */
+body {
+	background: var(--color-surface);
+	color: var(--color-ink);
+}
+
 /* The app must never scroll sideways on mobile; clip instead of hidden
    so no phantom scroll container is created. */
 html {
@@ -86,9 +147,9 @@ html {
 }
 
 @utility btn-primary {
-	@apply bg-gray-900 text-white hover:bg-gray-800 active:bg-gray-700;
+	@apply bg-btn-primary text-btn-primary-ink hover:bg-btn-primary-hover active:bg-btn-primary-active;
 }
 
 @utility btn-secondary {
-	@apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+	@apply border border-edge-strong text-ink-label hover:bg-surface-hover-soft;
 }

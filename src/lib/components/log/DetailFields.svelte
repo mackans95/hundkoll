@@ -18,13 +18,13 @@
 			<input
 				type="checkbox"
 				name={field.name}
-				class="rounded border-gray-300"
+				class="rounded border-edge-strong"
 			/>
-			<span class="text-sm font-medium text-gray-700">{field.label}</span>
+			<span class="text-sm font-medium text-ink-label">{field.label}</span>
 		</label>
 	{:else}
 		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">{field.label}</span>
+			<span class="text-sm font-medium text-ink-label">{field.label}</span>
 			<input
 				type="number"
 				name={field.name}
@@ -32,7 +32,7 @@
 				step={field.step ?? '1'}
 				min="0"
 				required={field.required ?? false}
-				class="rounded-lg border-gray-300"
+				class="rounded-lg border-edge-strong"
 			/>
 		</label>
 	{/if}

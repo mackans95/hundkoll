@@ -79,13 +79,13 @@
 		x="0"
 		y={y(hi) + 3}
 		font-size="9"
-		class="fill-gray-400">{format.swedishNumber(hi)}</text
+		class="fill-ink-faint">{format.swedishNumber(hi)}</text
 	>
 	<text
 		x="0"
 		y={y(lo) + 3}
 		font-size="9"
-		class="fill-gray-400">{format.swedishNumber(lo)}</text
+		class="fill-ink-faint">{format.swedishNumber(lo)}</text
 	>
 
 	{#if points.length > 1}
@@ -118,7 +118,7 @@
 			y={y(last.value) + 3}
 			font-size="10"
 			font-weight="600"
-			class="fill-gray-700"
+			class="fill-ink-label"
 		>
 			{format.swedishNumber(last.value)}{unit ? ` ${unit}` : ''}
 		</text>
@@ -126,7 +126,7 @@
 			x={PAD.left}
 			y={height - 4}
 			font-size="9"
-			class="fill-gray-400"
+			class="fill-ink-faint"
 		>
 			{points[0].label}
 		</text>
@@ -135,7 +135,7 @@
 			y={height - 4}
 			text-anchor="end"
 			font-size="9"
-			class="fill-gray-400"
+			class="fill-ink-faint"
 		>
 			{last.label}
 		</text>

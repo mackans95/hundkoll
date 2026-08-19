@@ -27,7 +27,7 @@
 
 <div
 	bind:clientWidth={tipW}
-	class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
+	class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-tooltip px-2.5 py-1.5 text-xs whitespace-nowrap text-tooltip-ink shadow-lg"
 	style="left: {leftPx}px; top: calc({topPercent}% - 6px)"
 >
 	<p class="font-semibold">{bucket.tooltip.heading}</p>
@@ -36,10 +36,10 @@
 		     of their own, and the whole tooltip is rebuilt whenever the hovered
 		     column changes. -->
 		{#each bucket.tooltip.rows as row}
-			<div class="flex items-stretch rounded-md bg-white/10 px-2 py-1">
+			<div class="flex items-stretch rounded-md bg-tooltip-tint px-2 py-1">
 				{#each row as cell, ci}
 					{#if ci > 0}
-						<span class="mx-2 w-px shrink-0 self-stretch bg-white/20"></span>
+						<span class="mx-2 w-px shrink-0 self-stretch bg-tooltip-edge"></span>
 					{/if}
 					<span
 						class="flex flex-1 items-center gap-1.5 {row.length > 1
@@ -53,7 +53,7 @@
 							></span>
 						{/if}
 						{#if cell.label}
-							<span class={cell.big ? 'text-lg leading-none' : 'text-gray-300'}>
+							<span class={cell.big ? 'text-lg leading-none' : 'text-tooltip-ink-muted'}>
 								{cell.label}
 							</span>
 						{/if}
