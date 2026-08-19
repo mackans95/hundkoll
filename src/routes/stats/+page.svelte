@@ -7,13 +7,11 @@
 	import WeightCard from '$lib/components/stats/WeightCard.svelte';
 	import * as locale from '$lib/locale';
 	import { daysTracked } from '$lib/stats/summary';
-	import * as time from '$lib/time';
 	import type { Period } from '$lib/types/domain';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const today = time.stockholmNowForInput().slice(0, 10);
 	const tracked = $derived(daysTracked(data.summary));
 
 	const tabs: Tab<Period>[] = [
@@ -48,13 +46,13 @@
 	<WalkCard
 		days={data.walkDays}
 		summary={data.summary}
-		{today}
+		today={data.today}
 	/>
 
 	<MealCard
 		days={data.mealDays}
 		summary={data.summary}
-		{today}
+		today={data.today}
 	/>
 
 	<AccidentCard
@@ -62,7 +60,7 @@
 		period={data.period}
 		summary={data.summary}
 		{tracked}
-		{today}
+		today={data.today}
 		{tabs}
 		tabHref={periodHref}
 	/>

@@ -20,6 +20,9 @@ import type { Db } from './db';
 export type Stats = {
 	period: Period;
 	trend: Period;
+	/** The Stockholm day the query windows were cut from, for the charts to
+	 * zero-fill the same window. */
+	today: string;
 	trendPrev: TrendBucket | null;
 	trendLatest: TrendBucket | null;
 	trendPrevBucket: string;
@@ -123,8 +126,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	const today = time.stockholmNowForInput().slice(0, 10);
 	const { prev: trendPrevBucket, latest: trendLatestBucket } = trendBucketKeys(today, trend);
 
-	const daysAgo = (days: number) =>
-		new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+	// Counted in Stockholm days, the same days the charts zero-fill — a UTC
+	// cutoff would disagree with them for the hours around midnight.
+	const daysAgo = (days: number) => time.addDays(today, -days);
 
 	const dailyColumns =
 		'day, n, pee, poop, finished_true, finished_false, avg_gap_min, avg_duration_min';
@@ -165,6 +169,7 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	return {
 		period,
 		trend,
+		today,
 		trendPrev: trendRows.find((row) => row.bucket === trendPrevBucket) ?? null,
 		trendLatest: trendRows.find((row) => row.bucket === trendLatestBucket) ?? null,
 		trendPrevBucket,

@@ -133,8 +133,15 @@ export type NewLog = Pick<
 export async function enqueue(log: NewLog): Promise<void> {
 	const queued: QueuedLog = { ...log, attempts: 0, status: 'sending', error: null };
 	offlineQueue.items = [queued, ...offlineQueue.items.filter((item) => item.id !== queued.id)];
-	// Written after the list updates: the point is not to block the dialog.
-	await tx('readwrite', (store) => store.put(queued));
+	try {
+		// Written after the list updates: the point is not to block the dialog.
+		await tx('readwrite', (store) => store.put(queued));
+	} catch (error) {
+		// The row lives only in memory: it still sends, it just cannot survive
+		// a reload — and Spara must not appear dead. Warned rather than thrown,
+		// but never swallowed, since this also catches the unexpected.
+		console.warn('queue write failed:', error);
+	}
 }
 
 /** Takes a log out of the database, whether it landed or was rejected. */
