@@ -1,58 +1,77 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 
+/* Which theme is in force. The default follows the device; an explicit
+   choice from the settings page lands as data-theme on <html> (set before
+   first paint by the inline script in app.html). Every light-dark() below
+   resolves against this — the whole theme turns on one attribute. */
+:root {
+	color-scheme: light dark;
+}
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}
+
 /* The app's palette, as roles rather than colors. Components never name a
-   gray: they say what the surface or text *is*, and the value lives here.
+   gray: they say what the surface or text *is*, and both themes' values
+   live here, side by side as light-dark(light, dark) pairs.
    `inline` makes the utilities carry the value directly. */
 @theme inline {
 	/* Surfaces. surface and surface-raised coincide in light mode; the
 	   sunken/hover-soft pair share a light value but are separate tokens
-	   because dark mode needs them to move in opposite directions. */
-	--color-surface: #ffffff;
-	--color-surface-raised: #ffffff;
-	--color-surface-sunken: #f9fafb;
-	--color-surface-hover: #f3f4f6;
-	--color-surface-hover-soft: #f9fafb;
+	   because dark mode moves them in opposite directions: sunken dips
+	   below the card, a hover tint lifts above it. */
+	--color-surface: light-dark(#ffffff, #0b0f1a);
+	--color-surface-raised: light-dark(#ffffff, #111827);
+	--color-surface-sunken: light-dark(#f9fafb, #030712);
+	--color-surface-hover: light-dark(#f3f4f6, #1f2937);
+	--color-surface-hover-soft: light-dark(#f9fafb, #1f2937);
 
-	--color-edge: #e5e7eb;
-	--color-edge-soft: #f3f4f6;
-	--color-edge-strong: #d1d5db;
+	--color-edge: light-dark(#e5e7eb, #1f2937);
+	--color-edge-soft: light-dark(#f3f4f6, #1f2937);
+	--color-edge-strong: light-dark(#d1d5db, #374151);
 
-	/* Text, strongest to faintest. */
-	--color-ink: #111827;
-	--color-ink-label: #374151;
-	--color-ink-soft: #4b5563;
-	--color-ink-muted: #6b7280;
-	--color-ink-faint: #9ca3af;
+	/* Text, strongest to faintest. The ramp compresses a little in dark:
+	   faint text has to rise toward the middle or it falls out of contrast. */
+	--color-ink: light-dark(#111827, #f3f4f6);
+	--color-ink-label: light-dark(#374151, #d1d5db);
+	--color-ink-soft: light-dark(#4b5563, #9ca3af);
+	--color-ink-muted: light-dark(#6b7280, #9ca3af);
+	--color-ink-faint: light-dark(#9ca3af, #6b7280);
 
-	--color-scrim: rgb(0 0 0 / 0.4);
+	--color-scrim: light-dark(rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.6));
 
-	/* The chart tooltip is a high-contrast inversion of the page. */
-	--color-tooltip: #111827;
-	--color-tooltip-ink: #ffffff;
-	--color-tooltip-ink-muted: #d1d5db;
-	--color-tooltip-tint: rgb(255 255 255 / 0.1);
-	--color-tooltip-edge: rgb(255 255 255 / 0.2);
+	/* The chart tooltip is a high-contrast inversion of the page — so it
+	   flips with the theme: light box on the dark chart. */
+	--color-tooltip: light-dark(#111827, #f3f4f6);
+	--color-tooltip-ink: light-dark(#ffffff, #111827);
+	--color-tooltip-ink-muted: light-dark(#d1d5db, #4b5563);
+	--color-tooltip-tint: light-dark(rgb(255 255 255 / 0.1), rgb(0 0 0 / 0.08));
+	--color-tooltip-edge: light-dark(rgb(255 255 255 / 0.2), rgb(0 0 0 / 0.15));
 
 	/* The selected tab's fill. */
-	--color-selected: #d1fae5;
+	--color-selected: light-dark(#d1fae5, #022c22);
 
-	/* Status feedback: banner surface, badge surface, and their text. */
-	--color-danger-surface: #fef2f2;
-	--color-danger-badge: #fee2e2;
-	--color-danger-ink: #991b1b;
-	--color-danger-accent: #b91c1c;
-	--color-warn-surface: #fffbeb;
-	--color-warn-badge: #fef3c7;
-	--color-warn-ink: #78350f;
-	--color-success-surface: #f0fdf4;
-	--color-success-badge: #dcfce7;
-	--color-success-ink: #166534;
+	/* Status feedback: banner surface, badge surface, and their text.
+	   Hue carries the meaning; lightness flips with the theme. */
+	--color-danger-surface: light-dark(#fef2f2, #450a0a);
+	--color-danger-badge: light-dark(#fee2e2, #7f1d1d);
+	--color-danger-ink: light-dark(#991b1b, #fca5a5);
+	--color-danger-accent: light-dark(#b91c1c, #f87171);
+	--color-warn-surface: light-dark(#fffbeb, #451a03);
+	--color-warn-badge: light-dark(#fef3c7, #78350f);
+	--color-warn-ink: light-dark(#78350f, #fde68a);
+	--color-success-surface: light-dark(#f0fdf4, #052e16);
+	--color-success-badge: light-dark(#dcfce7, #14532d);
+	--color-success-ink: light-dark(#166534, #86efac);
 
-	--color-btn-primary: #111827;
-	--color-btn-primary-ink: #ffffff;
-	--color-btn-primary-hover: #1f2937;
-	--color-btn-primary-active: #374151;
+	--color-btn-primary: light-dark(#111827, #f3f4f6);
+	--color-btn-primary-ink: light-dark(#ffffff, #111827);
+	--color-btn-primary-hover: light-dark(#1f2937, #ffffff);
+	--color-btn-primary-active: light-dark(#374151, #d1d5db);
 }
 
 /* The page's own ground: the viewer paints behind the app, so the body must
