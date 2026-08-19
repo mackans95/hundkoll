@@ -136,9 +136,11 @@ export async function enqueue(log: NewLog): Promise<void> {
 	try {
 		// Written after the list updates: the point is not to block the dialog.
 		await tx('readwrite', (store) => store.put(queued));
-	} catch {
-		// Storage denied: the row lives only in memory. It still sends — it
-		// just cannot survive a reload — and Spara must not appear dead.
+	} catch (error) {
+		// The row lives only in memory: it still sends, it just cannot survive
+		// a reload — and Spara must not appear dead. Warned rather than thrown,
+		// but never swallowed, since this also catches the unexpected.
+		console.warn('queue write failed:', error);
 	}
 }
 
