@@ -8,6 +8,7 @@ import type {
 	AccidentBin,
 	MealDay,
 	Period,
+	SimpleDay,
 	StatSummary,
 	TrendBucket,
 	ViewRow,
@@ -18,6 +19,7 @@ import { weightHistory } from './events';
 import type { Db } from './db';
 
 export type Stats = {
+	// codegen:stats-shape — npm run new-event inserts card data fields here
 	period: Period;
 	trend: Period;
 	/** The Stockholm day the query windows were cut from, for the charts to
@@ -88,6 +90,14 @@ function toMealDay(row: SelectedDaily): MealDay | null {
 	};
 }
 
+/** Narrows a daily-counts row into just the day and its count. */
+function toSimpleDay(row: Pick<ViewRow<'stats_daily_counts'>, 'day' | 'n'>): SimpleDay | null {
+	if (!row.day) {
+		return null;
+	}
+	return { day: row.day, n: row.n ?? 0 };
+}
+
 /** Narrows one accident bin, whichever period it was binned by. */
 function toAccidentBin(row: SelectedBin): AccidentBin | null {
 	if (!row.bucket) {
@@ -133,7 +143,16 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	const dailyColumns =
 		'day, n, pee, poop, finished_true, finished_false, avg_gap_min, avg_duration_min';
 
-	const [summaryRes, walksRes, mealsRes, binsRes, weights, trendRes] = await Promise.all([
+	const [
+		// codegen:stats-results — one name here per query below, same order
+		summaryRes,
+		walksRes,
+		mealsRes,
+		binsRes,
+		weights,
+		trendRes
+	] = await Promise.all([
+		// codegen:stats-queries — npm run new-event inserts card queries here
 		db.from('stats_summary').select('*').limit(1).maybeSingle(),
 		db
 			.from('stats_daily_counts')
@@ -167,6 +186,7 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	const summary = summaryRes.data;
 
 	return {
+		// codegen:stats-return — npm run new-event inserts narrowed results here
 		period,
 		trend,
 		today,

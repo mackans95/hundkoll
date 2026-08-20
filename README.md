@@ -10,12 +10,12 @@ The question the app exists to answer is _"when was X last done, and is it overd
 
 Four screens, as a bottom tab bar:
 
-| Screen            | What it does                                                                                                    |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Logga** (`/`)   | A 3×3 grid of tap targets, one per activity. Tapping opens a dialog for time, type-specific details and a note. |
-| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red.             |
-| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.       |
-| **Inställningar** | The interval for each activity, editable. Blank means "no schedule". Also logout.                               |
+| Screen            | What it does                                                                                                                |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. |
+| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red.                         |
+| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                   |
+| **Inställningar** | The interval for each activity, editable. Blank means "no schedule". Also logout.                                           |
 
 Swedish in the UI, English in the code.
 
@@ -52,13 +52,15 @@ anywhere in this project.
 
 Other commands:
 
-| Command             | Purpose                                                |
-| ------------------- | ------------------------------------------------------ |
-| `npm run check`     | `svelte-check` — run this before committing            |
-| `npm run format`    | Prettier                                               |
-| `npm run build`     | production build                                       |
-| `npm run db-push`   | apply pending migrations to Supabase                   |
-| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the schema |
+| Command             | Purpose                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `npm run check`     | `svelte-check` + the script projects — run before committing                        |
+| `npm test`          | vitest over the pure modules in `tests/`                                            |
+| `npm run format`    | Prettier                                                                            |
+| `npm run build`     | production build                                                                    |
+| `npm run new-event` | generate a new tracked activity — see [Adding an event type](#adding-an-event-type) |
+| `npm run db-push`   | apply pending migrations to Supabase                                                |
+| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the schema                              |
 
 ## Code layout
 
@@ -179,6 +181,10 @@ Current catalogue:
 `{"finished": true}`, weight `{"kg": 12.4}`. Pee and poop are counts; older rows hold
 booleans and are still read correctly.
 
+Categories exist only as tile colors on the log grid: emerald for `routine`, sky for
+`care`, amber for `health`, and slate for `other` — the catch-all every new type lands
+in unless it obviously belongs to one of the first three.
+
 The generated `src/lib/types/database.ts` is committed, and the Supabase client is
 typed against it — so a query that names a column the schema does not have fails to
 compile instead of returning empty rows. Regenerate it with `npm run gen-types` after
@@ -210,6 +216,65 @@ Schema lives in `supabase/migrations/` and is applied with `npm run db-push`.
 > **Never change the schema in the Supabase web UI.** The migration files are the source of
 > truth. And do not push a migration from an unmerged branch — the database is shared with
 > production, so schema changes land when the branch merges.
+
+## Adding an event type
+
+`npm run new-event` executes this whole recipe for you: answer the prompts (or pass
+flags, see `--help`) and it writes every artifact below, ready for review on a feature
+branch. `--dry-run` prints the planned writes without performing any, and the generator
+never touches the database — the migration it writes ships through the normal
+merge-then-`db-push` path. Doing it by hand is three steps, of which two are optional:
+
+1. **Migration** — one insert. For a type with no detail fields (a nail trim is just a
+   timestamp) this is the _entire_ recipe: the log grid, the dialog, Status, Settings
+   and the offline queue all render from the `event_types` row.
+
+   ```sql
+   insert into event_types (id, label, category, interval_days, icon, sort_order)
+   values ('nail_check', 'Klokoll', 'other', 21, '✂️', 100);
+   ```
+
+   `category` decides the tile color (`other` is the default for everything new);
+   `interval_days` is null for types without a schedule; the highest `sort_order`
+   lands last in the grid.
+
+2. **Detail fields** — only if the type collects data: one entry in
+   `src/lib/events/fields.ts`, labels in `locale.ts`. A field declares its input
+   (`number` / `checkbox` / `count`) and its `summarize`, and the dialog form, the
+   server parsing, the queue's optimistic row and the events-list summary line all
+   follow from that one declaration.
+
+3. **Stats** — only if the type deserves a chart: see the next section.
+
+The files the generator edits carry `codegen:` marker comments at its insertion points.
+Those markers are a contract — the generator refuses to run (before writing anything)
+if one is missing, so do not delete them. The generator's pure core is covered by
+`tests/new-event.test.ts` against a fixture spec.
+
+### Adding a stats card
+
+There is deliberately no generic config-driven chart component. The building blocks —
+`FoldableCard`, `StackedColumns`, `TrendLine`, `StatTile`, `ChartLegend`, `TabBar` —
+are the generic layer, and a card is 30–60 lines composing them; a config object
+expressive enough to cover the real cards would be a worse programming language than
+Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
+
+1. **SQL** — for counts per day nothing is needed: `stats_daily_counts` is already
+   grouped per `type_id`. A genuinely new shape means a new view migration.
+2. **Query + narrowing** in `src/lib/server/stats.ts` — select exactly the columns the
+   card reads and narrow the nullable view columns once, so pages never handle
+   `number | null`.
+3. **Buckets** in `src/lib/stats/buckets.ts` — pure rows-in, zero-filled-columns-out;
+   `simpleCountBuckets` already covers the plain counts case.
+4. **The card** in `src/lib/components/stats/`, wired into
+   `src/routes/stats/+page.svelte`, with its light/dark color pair in `layout.css` and
+   the `var()` handle in `palette.ts`.
+
+`npm run new-event` scaffolds the two common shapes — counts-per-day
+(`StackedColumns`, like walks) and trend-line (`TrendLine`, like weight) — as ordinary
+checked-in components you edit freely afterwards. Anything fancier (an accidents-style
+period picker, stacked segments from details) starts from a generated card and gets
+hand-finished.
 
 ## Auth
 

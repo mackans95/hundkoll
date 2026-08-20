@@ -15,7 +15,7 @@ type Views<T extends keyof Database['public']['Views']> = ViewRow<T>;
 /** Narrow the named columns of a view row to non-null. */
 type NotNull<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 
-export type EventCategory = 'routine' | 'care' | 'health';
+export type EventCategory = 'routine' | 'care' | 'health' | 'other';
 
 /** A tracked activity: the catalogue row that drives every screen. */
 export type EventType = Omit<Tables<'event_types'>, 'category'> & { category: EventCategory };
@@ -72,6 +72,12 @@ export type TrendBucket = Pick<
 
 /** A single weighing, flattened out of the event's details. */
 export type WeightPoint = { occurred_at: string; kg: number };
+
+/** One day's count of a type, for generated counts-per-day cards. */
+export type SimpleDay = { day: string; n: number };
+
+/** One numeric detail value over time, for generated trend-line cards. */
+export type FieldPoint = { occurred_at: string; value: number };
 
 /** The bucket size the stats screen is showing. */
 export type Period = 'day' | 'week' | 'month';

@@ -6,7 +6,7 @@ import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
-import type { AccidentBin, MealDay, Period, WalkDay } from '$lib/types/domain';
+import type { AccidentBin, MealDay, Period, SimpleDay, WalkDay } from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
@@ -39,6 +39,33 @@ function countCell(label: string, count: number): TooltipCell {
 /** A tooltip row, with the cells that had nothing to say left out. */
 function tooltipRow(...cells: (TooltipCell | null)[]): TooltipCell[] {
 	return cells.filter((c): c is TooltipCell => c !== null);
+}
+
+/**
+ * Builds plain count-per-day columns for the last 30 days — the shared
+ * builder generated stats cards call, so each new type does not grow a
+ * bespoke one. `label` names the count in the tooltip.
+ */
+export function simpleCountBuckets(
+	days: SimpleDay[],
+	today: string,
+	label: string,
+	color: string
+): ColumnBucket[] {
+	const byDay = new Map(days.map((day) => [day.day, day.n]));
+
+	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
+		const n = byDay.get(day) ?? 0;
+		return {
+			label: format.dayLabel(day),
+			tick: i % DAY_TICK_EVERY === 0,
+			segments: [n],
+			tooltip: {
+				heading: format.dayLabel(day),
+				rows: [tooltipRow(cell(label, String(n), color))]
+			}
+		};
+	});
 }
 
 /**

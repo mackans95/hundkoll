@@ -2,7 +2,13 @@ import * as locale from '$lib/locale';
 import { parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
-import type { EventDetails, EventInsert, EventRow, WeightPoint } from '$lib/types/domain';
+import type {
+	EventDetails,
+	EventInsert,
+	EventRow,
+	FieldPoint,
+	WeightPoint
+} from '$lib/types/domain';
 import type { Db } from './db';
 
 /**
@@ -21,19 +27,26 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 }
 
 /**
- * Reads every weighing, oldest first, lifting the kilos out of the details
- * column. Rows without a number are dropped rather than plotted as zero.
+ * Reads one numeric detail field of a type over time, oldest first — what a
+ * trend-line card plots. Rows without a number are dropped rather than
+ * plotted as zero.
  */
-export async function weightHistory(db: Db): Promise<WeightPoint[]> {
+export async function fieldHistory(db: Db, typeId: string, field: string): Promise<FieldPoint[]> {
 	const { data } = await db
 		.from('events')
 		.select('occurred_at, details')
-		.eq('type_id', 'weight')
+		.eq('type_id', typeId)
 		.order('occurred_at');
 
 	return (data ?? [])
-		.map((row) => ({ occurred_at: row.occurred_at, kg: (row.details as EventDetails)?.kg }))
-		.filter((point): point is WeightPoint => typeof point.kg === 'number');
+		.map((row) => ({ occurred_at: row.occurred_at, value: (row.details as EventDetails)?.[field] }))
+		.filter((point): point is FieldPoint => typeof point.value === 'number');
+}
+
+/** Reads every weighing, oldest first, lifting the kilos out of the details. */
+export async function weightHistory(db: Db): Promise<WeightPoint[]> {
+	const points = await fieldHistory(db, 'weight', 'kg');
+	return points.map((point) => ({ occurred_at: point.occurred_at, kg: point.value }));
 }
 
 export type ParsedEvent = { ok: true; row: EventInsert } | { ok: false; message: string };
