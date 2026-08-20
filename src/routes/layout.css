@@ -102,6 +102,20 @@ body {
 	color: var(--color-ink);
 }
 
+/* How far the bottom nav (and the content clearing it) extends below the
+   tabs to cover the gesture area. Only Chromium actually extends the
+   viewport under the system bar; Firefox on Android reports a nonzero
+   safe-area inset *without* doing so, which would only make the nav taller
+   — so Gecko, matched by its -moz property support, gets zero. */
+:root {
+	--nav-inset: env(safe-area-inset-bottom, 0px);
+}
+@supports (-moz-appearance: none) {
+	:root {
+		--nav-inset: 0px;
+	}
+}
+
 /* @tailwindcss/forms paints controls white; follow the theme instead. The
    checked checkbox fills with currentColor under a white glyph, so in dark
    it must not follow ink (a near-white box would hide the check) — it gets
