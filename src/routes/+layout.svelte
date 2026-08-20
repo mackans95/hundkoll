@@ -37,9 +37,10 @@
 	<div class="pb-[calc(5rem+env(safe-area-inset-bottom))]">
 		{@render children()}
 	</div>
-	<nav
-		class="fixed inset-x-0 bottom-0 z-20 border-t border-edge bg-surface-raised pb-[env(safe-area-inset-bottom)]"
-	>
+	<!-- The safe-area padding lives inside each tab, not on the nav, so a
+	     tab's own fill — the selected tint above all — reaches the physical
+	     bottom edge instead of leaving a nav-colored band under the tabs. -->
+	<nav class="fixed inset-x-0 bottom-0 z-20 border-t border-edge bg-surface-raised">
 		<!-- relative: the bar sits on this row's top edge and spans exactly the
 		     tabs. Absolute children of a flex container stay out of flow. -->
 		<div class="relative mx-auto flex max-w-sm">
@@ -61,7 +62,7 @@
 					data-sveltekit-preload-data="tap"
 					aria-current={page.url.pathname === tab.href ? 'page' : undefined}
 					aria-busy={pending === tab.href ? 'true' : undefined}
-					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors {selected
+					class="flex flex-1 flex-col items-center gap-0.5 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-xs transition-colors {selected
 						? 'bg-selected font-semibold text-ink'
 						: 'text-ink-muted hover:bg-surface-hover-soft hover:text-ink active:bg-surface-hover'}"
 				>
