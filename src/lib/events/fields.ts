@@ -1,5 +1,6 @@
-// Per-type detail fields, shared by the dialog form (rendering) and the form
-// action (parsing) — adding a field here is all it takes to collect it.
+// Per-type detail fields, shared by the dialog form (rendering), the form
+// action (parsing) and the recent-events list (summarize) — declaring a field
+// here is all it takes to collect it and show it back.
 // 'count' is a checkbox that reveals a stepper, submitted as the checkbox
 // plus "<name>_count", so a no-JS submission degrades to a count of 1.
 
@@ -11,28 +12,102 @@ export type DetailField = {
 	input: 'number' | 'checkbox' | 'count';
 	step?: string;
 	required?: boolean;
+	/** How the value reads in the events list; null hides it. */
+	summarize?: (value: unknown) => string | null;
 };
 
+/**
+ * Names a count of something, leaving the number off when there was only one.
+ * Accepts the older rows that stored a plain boolean, reading true as one.
+ * (3, "kiss") → "kiss ×3", (true, "kiss") → "kiss"
+ */
+function countText(value: unknown, word: string): string | null {
+	if (value === true) {
+		return word;
+	}
+	if (typeof value === 'number' && value > 0) {
+		return value > 1 ? locale.activities.summary.repeated(word, value) : word;
+	}
+	return null;
+}
+
 export const DETAIL_FIELDS: Record<string, DetailField[]> = {
+	// codegen:detail-fields — npm run new-event inserts new types here
 	walk: [
-		{ name: 'duration_min', label: locale.activities.fields.durationMin, input: 'number' },
-		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
-		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
+		{
+			name: 'duration_min',
+			label: locale.activities.fields.durationMin,
+			input: 'number',
+			summarize: (value) => (typeof value === 'number' ? locale.units.minutes(String(value)) : null)
+		},
+		{
+			name: 'pee',
+			label: locale.activities.fields.pee,
+			input: 'count',
+			summarize: (value) => countText(value, locale.activities.summary.pee)
+		},
+		{
+			name: 'poop',
+			label: locale.activities.fields.poop,
+			input: 'count',
+			summarize: (value) => countText(value, locale.activities.summary.poop)
+		}
 	],
 	accident: [
-		{ name: 'pee', label: locale.activities.fields.pee, input: 'count' },
-		{ name: 'poop', label: locale.activities.fields.poop, input: 'count' }
+		{
+			name: 'pee',
+			label: locale.activities.fields.pee,
+			input: 'count',
+			summarize: (value) => countText(value, locale.activities.summary.pee)
+		},
+		{
+			name: 'poop',
+			label: locale.activities.fields.poop,
+			input: 'count',
+			summarize: (value) => countText(value, locale.activities.summary.poop)
+		}
 	],
 	// Portion size is always the same, so meals only track whether she
-	// finished; legacy portion_g rows still render in summaries.
-	meal: [{ name: 'finished', label: locale.activities.fields.finished, input: 'checkbox' }],
+	// finished; legacy portion_g rows still render via LEGACY_SUMMARIES.
+	meal: [
+		{
+			name: 'finished',
+			label: locale.activities.fields.finished,
+			input: 'checkbox',
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.finished
+					: value === false
+						? locale.activities.summary.notFinished
+						: null
+		}
+	],
 	weight: [
 		{
 			name: 'kg',
 			label: locale.activities.fields.weightKg,
 			input: 'number',
 			step: '0.1',
-			required: true
+			required: true,
+			summarize: (value) =>
+				typeof value === 'number' ? locale.units.kilograms(String(value).replace('.', ',')) : null
+		}
+	]
+};
+
+/**
+ * Detail keys older rows carry that no current field declares — append-only
+ * history, never collected again but still read. Summarized ahead of the
+ * declared fields, matching how those rows have always rendered.
+ */
+export const LEGACY_SUMMARIES: Record<
+	string,
+	{ name: string; summarize: (value: unknown) => string | null }[]
+> = {
+	meal: [
+		{
+			name: 'portion_g',
+			summarize: (value) => (typeof value === 'number' ? locale.units.grams(String(value)) : null)
 		}
 	]
 };
