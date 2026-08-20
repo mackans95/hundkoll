@@ -100,6 +100,26 @@
 body {
 	background: var(--color-surface);
 	color: var(--color-ink);
+	/* Zero everywhere today; the moment a browser draws the app under the
+	   status bar (Chrome's upcoming edge-to-edge for installed PWAs), this
+	   keeps every page's header out from beneath the clock. */
+	padding-top: var(--inset-top);
+}
+
+/* How far the bottom nav (and the content clearing it) extends below the
+   tabs to cover the gesture area. Only Chromium actually extends the
+   viewport under the system bar; Firefox on Android reports a nonzero
+   safe-area inset *without* doing so, which would only make the nav taller
+   — so Gecko, matched by its -moz property support, gets zero. */
+:root {
+	--nav-inset: env(safe-area-inset-bottom, 0px);
+	--inset-top: env(safe-area-inset-top, 0px);
+}
+@supports (-moz-appearance: none) {
+	:root {
+		--nav-inset: 0px;
+		--inset-top: 0px;
+	}
 }
 
 /* @tailwindcss/forms paints controls white; follow the theme instead. The

@@ -27,3 +27,7 @@ vite.config.ts.timestamp-*
 
 # Claude
 .claude/
+
+# Loose screenshots dropped in the repo root for debugging
+/*.jpg
+/*.png

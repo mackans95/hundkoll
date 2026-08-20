@@ -34,7 +34,7 @@
 
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
-	<div class="pb-[calc(5rem+env(safe-area-inset-bottom))]">
+	<div class="pb-[calc(5rem+var(--nav-inset))]">
 		{@render children()}
 	</div>
 	<!-- The safe-area padding lives inside each tab, not on the nav, so a
@@ -62,7 +62,7 @@
 					data-sveltekit-preload-data="tap"
 					aria-current={page.url.pathname === tab.href ? 'page' : undefined}
 					aria-busy={pending === tab.href ? 'true' : undefined}
-					class="flex flex-1 flex-col items-center gap-0.5 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-xs transition-colors {selected
+					class="flex flex-1 flex-col items-center gap-0.5 pt-2 pb-[calc(0.5rem+var(--nav-inset))] text-xs transition-colors {selected
 						? 'bg-selected font-semibold text-ink'
 						: 'text-ink-muted hover:bg-surface-hover-soft hover:text-ink active:bg-surface-hover'}"
 				>
