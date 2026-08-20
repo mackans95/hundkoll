@@ -2,6 +2,13 @@
 
 > Source: `new-features.md` § "Implement dark-mode (unsure)"
 
+> **Status: ✅ Built and shipped** — PR #22 (the feature as planned below),
+> followed by PRs #23–#25 for phone safe-area behavior; see
+> "Postscript: the bottom bar on Android" at the end. Open question 1 was
+> settled as `#0b0f1a` for the dark surface; question 2 as "no, settings
+> only". The toggle lives on the settings page, the choice in
+> `localStorage` under `hundkoll:theme`.
+
 ## Summary
 
 Semantic color tokens via the CSS `light-dark()` function, a three-state
@@ -183,3 +190,56 @@ Medium. Steps 1–2 are one focused evening (mechanical sweep + one CSS
 block); steps 3–4 are small. Best done _before_ Plans 1 and 3 add new
 components, so those are written token-native — otherwise their surfaces
 join the sweep list.
+
+## Postscript: the bottom bar on Android (as built)
+
+Dark mode itself worked first try on desktop; the follow-up work
+(PRs #23–#25) was all about the strip between the tab bar and the
+physical bottom edge of the phone. What we learned, so nobody re-debugs
+it:
+
+**The core problem.** The area below the tabs (the gesture/home-indicator
+zone) is only paintable by the page when the browser extends the viewport
+edge-to-edge under the system bar. As of August 2026, on Android **only
+the Chrome browser tab does this**. Everywhere else that strip is an
+OS-owned bar whose color the page cannot touch.
+
+**Observed behavior matrix** (Pixel, Android, verified on device):
+
+| Where the app runs         | The strip below the tabs                                   |
+| -------------------------- | ---------------------------------------------------------- |
+| Chrome, browser tab        | ✅ Painted by us — tabs (and selected tint) reach the edge |
+| Chrome, installed (WebAPK) | Always-black OS bar; ignores theme-color                   |
+| Firefox, browser tab       | Dark OS bar in both themes; page can't color it            |
+| Firefox, installed         | White OS bar in both themes; page can't color it           |
+
+**The fixes that hold this together** (all in `src/routes/layout.css` and
+`src/routes/+layout.svelte`):
+
+- `viewport-fit=cover` in `app.html` makes `env(safe-area-inset-*)`
+  resolve at all.
+- The safe-area padding lives **inside each tab link**
+  (`pb-[calc(0.5rem+var(--nav-inset))]`), not on the nav — so the
+  selected tab's tint fills all the way down instead of leaving a
+  nav-colored band.
+- **Firefox lies**: Gecko reports a nonzero `safe-area-inset-bottom`
+  _without_ extending the viewport, which only made the nav taller while
+  the bar stayed. So `--nav-inset` and `--inset-top` are zeroed under
+  `@supports (-moz-appearance: none)`.
+- `html` gets an explicit `background: var(--color-surface)` — the canvas
+  behind overscroll and the insets takes its color from the root element.
+
+**The Chrome WebAPK black bar** is expected to self-heal: Chrome is
+rolling out edge-to-edge for installed PWAs, at which point the app's
+existing inset handling takes over. We tested the
+`chrome://flags` entry **"Web App Short Edges Cutout Mode"** with a
+reinstall and it did not engage — WebAPK shells are re-minted
+asynchronously (a quick remove/reinstall returns the cached shell) and
+such features are often additionally server-gated, so this waits for
+Chrome's rollout. Tell-tale that it never activated: the status bar
+didn't change either.
+
+**Prep already in place for that day**: `body` pads by `--inset-top`
+(`env(safe-area-inset-top)`, also Gecko-zeroed), zero everywhere today,
+so when edge-to-edge arrives the header won't sit under the clock and
+nothing further needs shipping.
