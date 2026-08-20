@@ -1,9 +1,13 @@
 <script lang="ts">
+	import { LIVE_TYPE_IDS } from '$lib/events/fields';
+	import * as locale from '$lib/locale';
 	import type { EventCategory, EventType } from '$lib/types/domain';
 
 	let {
 		types,
-		onOpen
+		onOpen,
+		onStartLive,
+		liveTypeId = null
 	}: {
 		types: EventType[];
 		/**
@@ -11,6 +15,10 @@
 		 * that was tapped, so the dialog can grow out of it.
 		 */
 		onOpen: (type: EventType, origin: DOMRect) => void;
+		/** Starts (or refocuses) a live log, for the types that have one. */
+		onStartLive: (type: EventType) => void;
+		/** The type currently running live, so its tile can say so. */
+		liveTypeId?: string | null;
 	} = $props();
 
 	// Category identity is carried by the tile colours alone — one grid, no
@@ -31,6 +39,12 @@
 	 */
 	function tap(event: MouseEvent & { currentTarget: HTMLElement }, type: EventType) {
 		event.preventDefault();
+		// Live types start logging on the tap itself; the ?detail= href below
+		// keeps the pre-hydration path on the backdating dialog.
+		if (LIVE_TYPE_IDS.has(type.id)) {
+			onStartLive(type);
+			return;
+		}
 		// Measured now: the last moment the tile is certainly where the thumb
 		// found it.
 		onOpen(type, event.currentTarget.getBoundingClientRect());
@@ -42,6 +56,7 @@
      3+3+1 full-width, 8 become 3+3+2 halves. Tap targets only ever grow. -->
 <div class="flex flex-wrap gap-2">
 	{#each types as type (type.id)}
+		{@const live = liveTypeId === type.id}
 		<!-- The href is what makes a tap work before hydration and with no
 		     JavaScript at all: ?detail= renders the same dialog on the server. -->
 		<a
@@ -49,13 +64,13 @@
 			onclick={(event) => tap(event, type)}
 			class="flex min-w-[30%] flex-1 basis-[30%] flex-col items-center gap-1 rounded-2xl border px-1 py-4 text-white transition active:scale-95 {CATEGORY_COLORS[
 				type.category
-			]}"
+			]} {live ? 'ring-2 ring-white/80 ring-inset' : ''}"
 		>
 			<span
 				class="text-3xl"
 				aria-hidden="true">{type.icon}</span
 			>
-			<span class="text-sm font-semibold">{type.label}</span>
+			<span class="text-sm font-semibold">{live ? locale.log.liveWalk.tile : type.label}</span>
 		</a>
 	{/each}
 </div>

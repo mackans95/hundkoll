@@ -1,16 +1,22 @@
 <script lang="ts">
 	import Card from '$lib/components/Card.svelte';
+	import ActiveWalkCard from '$lib/components/log/ActiveWalkCard.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
 	import { replaceState } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import * as locale from '$lib/locale';
+	import { activeWalk, loadActiveWalk, startWalk } from '$lib/offline/activeWalk.svelte';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
 	import type { EventType } from '$lib/types/domain';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// A walk may still be running from before the app was killed.
+	onMount(loadActiveWalk);
 
 	/** Everything the dialog needs, whoever opened it. */
 	type OpenDialog = {
@@ -28,10 +34,28 @@
 	// the server for the page again.
 	let urlDialogClosed = $state(false);
 
-	/** Opens a dialog from data already on the page, with a fresh row id. */
-	function open(type: EventType, origin: DOMRect) {
+	/** Opens a dialog from data already on the page, with a fresh row id.
+	 * `origin` is null when no tile rect exists (the backdate link). */
+	function open(type: EventType, origin: DOMRect | null) {
 		opened = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput(), origin };
 	}
+
+	/** One tap starts the walk; a second tap points back at the card. */
+	function startLive(type: EventType) {
+		if (activeWalk.current) {
+			document.getElementById('active-walk')?.scrollIntoView({ behavior: 'smooth' });
+			return;
+		}
+		startWalk(type.id);
+	}
+
+	// The running walk's catalogue row, for the card's label and icon. Gone
+	// from the catalogue (never, in practice) would simply hide the card.
+	const liveType = $derived(
+		activeWalk.current
+			? (data.types.find((type) => type.id === activeWalk.current?.typeId) ?? null)
+			: null
+	);
 
 	function close() {
 		if (opened) {
@@ -78,10 +102,21 @@
 		</p>
 	{/if}
 
+	{#if liveType}
+		<div id="active-walk">
+			<ActiveWalkCard
+				type={liveType}
+				onBackdate={(type) => open(type, null)}
+			/>
+		</div>
+	{/if}
+
 	<Card padding="p-3">
 		<LogGrid
 			types={data.types}
 			onOpen={open}
+			onStartLive={startLive}
+			liveTypeId={liveType?.id ?? null}
 		/>
 	</Card>
 
