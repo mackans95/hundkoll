@@ -24,6 +24,11 @@ export function loadTheme(): void {
 	}
 	theme.choice = stored === 'light' || stored === 'dark' ? stored : 'system';
 	applyThemeColorMeta(theme.choice);
+	// In System mode the status bar has to follow the device when it flips
+	// between light and dark while the app is open.
+	matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+		if (theme.choice === 'system') applyThemeColorMeta('system');
+	});
 }
 
 export function setTheme(choice: ThemeChoice): void {
@@ -46,15 +51,19 @@ export function setTheme(choice: ThemeChoice): void {
 }
 
 /**
- * The two theme-color metas in app.html are media-gated for System mode.
- * An explicit choice overrides the media query in CSS but not in the metas,
- * so for explicit modes both metas get that mode's color; System restores
- * the originals.
+ * Sets both theme-color metas to the effective scheme's color. The metas'
+ * media gating is only a first-paint hint — iOS reads just the first meta
+ * and ignores the media attribute, so the real value is always written from
+ * here: the explicit choice, or the device preference in System mode.
  */
 function applyThemeColorMeta(choice: ThemeChoice): void {
-	const metas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-	metas.forEach((meta) => {
-		const scheme = meta.media.includes('dark') ? 'dark' : 'light';
-		meta.content = THEME_COLOR[choice === 'system' ? scheme : choice];
-	});
+	const effective =
+		choice === 'system'
+			? matchMedia('(prefers-color-scheme: dark)').matches
+				? 'dark'
+				: 'light'
+			: choice;
+	document
+		.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+		.forEach((meta) => (meta.content = THEME_COLOR[effective]));
 }

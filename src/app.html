@@ -35,14 +35,23 @@
 			content="#0b0f1a"
 		/>
 		<!-- Applies the stored theme before the stylesheet paints, so a dark
-		     launch never flashes light. Must stay inline and ahead of the CSS;
-		     the app's own code takes over in $lib/theme.svelte.ts. -->
+		     launch never flashes light. Also writes the effective color into
+		     the theme-color metas: iOS reads only the first meta and ignores
+		     media gating, so the status bar needs the value set outright.
+		     Must stay inline and ahead of the CSS; the app's own code takes
+		     over in $lib/theme.svelte.ts. Colors mirror THEME_COLOR there. -->
 		<script>
 			try {
 				var theme = localStorage.getItem('hundkoll:theme');
 				if (theme === 'light' || theme === 'dark') {
 					document.documentElement.dataset.theme = theme;
 				}
+				var dark =
+					theme === 'dark' ||
+					(theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+				document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
+					meta.content = dark ? '#0b0f1a' : '#059669';
+				});
 			} catch (e) {}
 		</script>
 		<meta
