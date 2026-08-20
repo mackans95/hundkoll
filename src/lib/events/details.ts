@@ -19,13 +19,15 @@ export function parseDetails(form: FormData, typeId: string): ParsedDetails {
 		if (field.input === 'checkbox') {
 			details[field.name] = form.get(field.name) === 'on';
 		} else if (field.input === 'count') {
-			// Checkbox plus stepper; without JS only the checkbox submits,
-			// which counts as one.
+			// The stepper posts the count directly; rows queued before that
+			// change replay the old checkbox + "<name>_count" pair, which must
+			// keep reading — not be misread as zero.
 			if (form.get(field.name) === 'on') {
 				const count = parseInt(String(form.get(`${field.name}_count`) ?? '1'), 10);
 				details[field.name] = Number.isFinite(count) && count > 0 ? count : 1;
 			} else {
-				details[field.name] = 0;
+				const count = parseInt(String(form.get(field.name) ?? '0'), 10);
+				details[field.name] = Number.isFinite(count) && count > 0 ? count : 0;
 			}
 		} else {
 			const raw = String(form.get(field.name) ?? '')
