@@ -80,6 +80,7 @@
    contrast, not hue, is what keeps the charts readable for color-blind
    eyes. */
 :root {
+	/* codegen:chart-values — npm run new-event inserts card color pairs here */
 	--chart-walk: light-dark(#059669, #34d399);
 	--chart-weight: light-dark(#0284c7, #38bdf8);
 	--chart-accident-1: light-dark(#d97706, #fbbf24);

@@ -112,6 +112,7 @@ export const errors = {
  * is written; these decide what it is called.
  */
 export const units = {
+	// codegen:units — npm run new-event inserts unfamiliar units here
 	minutes: (value: string) => `${value} min` as const,
 	hours: (value: string) => `${value} tim` as const,
 	kilograms: (value: string) => `${value} kg` as const,
@@ -139,6 +140,7 @@ export const units = {
 /** What an activity's details are called, on the form and in the log list. */
 export const activities = {
 	fields: {
+		// codegen:field-labels — npm run new-event inserts field labels here
 		durationMin: 'Längd (minuter)',
 		pee: 'Kiss',
 		poop: 'Bajs',
@@ -147,6 +149,7 @@ export const activities = {
 	},
 	/** Lower case: these are fragments joined into one line under an event. */
 	summary: {
+		// codegen:summary-words — npm run new-event inserts summary fragments here
 		pee: 'kiss',
 		poop: 'bajs',
 		finished: 'åt upp',
@@ -167,6 +170,7 @@ const symbols = {
 } as const;
 
 export const stats = {
+	// codegen:stats-strings — npm run new-event inserts card strings here
 	title: nav.stats,
 	subtitle: (days: number) => `Snitt över de senaste ${days} dagarna.` as const,
 	// `as const satisfies`: keeps the literal types, and still fails if a

@@ -3,6 +3,7 @@
 // dark side by side; these var() references are how SVG style attributes
 // and the tooltip/legend swatches reach them.
 
+// codegen:chart-colors — npm run new-event inserts card colors here
 export const WALK_COLOR = 'var(--chart-walk)';
 export const WEIGHT_COLOR = 'var(--chart-weight)';
 
