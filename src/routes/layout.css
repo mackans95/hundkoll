@@ -121,9 +121,14 @@ body {
 }
 
 /* The app must never scroll sideways on mobile; clip instead of hidden
-   so no phantom scroll container is created. */
+   so no phantom scroll container is created.
+   The background sits on html as well as body: the canvas behind overscroll
+   and behind the safe-area insets (the strip under the bottom nav on a
+   phone) takes its color from the root element, and left unpainted it shows
+   the platform default regardless of theme. */
 html {
 	overflow-x: clip;
+	background: var(--color-surface);
 }
 
 /* Progress for a screen change, which still has to reach the server.
