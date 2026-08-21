@@ -7,6 +7,7 @@
 	import { growFrom, sheet } from '$lib/transitions';
 	import type { EventType } from '$lib/types/domain';
 	import DetailFields from './DetailFields.svelte';
+	import NoteField from './NoteField.svelte';
 
 	let {
 		type,
@@ -121,13 +122,7 @@
 
 			<DetailFields {fields} />
 
-			<label class="flex flex-col gap-1">
-				<span class="text-sm font-medium text-ink-label">{locale.log.dialog.note}</span>
-				<textarea
-					name="note"
-					rows="2"
-					class="rounded-lg border-edge-strong"></textarea>
-			</label>
+			<NoteField />
 
 			<div class="mt-2 flex gap-2">
 				<a

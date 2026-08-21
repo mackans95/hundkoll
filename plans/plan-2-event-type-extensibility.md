@@ -2,6 +2,14 @@
 
 > Source: `new-features.md` § "Re-design how we add events"
 
+> **Status: ✅ Built and shipped** — PR #27, in one piece as planned: the
+> wrapping/stretching grid, the Övrigt (`other`) category with its slate
+> tile (migration pushed), declarative `summarize` on `DetailField` with
+> `LEGACY_SUMMARIES`, the README recipes, and `npm run new-event` (pure
+> core + prompt shell, `--dry-run`, marker-comment insertion, fixture
+> tests). Verified end-to-end by generating a real fixture type through
+> the full check/test/build/autofixer pipeline, then removing it.
+
 ## Summary
 
 Good news first: **the app is already much closer to this than the problem

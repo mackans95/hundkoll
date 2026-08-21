@@ -75,6 +75,7 @@ src/lib/
   time.ts      computation: timezone conversion and calendar arithmetic
   format.ts    presentation: the same values as Swedish text
   locale.ts    every word the app shows
+  clock.ts     the passing of time as a reactive value, for ticking displays
 ```
 
 **All user-facing text lives in `locale.ts`.** There is one language and no plan for

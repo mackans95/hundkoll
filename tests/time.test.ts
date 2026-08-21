@@ -34,6 +34,13 @@ describe('stockholmInputToUtc', () => {
 		);
 	});
 
+	it('round-trips with stockholmForInput in both DST regimes', () => {
+		for (const instant of ['2026-07-01T10:00:00.000Z', '2026-01-15T11:00:00.000Z']) {
+			const local = time.stockholmForInput(new Date(instant));
+			expect(time.stockholmInputToUtc(local)?.toISOString()).toBe(instant);
+		}
+	});
+
 	it('rejects malformed values', () => {
 		expect(time.stockholmInputToUtc('')).toBeNull();
 		expect(time.stockholmInputToUtc('not-a-date')).toBeNull();

@@ -72,12 +72,21 @@ const inputFormat = new Intl.DateTimeFormat('sv-SE', {
 });
 
 /**
+ * Writes an instant as the Stockholm wall-clock time a datetime-local input
+ * expects — the inverse of stockholmInputToUtc, to minute precision.
+ * 2026-08-14T07:15:00Z → "2026-08-14T09:15"
+ */
+export function stockholmForInput(at: Date): string {
+	return inputFormat.format(at).replace(' ', 'T');
+}
+
+/**
  * Gives the current Stockholm time in the shape a datetime-local input
  * expects, for pre-filling the log dialog.
  * → "2026-08-14T09:15"
  */
 export function stockholmNowForInput(): string {
-	return inputFormat.format(new Date()).replace(' ', 'T');
+	return stockholmForInput(new Date());
 }
 
 /**

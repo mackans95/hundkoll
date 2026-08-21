@@ -39,6 +39,17 @@ export const log = {
 	dismissFailed: 'Ta bort',
 	waitingBanner: (count: number) =>
 		`⏳ ${count} ${count === 1 ? 'händelse väntar' : 'händelser väntar'} på signal – de skickas automatiskt.` as const,
+	liveWalk: {
+		/** The card heading: what is running and for how long. */
+		status: (activity: string, elapsed: string) => `${activity} pågår · ${elapsed}` as const,
+		/** On the grid tile while its activity is running. */
+		tile: 'Pågår…',
+		finish: 'Avsluta & spara',
+		adjustStart: 'Justera starttid',
+		backdateInstead: 'Logga i efterhand istället',
+		/** Over the editable minutes input when a walk ran suspiciously long. */
+		checkDuration: 'Kontrollera längden (minuter) innan du sparar.'
+	},
 	dialog: {
 		ariaLabel: (activity: string) => `Logga ${activity.toLowerCase()}` as const,
 		time: 'Tidpunkt',

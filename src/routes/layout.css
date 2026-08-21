@@ -128,16 +128,28 @@ body {
    it must not follow ink (a near-white box would hide the check) — it gets
    the brand green instead; light keeps its ink fill unchanged. */
 @layer base {
-	/* input[type] out-specifies the plugin's [type='…'] selectors, while the
-	   plugin's [type='checkbox']:checked still out-specifies this — so the
-	   checked fill below keeps working. */
+	/* The plugin's own rules land after these in the base layer, so every
+	   selector here has to out-specify its counterpart there: input[type]
+	   beats [type='…'], and the html prefix beats the plugin's bare textarea
+	   and select — a plain `textarea` ties and loses, which left the note
+	   field white-on-white in dark mode. (The plugin's
+	   [type='checkbox']:checked still out-specifies all of this, so the
+	   checked fill below keeps working.) */
 	input[type],
-	textarea,
-	select {
+	html textarea,
+	html select {
 		background-color: var(--color-surface-raised);
 	}
 	input[type='checkbox'] {
 		color: light-dark(#111827, #059669);
+	}
+
+	/* Tailwind v4's preflight leaves buttons on the arrow cursor, so on a
+	   desktop nothing in the app looked clickable. Restore the affordance
+	   once, here, rather than per button. */
+	button:not(:disabled),
+	[role='button']:not(:disabled) {
+		cursor: pointer;
 	}
 }
 
