@@ -2,6 +2,40 @@
 
 > Source: `new-features.md` § "Make the walk-logging more automated"
 
+> **Status: ✅ Built and shipped** — PR #28, as designed: the persisted
+> wall-clock walk (`hundkoll:active-walk:v1`), the checkbox-less always-visible
+> `CountStepper`, the `<details>`-folded `NoteField`, `LIVE_TYPE_IDS`, the
+> shared `queueLog`, `stockholmForInput`, and no database change at all.
+> The three open questions took their defaults: minutes only, a 4 h guard,
+> and no "backdate with the counts kept".
+>
+> **Deviations from the plan as written**, all from testing it on a real
+> phone and desktop:
+>
+> - **Avbryt discards immediately, with no confirm step.** The plan called
+>   for confirming first; in the hand it read as friction, and every other
+>   Avbryt in the app cancels outright — one live walk is not worth being
+>   the exception.
+> - _Justera starttid_ and _Logga i efterhand istället_ are **buttons, not
+>   links** (they act on local state and navigate nowhere). Tailwind v4's
+>   preflight leaves buttons on the arrow cursor, so nothing in the app
+>   looked clickable on a desktop; `button:not(:disabled)` now gets
+>   `cursor: pointer` once in `layout.css` rather than per button.
+> - **Bug found and fixed in review:** `backdate()` called `discardWalk()`
+>   before passing `type` on, and `type` is a live getter into the page's
+>   derived lookup of the _running_ walk — so by the time the dialog opened,
+>   its activity was already null and nothing appeared. It now reads the prop
+>   into a local first. Worth remembering as a shape of bug: a prop that
+>   looks like a value is a getter, and discarding the state behind it
+>   empties it mid-function.
+> - Also fixed while here: the note textarea was **white-on-white in dark
+>   mode**. `@tailwindcss/forms` styles textareas with a bare `textarea`
+>   selector, which ties our themed override and wins on source order — the
+>   inputs were only safe because they go through `input[type]`. The rule is
+>   now `html textarea` / `html select`, with the specificity contract
+>   spelled out in the comment. It had survived the dark-mode PR because
+>   those screenshot probes ran on `/login`, which has no textarea.
+
 ## Summary
 
 Tapping the Promenad tile starts a **live walk**: the start time is recorded
