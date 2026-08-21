@@ -90,6 +90,61 @@ export function stockholmNowForInput(): string {
 }
 
 /**
+ * The Stockholm calendar day an instant falls on — the day it felt like,
+ * which is the day every view groups by.
+ * 2026-08-14T22:30:00Z → "2026-08-15"
+ */
+export function stockholmDay(at: Date): string {
+	return stockholmForInput(at).slice(0, 10);
+}
+
+/**
+ * The instants a Stockholm month starts and ends, for querying it. Null when
+ * the month is not a real one, so a hand-edited URL cannot widen the query.
+ * "2026-08" → 2026-07-31T22:00Z … 2026-08-31T22:00Z (both CEST midnights)
+ */
+export function monthBoundsUtc(month: string): { from: string; to: string } | null {
+	if (!/^\d{4}-\d{2}$/.test(month)) {
+		return null;
+	}
+
+	// Via the input parser, so the bounds sit at Stockholm midnight whichever
+	// side of a DST switch the month falls on.
+	const from = stockholmInputToUtc(`${month}-01T00:00`);
+	// Checked before doing any arithmetic: the pattern above admits "2026-13",
+	// and addMonths would throw on it rather than report it.
+	if (!from) {
+		return null;
+	}
+
+	const to = stockholmInputToUtc(`${addMonths(`${month}-01`, 1)}T00:00`);
+	return to ? { from: from.toISOString(), to: to.toISOString() } : null;
+}
+
+/**
+ * The cells of a Monday-first month grid: every day of the month, with the
+ * leading and trailing blanks that keep the columns under mån–sön.
+ * "2026-08" → [null ×5, "2026-08-01" … "2026-08-31", null ×6]
+ */
+export function calendarDays(month: string): (string | null)[] {
+	const first = `${month}-01`;
+	// getUTCDay counts from Sunday; the app's weeks start on Monday.
+	const leading = (new Date(`${first}T00:00:00Z`).getUTCDay() + 6) % 7;
+	// Day 0 of the next month is the last day of this one.
+	const length = new Date(Date.UTC(+month.slice(0, 4), +month.slice(5, 7), 0)).getUTCDate();
+
+	const cells: (string | null)[] = Array(leading).fill(null);
+	for (let day = 1; day <= length; day++) {
+		cells.push(addDays(first, day - 1));
+	}
+	// Complete the last week, so the grid keeps its shape.
+	while (cells.length % 7 !== 0) {
+		cells.push(null);
+	}
+	return cells;
+}
+
+/**
  * Moves a date-only string by a number of days, forwards or backwards.
  * ("2026-08-14", -3) → "2026-08-11"
  */

@@ -3,13 +3,12 @@ import * as locale from '$lib/locale';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
 import {
-	deleteEvent,
+	applyEventDelete,
+	applyEventEdit,
 	getEvent,
 	insertEvent,
-	parseEventEdit,
 	parseEventForm,
-	recentEvents,
-	updateEvent
+	recentEvents
 } from '$lib/server/events';
 import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
@@ -69,23 +68,9 @@ export const actions: Actions = {
 	// Edits go straight to the server rather than through the offline queue:
 	// logging happens on walks, correcting happens on the couch.
 	update: async ({ request, locals: { supabase } }) => {
-		const form = await request.formData();
-
-		// Read the row first: it decides which fields exist and which details
-		// an edit must preserve, and the form is not to be trusted for either.
-		const event = await getEvent(supabase, String(form.get('event_id') ?? ''));
-		if (!event) {
-			return fail(404, { message: locale.errors.eventGone });
-		}
-
-		const parsed = parseEventEdit(form, event);
-		if (!parsed.ok) {
-			return fail(400, { message: parsed.message });
-		}
-
-		const message = await updateEvent(supabase, event.id, parsed.patch);
-		if (message) {
-			return fail(500, { message });
+		const outcome = await applyEventEdit(supabase, await request.formData());
+		if (!outcome.ok) {
+			return fail(outcome.status, { message: outcome.message });
 		}
 
 		// Clears ?event=, closing the sheet, and reloads the lists — every
@@ -94,11 +79,9 @@ export const actions: Actions = {
 	},
 
 	delete: async ({ request, locals: { supabase } }) => {
-		const form = await request.formData();
-
-		const message = await deleteEvent(supabase, String(form.get('event_id') ?? ''));
-		if (message) {
-			return fail(500, { message });
+		const outcome = await applyEventDelete(supabase, await request.formData());
+		if (!outcome.ok) {
+			return fail(outcome.status, { message: outcome.message });
 		}
 
 		redirect(303, '/');

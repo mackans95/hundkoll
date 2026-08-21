@@ -75,6 +75,24 @@ export const log = {
 	}
 } as const;
 
+/** The month calendar, reached from the log page rather than the tab bar. */
+export const history = {
+	title: 'Historik',
+	/** The link on the recent-events card that leads here. */
+	showAll: 'Visa alla →',
+	/** Monday first, matching ISO weeks and the rest of the app. */
+	weekdays: ['mån', 'tis', 'ons', 'tors', 'fre', 'lör', 'sön'],
+	previousMonth: 'Föregående månad',
+	nextMonth: 'Nästa månad',
+	/** A day cell with more events than it has room for icons. */
+	more: (count: number) => `+${count}` as const,
+	/** How many events a day holds, for the cell's screen-reader label. */
+	dayLabel: (day: string, count: number) =>
+		`${day}, ${count} ${count === 1 ? 'händelse' : 'händelser'}` as const,
+	emptyDay: 'Inget loggat den här dagen.',
+	backToLog: '← Tillbaka'
+} as const;
+
 export const status = {
 	title: nav.status,
 	noIntervals: 'Inga aktiviteter har något intervall. Sätt intervall under Inställningar.',
