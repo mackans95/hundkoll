@@ -66,6 +66,35 @@ export function dayLabel(iso: string): string {
 	return `${day.getUTCDate()}/${day.getUTCMonth() + 1}`;
 }
 
+const dayHeadingFormat = new Intl.DateTimeFormat('sv-SE', {
+	weekday: 'short',
+	day: 'numeric',
+	month: 'short',
+	timeZone: 'UTC'
+});
+
+/**
+ * Names a day for a heading, where there is room for the weekday.
+ * "2026-08-14" → "fre 14 aug."
+ */
+export function dayHeading(iso: string): string {
+	return dayHeadingFormat.format(new Date(`${iso}T00:00:00Z`));
+}
+
+const monthHeadingFormat = new Intl.DateTimeFormat('sv-SE', {
+	year: 'numeric',
+	month: 'long',
+	timeZone: 'UTC'
+});
+
+/**
+ * Names a month for a heading. Swedish keeps month names lower case.
+ * "2026-08" → "augusti 2026"
+ */
+export function monthHeading(month: string): string {
+	return monthHeadingFormat.format(new Date(`${month}-01T00:00:00Z`));
+}
+
 const monthFormat = new Intl.DateTimeFormat('sv-SE', { month: 'short', timeZone: 'UTC' });
 
 /**
