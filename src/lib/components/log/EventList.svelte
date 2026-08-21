@@ -7,9 +7,15 @@
 
 	let {
 		events,
-		onOpen
+		onOpen,
+		showQueued = true,
+		empty = locale.log.empty
 	}: {
 		events: EventRow[];
+		/** Off where rows come from a query rather than from today's logging. */
+		showQueued?: boolean;
+		/** What to say when there is nothing to list. */
+		empty?: string;
 		/**
 		 * Opens the edit sheet for a stored row. `origin` is the row that was
 		 * tapped, so the sheet can grow out of it. Queued rows have no server
@@ -21,7 +27,9 @@
 	// A stored row takes precedence over its queued copy, which can overlap
 	// for the moment between a send landing and the reload that follows.
 	const stored = $derived(new Set(events.map((event) => event.id)));
-	const queued = $derived(offlineQueue.items.filter((item) => !stored.has(item.id)));
+	const queued = $derived(
+		showQueued ? offlineQueue.items.filter((item) => !stored.has(item.id)) : []
+	);
 
 	/** The detail line, whether the row came from the queue or the database. */
 	function summarise(typeId: string, details: Record<string, unknown>, note: string | null) {
@@ -32,7 +40,7 @@
 </script>
 
 {#if events.length === 0 && queued.length === 0}
-	<p class="text-ink-muted">{locale.log.empty}</p>
+	<p class="text-ink-muted">{empty}</p>
 {:else}
 	<ul class="divide-y divide-edge">
 		<!-- Queued rows sit on top: the list shows what has been logged, not

@@ -144,6 +144,15 @@
 	</Card>
 
 	<Card title={locale.log.recentHeading}>
+		<!-- A link rather than a fifth tab: the tab bar is for daily screens,
+		     and history is an occasional lookup and repair tool. -->
+		{#snippet action()}
+			<a
+				href="/history"
+				class="text-sm text-ink-muted underline">{locale.history.showAll}</a
+			>
+		{/snippet}
+
 		<EventList
 			events={data.events}
 			onOpen={openEvent}
