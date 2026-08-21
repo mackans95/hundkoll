@@ -2,6 +2,7 @@
 	import Card from '$lib/components/Card.svelte';
 	import ActiveWalkCard from '$lib/components/log/ActiveWalkCard.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
+	import EventSheet from '$lib/components/log/EventSheet.svelte';
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
 	import { replaceState } from '$app/navigation';
@@ -10,7 +11,7 @@
 	import { activeWalk, loadActiveWalk, startWalk } from '$lib/offline/activeWalk.svelte';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
-	import type { EventType } from '$lib/types/domain';
+	import type { EventRow, EventType } from '$lib/types/domain';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -68,6 +69,28 @@
 		replaceState('/', {});
 	}
 
+	/** The stored event whose sheet is open, on the same pattern as above. */
+	let openedEvent = $state<{ event: EventRow; origin: DOMRect | null } | null>(null);
+	let urlSheetClosed = $state(false);
+
+	function openEvent(event: EventRow, origin: DOMRect) {
+		openedEvent = { event, origin };
+	}
+
+	function closeEvent() {
+		if (openedEvent) {
+			openedEvent = null;
+			return;
+		}
+		urlSheetClosed = true;
+		replaceState('/', {});
+	}
+
+	const sheet = $derived<{ event: EventRow; origin: DOMRect | null } | null>(
+		openedEvent ??
+			(data.editEvent && !urlSheetClosed ? { event: data.editEvent, origin: null } : null)
+	);
+
 	const dialog = $derived<OpenDialog | null>(
 		opened ??
 			(data.detailType && !urlDialogClosed
@@ -121,9 +144,24 @@
 	</Card>
 
 	<Card title={locale.log.recentHeading}>
-		<EventList events={data.events} />
+		<EventList
+			events={data.events}
+			onOpen={openEvent}
+		/>
 	</Card>
 </main>
+
+{#if sheet}
+	<!-- Keyed so the sheet's edit/confirm modes reset per event. -->
+	{#key sheet.event.id}
+		<EventSheet
+			event={sheet.event}
+			origin={sheet.origin}
+			message={form?.message ?? null}
+			onClose={closeEvent}
+		/>
+	{/key}
+{/if}
 
 {#if dialog}
 	<!-- Keyed so fields reset — and use:enhance rebinds — per activity. -->

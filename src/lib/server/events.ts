@@ -11,6 +11,9 @@ import type {
 } from '$lib/types/domain';
 import type { Db } from './db';
 
+/** The columns every list and the edit sheet read, with the catalogue row. */
+const EVENT_COLUMNS = 'id, type_id, occurred_at, note, details, type:event_types(label, icon)';
+
 /**
  * Reads the most recently logged events, newest first, with each one's
  * catalogue row attached so the list can show a label and an icon.
@@ -18,12 +21,22 @@ import type { Db } from './db';
 export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 	const { data } = await db
 		.from('events')
-		.select('id, type_id, occurred_at, note, details, type:event_types(label, icon)')
+		.select(EVENT_COLUMNS)
 		.order('occurred_at', { ascending: false })
 		.limit(limit);
 
 	// `details` is jsonb; the keys it holds are the ones DETAIL_FIELDS wrote.
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
+}
+
+/**
+ * Reads one event for the edit sheet, or null when there is no such row —
+ * which also covers another household's event, since RLS scopes the select.
+ */
+export async function getEvent(db: Db, id: string): Promise<EventRow | null> {
+	const { data } = await db.from('events').select(EVENT_COLUMNS).eq('id', id).maybeSingle();
+
+	return data ? { ...data, details: (data.details ?? {}) as EventDetails } : null;
 }
 
 /**
@@ -111,4 +124,74 @@ export async function insertEvent(db: Db, row: EventInsert): Promise<string | nu
 		return locale.errors.logFailed;
 	}
 	return null;
+}
+
+/** The three columns an edit may touch; the rest are immutable by grant. */
+export type EventPatch = { occurred_at: string; details: Json; note: string | null };
+
+export type ParsedEdit = { ok: true; patch: EventPatch } | { ok: false; message: string };
+
+/**
+ * Turns an edit submission into a patch. The type comes from the stored row
+ * rather than the form — an edit may not change which activity a row is.
+ *
+ * Parsed values are merged *over* the stored details rather than replacing
+ * them, so keys the form never showed (a legacy portion_g, say) survive an
+ * edit instead of being destroyed by it.
+ */
+export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
+	const occurred = time.stockholmInputToUtc(String(form.get('occurred_at') ?? '').trim());
+	if (!occurred) {
+		return { ok: false, message: locale.errors.invalidTime };
+	}
+
+	const parsed = parseDetails(form, event.type_id);
+	if (!parsed.ok) {
+		return { ok: false, message: locale.errors.invalidValue(parsed.field) };
+	}
+
+	const note = String(form.get('note') ?? '').trim();
+
+	return {
+		ok: true,
+		patch: {
+			occurred_at: occurred.toISOString(),
+			// Every value DETAIL_FIELDS produces is a number or a boolean.
+			details: { ...event.details, ...parsed.details } as Json,
+			note: note || null
+		}
+	};
+}
+
+/**
+ * Applies an edit. Reports the row having gone — deleted on the other phone
+ * while the sheet was open — rather than silently doing nothing.
+ */
+export async function updateEvent(db: Db, id: string, patch: EventPatch): Promise<string | null> {
+	const { error, count } = await db
+		.from('events')
+		.update(patch, { count: 'exact' })
+		.eq('id', id)
+		.select('id');
+
+	if (error) {
+		console.error('event update failed:', error.code, error.message);
+		return locale.errors.saveFailed;
+	}
+	return count === 0 ? locale.errors.eventGone : null;
+}
+
+/** Removes an event, saying so if it was already gone. */
+export async function deleteEvent(db: Db, id: string): Promise<string | null> {
+	const { error, count } = await db
+		.from('events')
+		.delete({ count: 'exact' })
+		.eq('id', id)
+		.select('id');
+
+	if (error) {
+		console.error('event delete failed:', error.code, error.message);
+		return locale.errors.deleteFailed;
+	}
+	return count === 0 ? locale.errors.eventGone : null;
 }

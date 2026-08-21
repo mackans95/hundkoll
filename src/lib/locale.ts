@@ -50,6 +50,20 @@ export const log = {
 		/** Over the editable minutes input when a walk ran suspiciously long. */
 		checkDuration: 'Kontrollera längden (minuter) innan du sparar.'
 	},
+	/** The sheet that opens when a stored event is tapped. */
+	event: {
+		ariaLabel: (activity: string) => `Ändra ${activity.toLowerCase()}` as const,
+		edit: 'Ändra',
+		delete: 'Ta bort',
+		/** Second tap on Ta bort, in place of a browser confirm dialog. */
+		confirmDelete: 'Säkert? Ta bort',
+		close: 'Stäng',
+		save: 'Spara',
+		cancelEdit: 'Avbryt',
+		loggedAt: 'Loggat',
+		/** Sits where the details would be when nothing was recorded. */
+		noDetails: 'Inga detaljer.'
+	},
 	dialog: {
 		ariaLabel: (activity: string) => `Logga ${activity.toLowerCase()}` as const,
 		time: 'Tidpunkt',
@@ -113,6 +127,9 @@ export const errors = {
 	logFailed: 'Kunde inte logga händelsen.',
 	intervalRange: 'Intervall måste vara ett antal dagar (minst 1).',
 	saveFailed: 'Kunde inte spara.',
+	deleteFailed: 'Kunde inte ta bort.',
+	/** Edited or deleted on the other phone while this sheet was open. */
+	eventGone: 'Händelsen finns inte längre.',
 	missingCredentials: 'Fyll i både mejladress och lösenord.',
 	invalidCredentials: 'Fel mejladress eller lösenord.',
 	loginFailed: 'Inloggningen misslyckades. Försök igen.'
