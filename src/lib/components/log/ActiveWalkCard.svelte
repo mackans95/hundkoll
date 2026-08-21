@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Card from '$lib/components/Card.svelte';
+	import { createClock } from '$lib/clock';
 	import * as locale from '$lib/locale';
 	import * as time from '$lib/time';
 	import {
@@ -26,12 +27,9 @@
 	const walk = $derived(activeWalk.current);
 
 	// Cosmetic tick only: elapsed is always derived from clocks, so a killed
-	// app comes back with the right number without anything having run.
-	let now = $state(new Date());
-	$effect(() => {
-		const id = setInterval(() => (now = new Date()), 1000);
-		return () => clearInterval(id);
-	});
+	// app comes back with the right number without anything having run. The
+	// clock stops itself when this card leaves the screen.
+	const clock = createClock(1000);
 
 	let adjusting = $state(false);
 	/** Set when a long walk needs its duration confirmed before saving. */
@@ -75,7 +73,7 @@
 			<span aria-hidden="true">{type.icon}</span>
 			{locale.log.liveWalk.status(
 				type.label,
-				locale.units.minutes(String(elapsedMinutes(walk, now)))
+				locale.units.minutes(String(elapsedMinutes(walk, clock.now)))
 			)}
 		</h2>
 
