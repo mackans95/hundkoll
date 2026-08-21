@@ -51,12 +51,6 @@
 		void finishWalk(type, confirmMinutes ?? undefined);
 	}
 
-	function discard() {
-		if (confirm(locale.log.liveWalk.confirmDiscard)) {
-			discardWalk();
-		}
-	}
-
 	function backdate() {
 		// Read the prop before discarding: `type` is a live getter into the
 		// page's derived lookup of the running walk, so once the walk is gone
@@ -127,7 +121,7 @@
 		<div class="mt-1 flex gap-2">
 			<button
 				type="button"
-				onclick={discard}
+				onclick={discardWalk}
 				class="flex-1 btn btn-secondary"
 			>
 				{locale.log.dialog.cancel}

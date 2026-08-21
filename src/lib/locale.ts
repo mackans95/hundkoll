@@ -45,7 +45,6 @@ export const log = {
 		/** On the grid tile while its activity is running. */
 		tile: 'Pågår…',
 		finish: 'Avsluta & spara',
-		confirmDiscard: 'Släng utan att spara?',
 		adjustStart: 'Justera starttid',
 		backdateInstead: 'Logga i efterhand istället',
 		/** Over the editable minutes input when a walk ran suspiciously long. */
