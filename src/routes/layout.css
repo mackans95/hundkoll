@@ -139,6 +139,14 @@ body {
 	input[type='checkbox'] {
 		color: light-dark(#111827, #059669);
 	}
+
+	/* Tailwind v4's preflight leaves buttons on the arrow cursor, so on a
+	   desktop nothing in the app looked clickable. Restore the affordance
+	   once, here, rather than per button. */
+	button:not(:disabled),
+	[role='button']:not(:disabled) {
+		cursor: pointer;
+	}
 }
 
 /* The app must never scroll sideways on mobile; clip instead of hidden

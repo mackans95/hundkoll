@@ -58,8 +58,12 @@
 	}
 
 	function backdate() {
+		// Read the prop before discarding: `type` is a live getter into the
+		// page's derived lookup of the running walk, so once the walk is gone
+		// it evaluates to null and the dialog would open on nothing.
+		const backdated = type;
 		discardWalk();
-		onBackdate(type);
+		onBackdate(backdated);
 	}
 
 	/** Reads the adjusted start as Stockholm wall-clock; junk is ignored. */
