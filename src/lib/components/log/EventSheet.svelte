@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
 	import { fieldsFor } from '$lib/events/fields';
 	import { detailSummary } from '$lib/events/summary';
@@ -29,6 +30,20 @@
 	// Ta bort asks once by turning into its own confirmation, rather than
 	// raising a browser dialog the rest of the app never uses.
 	let confirmingDelete = $state(false);
+
+	/**
+	 * Closes the sheet once the server has acted, since this row is then
+	 * either gone or out of date — the page owns the sheet, so it has to be
+	 * told. A failure deliberately leaves it open, carrying the message.
+	 */
+	const submit: SubmitFunction =
+		() =>
+		async ({ result, update }) => {
+			await update();
+			if (result.type === 'redirect') {
+				onClose();
+			}
+		};
 
 	const label = $derived(event.type?.label ?? event.type_id);
 	const fields = $derived(fieldsFor(event.type_id));
@@ -65,7 +80,7 @@
 		<form
 			method="POST"
 			action="?/update"
-			use:enhance
+			use:enhance={submit}
 			class="flex flex-col gap-3"
 		>
 			<input
@@ -140,7 +155,7 @@
 		<form
 			method="POST"
 			action="?/delete"
-			use:enhance
+			use:enhance={submit}
 			class="mt-2"
 		>
 			<input
