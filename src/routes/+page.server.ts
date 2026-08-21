@@ -2,15 +2,28 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as locale from '$lib/locale';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
-import { insertEvent, parseEventForm, recentEvents } from '$lib/server/events';
+import {
+	deleteEvent,
+	getEvent,
+	insertEvent,
+	parseEventEdit,
+	parseEventForm,
+	recentEvents,
+	updateEvent
+} from '$lib/server/events';
 import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
-	const [dog, types, events] = await Promise.all([
+	// ?event=<id> renders the edit sheet server-side, the same way ?detail=
+	// renders the log dialog — so both open without JavaScript.
+	const eventParam = url.searchParams.get('event');
+
+	const [dog, types, events, editEvent] = await Promise.all([
 		currentDog(supabase),
 		listEventTypes(supabase),
-		recentEvents(supabase)
+		recentEvents(supabase),
+		eventParam ? getEvent(supabase, eventParam) : null
 	]);
 
 	// ?detail=<type_id> renders the backdating dialog server-side, so it
@@ -21,6 +34,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		dog,
 		types,
 		events,
+		editEvent,
 		detailType: types.find((type) => type.id === detailParam) ?? null,
 		nowLocal: time.stockholmNowForInput(),
 		// Travels with the form so a resubmit collides on the primary key
@@ -49,6 +63,44 @@ export const actions: Actions = {
 		}
 
 		// Also clears any ?detail= param, closing the dialog.
+		redirect(303, '/');
+	},
+
+	// Edits go straight to the server rather than through the offline queue:
+	// logging happens on walks, correcting happens on the couch.
+	update: async ({ request, locals: { supabase } }) => {
+		const form = await request.formData();
+
+		// Read the row first: it decides which fields exist and which details
+		// an edit must preserve, and the form is not to be trusted for either.
+		const event = await getEvent(supabase, String(form.get('event_id') ?? ''));
+		if (!event) {
+			return fail(404, { message: locale.errors.eventGone });
+		}
+
+		const parsed = parseEventEdit(form, event);
+		if (!parsed.ok) {
+			return fail(400, { message: parsed.message });
+		}
+
+		const message = await updateEvent(supabase, event.id, parsed.patch);
+		if (message) {
+			return fail(500, { message });
+		}
+
+		// Clears ?event=, closing the sheet, and reloads the lists — every
+		// stat is a SQL view, so the charts follow with no work here.
+		redirect(303, '/');
+	},
+
+	delete: async ({ request, locals: { supabase } }) => {
+		const form = await request.formData();
+
+		const message = await deleteEvent(supabase, String(form.get('event_id') ?? ''));
+		if (message) {
+			return fail(500, { message });
+		}
+
 		redirect(303, '/');
 	}
 };
