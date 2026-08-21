@@ -2,6 +2,30 @@
 
 > Source: `new-features.md` § "Make every logged event editable"
 
+> **Status: ✅ Built and shipped** — Phase 1 in PR #29, Phase 2 in PR #30, as
+> the plan sequenced them. The RLS finding held up exactly as written: the
+> `member_update` policy plus column grants on `occurred_at, details, note`
+> shipped with Phase 1 (migration pushed). All three open questions took
+> their defaults: any household member may delete, legacy detail keys are
+> preserved by merging over stored details, and day cells show up to three
+> icons plus "+n".
+>
+> **Notes from building it:**
+>
+> - The sheet had to be told to close after a successful action. It is opened
+>   two ways — from a `?event=` URL, and from a tap that holds the row in page
+>   state — and only the first closes by itself when the data reloads. Both
+>   forms now share one `SubmitFunction` that closes on a redirect and stays
+>   open on a failure, so the message remains readable.
+> - `monthBoundsUtc` validates its parsed start **before** doing month
+>   arithmetic: `"2026-13"` satisfies the `YYYY-MM` pattern, and `addMonths`
+>   throws on it rather than reporting it, so a hand-edited `?month=` would
+>   have crashed the page. Caught by its own test.
+> - The edit/delete sequence lives in `$lib/server/events.ts` as
+>   `applyEventEdit`/`applyEventDelete` rather than in the routes, because
+>   both `/` and `/history` offer it and the read-then-parse-against-its-type
+>   order must not drift between them.
+
 ## Summary
 
 Two phases sharing one edit mechanism:

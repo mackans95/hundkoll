@@ -17,6 +17,10 @@ Four screens, as a bottom tab bar:
 | **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                   |
 | **Inställningar** | The interval for each activity, editable. Blank means "no schedule". Also logout.                                           |
 
+Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
+than a fifth tab — the tab bar is for daily screens, and history is an occasional lookup.
+Tapping any stored event, in either list, opens a sheet to correct or remove it.
+
 Swedish in the UI, English in the code.
 
 ## Stack
@@ -70,6 +74,7 @@ src/lib/
   server/      every query, and nothing else — the bundler keeps it off the client
   events/      the detail-field catalogue, shared by the form and the action
   stats/       pure row → chart-column and row → tile logic
+  history.ts   pure row → calendar-cell logic, the same shape as stats/
   offline/     the IndexedDB queue and the submit handler that feeds it
   components/  ui primitives at the top, then charts/ log/ stats/ status/
   time.ts      computation: timezone conversion and calendar arithmetic
