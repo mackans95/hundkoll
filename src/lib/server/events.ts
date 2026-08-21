@@ -30,6 +30,22 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 }
 
 /**
+ * Reads one Stockholm month of events, oldest first — what the history
+ * calendar groups into day cells. Bounds come from time.monthBoundsUtc.
+ */
+export async function monthEvents(db: Db, from: string, to: string): Promise<EventRow[]> {
+	const { data } = await db
+		.from('events')
+		.select(EVENT_COLUMNS)
+		.gte('occurred_at', from)
+		// Exclusive: `to` is the next month's first midnight.
+		.lt('occurred_at', to)
+		.order('occurred_at');
+
+	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
+}
+
+/**
  * Reads one event for the edit sheet, or null when there is no such row —
  * which also covers another household's event, since RLS scopes the select.
  */
@@ -194,4 +210,36 @@ export async function deleteEvent(db: Db, id: string): Promise<string | null> {
 		return locale.errors.deleteFailed;
 	}
 	return count === 0 ? locale.errors.eventGone : null;
+}
+
+/** What an edit or a delete came to, for the route to phrase as a response. */
+export type EditOutcome = { ok: true } | { ok: false; status: number; message: string };
+
+/**
+ * The whole edit, from submitted form to stored row. Kept here rather than in
+ * the routes because both the log page and the history page offer it, and the
+ * sequence — read the row, parse against *its* type, patch — must not drift
+ * between them.
+ */
+export async function applyEventEdit(db: Db, form: FormData): Promise<EditOutcome> {
+	// The row decides which fields exist and which details an edit must
+	// preserve, and the form is not to be trusted for either.
+	const event = await getEvent(db, String(form.get('event_id') ?? ''));
+	if (!event) {
+		return { ok: false, status: 404, message: locale.errors.eventGone };
+	}
+
+	const parsed = parseEventEdit(form, event);
+	if (!parsed.ok) {
+		return { ok: false, status: 400, message: parsed.message };
+	}
+
+	const message = await updateEvent(db, event.id, parsed.patch);
+	return message ? { ok: false, status: 500, message } : { ok: true };
+}
+
+/** The delete half of the same pair. */
+export async function applyEventDelete(db: Db, form: FormData): Promise<EditOutcome> {
+	const message = await deleteEvent(db, String(form.get('event_id') ?? ''));
+	return message ? { ok: false, status: 500, message } : { ok: true };
 }
