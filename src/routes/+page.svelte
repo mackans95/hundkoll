@@ -7,6 +7,7 @@
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
 	import { replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { LIVE_TYPE_IDS } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import { activeWalk, loadActiveWalk, startWalk } from '$lib/offline/activeWalk.svelte';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
@@ -16,8 +17,21 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	// A walk may still be running from before the app was killed.
-	onMount(loadActiveWalk);
+	onMount(() => {
+		// A walk may still be running from before the app was killed.
+		loadActiveWalk();
+		// A live type's ?detail= means the tap beat hydration, or the installed
+		// app reopened the URL it was closed at; do what the tap meant. After
+		// loadActiveWalk, so a walk that survived the kill wins over the URL.
+		if (data.detailType && LIVE_TYPE_IDS.has(data.detailType.id)) {
+			startWalk(data.detailType.id);
+			urlDialogClosed = true;
+			// A task later: the router finishes starting after mount, and
+			// replaceState throws until then. Left in place, ?detail= would
+			// start a fresh walk on the next open.
+			setTimeout(() => replaceState('/', {}), 0);
+		}
+	});
 
 	/** Everything the dialog needs, whoever opened it. */
 	type OpenDialog = {

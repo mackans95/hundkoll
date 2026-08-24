@@ -361,6 +361,10 @@ not needed:
   which the page already has. Tapping a tile builds the dialog in place. The
   `?detail=<id>` route stays as the pre-hydration and no-JavaScript fallback, and closing
   it uses `replaceState` rather than a navigation, since there is no new data to fetch.
+  For a live type that fallback lands on the backdating dialog, which is not what the tap
+  meant, so `+page.svelte` converts a live `?detail=` into a running walk on mount and
+  tidies the URL away. That covers both the tap that beat hydration and the installed app
+  reopening the URL it was closed at; without JavaScript the dialog stands, as before.
 - **Saving** writes to the queue, closes the dialog, and sends afterwards. The row shows
   up in the list immediately, described by parsing the form the same way the action will
   (`$lib/events/details.ts` is shared for exactly that reason), so it reads the same
