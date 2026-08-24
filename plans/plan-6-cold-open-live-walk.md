@@ -4,6 +4,37 @@
 > without refresh) the walk log shows the old dialog, so it does not start the
 > live walk functionality that is now the default".
 
+> **Status: ✅ Built and shipped** — PR #33, as designed: the conversion sits
+> in the existing `onMount`, after `loadActiveWalk`, and the anchor is
+> untouched, so the no-JavaScript path still gets the dialog.
+>
+> **Deviations from the plan as written:**
+>
+> - **The URL is tidied a task later**, not inline as the snippet had it.
+>   `replaceState` throws until SvelteKit has finished starting its router,
+>   which happens _after_ `onMount` — and in dev the throw took the whole
+>   mount effect down with it, leaving the dialog up. Ruled out: `goto`
+>   (works, but it is a navigation — a round trip at the app's slowest
+>   moment, and unreliable on an offline cold open), `afterNavigate` (fires
+>   before the router is marked started, so it throws identically), a
+>   redirect from a universal `load` (same round trip, plus a side effect in
+>   `load`), and native `history.replaceState` (desyncs Kit's own history
+>   bookkeeping and `page.url`).
+> - **No unit test.** The walk state lives in `activeWalk.svelte.ts`, and
+>   importing it under vitest pulls in `$app/forms` through the queue, which
+>   does not resolve outside a build. Stubbing it would cross the pure-logic
+>   only line this project drew on purpose, so the ordering is pinned by a
+>   comment and verified over CDP instead.
+> - The README line landed in the `?detail=` bullet under Performance rather
+>   than in "Offline and installable" — that bullet is where the
+>   pre-hydration fallback is already explained.
+>
+> Verified over CDP against a throttled dev server: a tap at 120 ms with the
+> CPU throttled 20× genuinely loaded the document from `?detail=walk` (the
+> navigation entry confirms it) and still ended on the live card with the URL
+> back to `/`; a restored URL over a 40-minute walk left its start, counts
+> and note untouched; `?detail=meal` still opens its dialog.
+
 ## Summary
 
 Not the service worker. This is the live walk's own design boundary showing
