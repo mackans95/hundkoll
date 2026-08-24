@@ -1,3 +1,19 @@
+> **All four of these are built and shipped.** Kept as written — this is the
+> record of what was asked for and why, in the words it was asked in, which
+> each plan document cites as its source. The plans carry the "as built"
+> notes; this file is deliberately not rewritten to match the outcome.
+>
+> | Request                   | Plan                                         | Shipped in  |
+> | ------------------------- | -------------------------------------------- | ----------- |
+> | Automate walk logging     | [Plan 1](plan-1-live-walk.md)                | PR #28      |
+> | Re-design adding events   | [Plan 2](plan-2-event-type-extensibility.md) | PR #27      |
+> | Make every event editable | [Plan 3](plan-3-editable-events.md)          | PR #29, #30 |
+> | Dark mode                 | [Plan 4](plan-4-dark-mode.md)                | PR #22–#25  |
+>
+> Where the result differs from the plan — Avbryt not confirming, the count
+> steppers losing their checkbox, history as a link rather than a fifth tab —
+> the plan's status banner says so and why.
+
 # Make the walk-logging more automated, or add another option for it.
 
 ## Problem

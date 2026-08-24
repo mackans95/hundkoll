@@ -303,6 +303,24 @@ only if the user is a member of the owning household. `event_types` is readable 
 and writable only in `interval_days`, via a column grant, so the Settings screen can adjust
 schedules without being able to rewrite the catalogue.
 
+`events` follows the same policy-plus-column-grant shape, and the reason is worth knowing.
+The original `member_access` policy's `with check` requires `created_by = auth.uid()`, and
+that clause validates the new row state on UPDATE as well as INSERT — so it silently made
+**editing the other person's events impossible** while leaving deletes fine (those are
+governed by `using`, which is membership only). A second policy, `member_update`, checks
+membership alone; permissive policies OR together, so that is enough, and `member_access`
+still guards inserts where the author must be the creator. Then:
+
+```sql
+revoke update on events from authenticated, anon;
+grant update (occurred_at, details, note) on events to authenticated;
+```
+
+An edit can change _what happened_, never which row it is, whose dog it is, which activity
+it was, or who logged it — enforced by the database, so no app bug can reassign a row or
+launder authorship. Changing an event's type is deliberately unsupported: delete and log
+again, which keeps `details` consistent with the type's field list.
+
 ## Offline and installable
 
 Hundkoll is a PWA: manifest, icons, and standalone display, so it installs to the home
