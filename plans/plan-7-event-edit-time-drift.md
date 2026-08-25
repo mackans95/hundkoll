@@ -4,6 +4,42 @@
 > events list, it has seemed like the change (especially if changing time) has
 > altered the previous events time aswell… I'm not sure about this".
 
+> **Status: ✅ Built and shipped** — PR #34: the seconds fix and its tests as
+> planned, plus a defect this plan missed. The row highlight was left out, as
+> the plan said it could be.
+>
+> **Correction — the seconds bug is real but historical.** Writing the fix
+> turned up what the plan should have checked before calling it confirmed:
+> **every path that logs an event submits whole minutes.** The dialog's field
+> is minute precision, and the live walk sends
+> `stockholmForInput(startedAt)`. So a stored `occurred_at` is already on
+> `:00`, and re-truncating it changes nothing. The exception is rows written
+> before the dialog had a time field, which took the column's `now()` default
+> with full precision — that field arrived in `4299f9c` on 2026-08-12, so it
+> is the first few hours of the app's life. The fix is still worth having (it
+> protects those rows and any future path that stores a real instant), but it
+> **cannot** be what you saw when editing a recent event.
+>
+> **What can:** with every row sitting on an exact minute, two events sharing
+> one are ordinary — and neither list query had a tie-break, so their order
+> was unspecified. An `UPDATE` rewrites the row, which can move it in the
+> heap and swap the pair. So editing one event really could reorder another,
+> and it needed no time change at all. Both queries now break ties on
+> `created_at`.
+>
+> **The queries below are wrong**, in the same way: they treat "sits on an
+> exact minute" as the fingerprint of an edited row, when it is the shape of
+> every row. What actually answers the question:
+>
+> ```sql
+> -- Rows that still carry seconds: the only ones the old bug could touch.
+> select count(*) from events where extract(second from occurred_at) <> 0;
+>
+> -- Events sharing a minute — the pairs whose order was unspecified.
+> select date_trunc('minute', occurred_at) as minute, count(*), array_agg(type_id)
+> from events group by 1 having count(*) > 1 order by 1 desc limit 20;
+> ```
+
 ## Summary
 
 You were right to flag it and right to be unsure. **An edit cannot write to
@@ -85,9 +121,9 @@ Worth stating precisely, so this can be ruled out rather than re-suspected:
 
 ## Confirming it against your data
 
-The seconds bug leaves a fingerprint, which makes this checkable rather than a
-matter of memory. Every edited row has `occurred_at` on an exact minute, while
-live-logged rows almost never do:
+**Superseded — see the correction in the status banner.** Live-logged rows sit
+on an exact minute too, so what follows does not distinguish anything. Kept as
+written, since the reasoning is what the banner corrects:
 
 ```sql
 -- Rows sitting exactly on the minute: every edited row, plus the rare
