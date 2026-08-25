@@ -1,18 +1,21 @@
 <script lang="ts">
 	import type { ColumnBucket } from '$lib/types/charts';
+	import { placeTooltip } from './geometry';
 
 	let {
 		bucket,
 		centerPx,
-		topPercent,
-		containerW
+		barTopPx,
+		containerW,
+		containerH
 	}: {
 		bucket: ColumnBucket;
 		/** Where the tooltip wants its centre: over the hovered column. */
 		centerPx: number;
-		/** How far down the box points, as a percentage of the chart height. */
-		topPercent: number;
+		/** The top of the hovered bar, which the box sits clear of. */
+		barTopPx: number;
 		containerW: number;
+		containerH: number;
 	} = $props();
 
 	// Clamped by the measured tooltip width so the box never leaves the
@@ -23,12 +26,20 @@
 		const half = tipW / 2;
 		return Math.min(containerW - half - 2, Math.max(half + 2, centerPx));
 	});
+
+	// The same idea vertically, and the height has to be measured for it: a
+	// box taller than the space above a tall bar flips below instead.
+	let tipH = $state(0);
+	const place = $derived(placeTooltip(barTopPx, tipH, containerH));
 </script>
 
 <div
 	bind:clientWidth={tipW}
-	class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-tooltip px-2.5 py-1.5 text-xs whitespace-nowrap text-tooltip-ink shadow-lg"
-	style="left: {leftPx}px; top: calc({topPercent}% - 6px)"
+	bind:clientHeight={tipH}
+	class="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg bg-tooltip px-2.5 py-1.5 text-xs whitespace-nowrap text-tooltip-ink shadow-lg {place.bottomAnchored
+		? '-translate-y-full'
+		: ''}"
+	style="left: {leftPx}px; top: {place.topPx}px"
 >
 	<p class="font-semibold">{bucket.tooltip.heading}</p>
 	<div class="mt-1 flex flex-col gap-1">
