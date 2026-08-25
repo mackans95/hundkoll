@@ -36,10 +36,11 @@
 	let hovered = $state<number | null>(null);
 	// Only ever read inside event handlers, so it has no need to be reactive.
 	let containerEl: HTMLDivElement | undefined;
-	let containerW = $state(0);
-	// Measured, not derived from the viewBox ratio: the tooltip's placement
-	// depends on it, so it should be the box the tooltip actually sits in.
-	let containerH = $state(0);
+	// The tooltip is placed against the screen, not the chart, so the anchor
+	// travels in viewport coordinates: the hovered column, and the pointer.
+	let anchor = $state({ x: 0, y: 0 });
+	let viewportW = $state(0);
+	let viewportH = $state(0);
 
 	/** Picks the column under the pointer from its position across the chart. */
 	function hoverFromEvent(e: PointerEvent) {
@@ -47,6 +48,7 @@
 		const rect = containerEl.getBoundingClientRect();
 		const idx = Math.floor(((e.clientX - rect.left) / rect.width) * buckets.length);
 		hovered = Math.min(buckets.length - 1, Math.max(0, idx));
+		anchor = { x: rect.left + ((hovered + 0.5) / buckets.length) * rect.width, y: e.clientY };
 	}
 
 	// Looked up rather than indexed directly where it is used: `hovered` can
@@ -54,24 +56,21 @@
 	// the chart stays mounted), so the index may briefly point past the new
 	// array. A stale index simply means no tooltip.
 	const hoveredBucket = $derived(hovered !== null ? (buckets[hovered] ?? null) : null);
-
-	// Where the tooltip points: centred over the hovered column, clear of the
-	// top of its bar. The tooltip clamps both, and picks its own side.
-	const tipCenterPx = $derived(hovered === null ? 0 : (((hovered + 0.5) * slot) / W) * containerW);
-	const tipBarTopPx = $derived(
-		hoveredBucket === null ? 0 : (y(total(hoveredBucket.segments)) / height) * containerH
-	);
 </script>
+
+<svelte:window
+	bind:innerWidth={viewportW}
+	bind:innerHeight={viewportH}
+/>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	bind:this={containerEl}
-	bind:clientWidth={containerW}
-	bind:clientHeight={containerH}
 	class="relative touch-pan-y select-none"
 	onpointermove={hoverFromEvent}
 	onpointerdown={hoverFromEvent}
 	onpointerleave={() => (hovered = null)}
+	onpointercancel={() => (hovered = null)}
 >
 	<svg
 		viewBox="0 0 {W} {height}"
@@ -174,10 +173,10 @@
 	{#if hoveredBucket !== null}
 		<ColumnTooltip
 			bucket={hoveredBucket}
-			centerPx={tipCenterPx}
-			barTopPx={tipBarTopPx}
-			{containerW}
-			{containerH}
+			anchorX={anchor.x}
+			pointerY={anchor.y}
+			{viewportW}
+			{viewportH}
 		/>
 	{/if}
 </div>

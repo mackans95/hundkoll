@@ -4,42 +4,37 @@
 
 	let {
 		bucket,
-		centerPx,
-		barTopPx,
-		containerW,
-		containerH
+		anchorX,
+		pointerY,
+		viewportW,
+		viewportH
 	}: {
 		bucket: ColumnBucket;
-		/** Where the tooltip wants its centre: over the hovered column. */
-		centerPx: number;
-		/** The top of the hovered bar, which the box sits clear of. */
-		barTopPx: number;
-		containerW: number;
-		containerH: number;
+		/** Centre of the hovered column, in viewport pixels. */
+		anchorX: number;
+		/** The pointer — a thumb, usually — which the box stays clear of. */
+		pointerY: number;
+		viewportW: number;
+		viewportH: number;
 	} = $props();
 
-	// Clamped by the measured tooltip width so the box never leaves the
-	// container (and therefore never the viewport).
+	// Measured, because both clamps need the box's own size.
 	let tipW = $state(0);
-	const leftPx = $derived.by(() => {
-		if (containerW === 0) return 0;
-		const half = tipW / 2;
-		return Math.min(containerW - half - 2, Math.max(half + 2, centerPx));
-	});
-
-	// The same idea vertically, and the height has to be measured for it: a
-	// box taller than the space above a tall bar flips below instead.
 	let tipH = $state(0);
-	const place = $derived(placeTooltip(barTopPx, tipH, containerH));
+	const place = $derived(
+		placeTooltip({ x: anchorX, y: pointerY }, { w: tipW, h: tipH }, { w: viewportW, h: viewportH })
+	);
 </script>
 
+<!-- fixed, so no card can clip it; z-25 sits over the tab bar (z-20) and
+     under a modal sheet (z-30), which cannot be open over a chart anyway. -->
 <div
 	bind:clientWidth={tipW}
 	bind:clientHeight={tipH}
-	class="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg bg-tooltip px-2.5 py-1.5 text-xs whitespace-nowrap text-tooltip-ink shadow-lg {place.bottomAnchored
+	class="pointer-events-none fixed z-25 -translate-x-1/2 rounded-lg bg-tooltip px-2.5 py-1.5 text-xs whitespace-nowrap text-tooltip-ink shadow-lg {place.bottomAnchored
 		? '-translate-y-full'
 		: ''}"
-	style="left: {leftPx}px; top: {place.topPx}px"
+	style="left: {place.centerX}px; top: {place.topPx}px"
 >
 	<p class="font-semibold">{bucket.tooltip.heading}</p>
 	<div class="mt-1 flex flex-col gap-1">
