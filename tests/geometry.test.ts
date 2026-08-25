@@ -10,12 +10,18 @@ const TIP = { w: 255, h: 86 }; // The walk tooltip, measured.
 const PHONE = { w: 430, h: 900 };
 
 describe('placeTooltip', () => {
-	it('sits a fingertip above the pointer when there is room', () => {
+	it("sits a thumb's width above the pointer when there is room", () => {
 		expect(placeTooltip({ x: 215, y: 500 }, TIP, PHONE)).toEqual({
 			centerX: 215,
-			topPx: 472, // bottom-anchored: the box fills the 86px above this
+			topPx: 452, // bottom-anchored: the box fills the 86px above this
 			bottomAnchored: true
 		});
+	});
+
+	it('takes the full gap while the screen allows it, and no less', () => {
+		// 48 + 86 + an 8px margin is 142: the least room the ideal needs.
+		expect(placeTooltip({ x: 215, y: 142 }, TIP, PHONE).bottomAnchored).toBe(true);
+		expect(placeTooltip({ x: 215, y: 141 }, TIP, PHONE).bottomAnchored).toBe(false);
 	});
 
 	it('holds the box on screen when the column is near an edge', () => {
@@ -27,9 +33,8 @@ describe('placeTooltip', () => {
 		expect(placeTooltip({ x: 40, y: 500 }, { w: 420, h: 86 }, PHONE).centerX).toBe(215);
 	});
 
-	// The stats page puts the walk chart high, so this is the ordinary case on
-	// a phone, not an edge case: 115 - 28 - 86 lands above the top of the
-	// screen, but the box still fits wholly above the finger.
+	// Not an edge case: a chart near the top of the screen leaves less than
+	// 142px above the finger, and the box still belongs wholly above it.
 	it('squeezes up against the top of the screen rather than going below', () => {
 		expect(placeTooltip({ x: 215, y: 115 }, TIP, PHONE)).toEqual({
 			centerX: 215,
@@ -55,7 +60,7 @@ describe('placeTooltip', () => {
 		// cannot clear the middle of a 430px screen either way.
 		expect(placeTooltip({ x: 215, y: 40 }, TIP, PHONE)).toEqual({
 			centerX: 215,
-			topPx: 68,
+			topPx: 88,
 			bottomAnchored: false
 		});
 	});
@@ -71,7 +76,7 @@ describe('placeTooltip', () => {
 	it('anchors upward until the box has been measured', () => {
 		expect(placeTooltip({ x: 215, y: 500 }, { w: 0, h: 0 }, PHONE)).toEqual({
 			centerX: 215,
-			topPx: 472,
+			topPx: 452,
 			bottomAnchored: true
 		});
 	});

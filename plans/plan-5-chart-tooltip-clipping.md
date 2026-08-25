@@ -59,7 +59,7 @@ So the box leaves the card: **`position: fixed`, placed against the viewport,
 a fingertip clear of the pointer.** `placeTooltip` now works in screen
 coordinates and tries four placements in order:
 
-1. above the pointer, the full 28px clear of it;
+1. above the pointer, the full gap clear of it — **48px**, a whole thumb;
 2. squeezed against the top of the screen, still wholly above the finger;
 3. beside it, pinned to the far edge opposite the hand — hold the left of the
    screen and the box lands on the right;
@@ -75,18 +75,21 @@ hit test confirms it lands on top.
 
 ### Measured over CDP, touching each column where a thumb would land
 
-| Case                                         | Result                                                                             |
-| -------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Walk chart, page at rest                     | 30/30 wholly above the touch, **28px minimum clearance**, 0 covering it, 0 clipped |
-| Accident chart                               | 30/30 above, 28px clearance                                                        |
-| Chart scrolled to the very top of the screen | 6 above, 14 beside, 10 below; 10px worst-case clearance, still 0 covering it       |
-| 360px, all of the above                      | Same, with 4 boxes reaching over the card's top edge — which is now allowed        |
+Re-measured after the gap went from 28px to 48px, on a probe page laid out
+like `/stats` — a header and a card above the walk card, so the chart sits
+where it really does:
 
-The residual case is the third row: with the chart scrolled to within ~90px of
-the top of the screen and the finger near the middle, the box has to go below,
-where the hand is. The probe page is deliberately pessimistic — it puts the
-walk card first, while `/stats` has a header and the Trend card above it, so
-the real page has more room above the finger than this measures.
+| Scroll position                     | Result                                                               |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| Chart mid-screen (reading position) | **30/30 above the touch at the full 48px**, 0 covering it, 0 clipped |
+| Chart high on the screen            | **30/30 at the full 48px**                                           |
+| Chart pressed against the top       | 6 at the full gap, 18 squeezed above, 3 beside, 3 below; worst 10px  |
+| 360px, all three                    | The same, worst case 13px                                            |
+
+The residual case is the third row, and it takes deliberate scrolling: the
+chart has to be within ~140px of the top of the screen before the ladder
+starts stepping down, and only the columns whose finger position leaves
+nothing above go below.
 
 ## Summary
 

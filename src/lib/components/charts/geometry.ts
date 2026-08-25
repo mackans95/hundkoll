@@ -38,8 +38,9 @@ const MIN_GAP = 10;
  * `fixed`, so only the viewport bounds it.
  *
  * A thumb reaches up the screen, so the room it leaves is above the touch —
- * `gap` is fingertip-sized rather than decorative. Four placements, in order
- * of how much of the finger they clear:
+ * `gap` is a whole thumb rather than decorative, wide enough that the box
+ * reads as separate from the hand. Four placements, in order of how much of
+ * the finger they clear:
  *
  * 1. above the pointer, the full gap clear of it;
  * 2. squeezed up against the top of the screen, still wholly above it;
@@ -51,7 +52,7 @@ export function placeTooltip(
 	anchor: { x: number; y: number },
 	tip: { w: number; h: number },
 	viewport: { w: number; h: number },
-	gap = 28,
+	gap = 48,
 	edge = 8
 ): TooltipPlacement {
 	const half = tip.w / 2;
