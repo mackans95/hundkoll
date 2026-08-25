@@ -81,6 +81,22 @@ describe('parseEventEdit', () => {
 		});
 	});
 
+	// Rows logged before the dialog had a time field carry real seconds, from
+	// the column's now() default. Editing anything else must not spend them.
+	it('keeps the stored seconds when the minute was not touched', () => {
+		const seconds: EventRow = { ...walk, occurred_at: '2026-08-20T10:00:37.412Z' };
+		const parsed = parseEventEdit(form({ occurred_at: '2026-08-20T12:00', note: 'sol' }), seconds);
+
+		expect(parsed.ok && parsed.patch.occurred_at).toBe('2026-08-20T10:00:37.412Z');
+	});
+
+	it('snaps to :00 when the minute really did change', () => {
+		const seconds: EventRow = { ...walk, occurred_at: '2026-08-20T10:00:37.412Z' };
+		const parsed = parseEventEdit(form({ occurred_at: '2026-08-20T12:05' }), seconds);
+
+		expect(parsed.ok && parsed.patch.occurred_at).toBe('2026-08-20T10:05:00.000Z');
+	});
+
 	it('ignores a type_id in the form: an edit cannot change the activity', () => {
 		const parsed = parseEventEdit(
 			form({ occurred_at: '2026-08-20T14:30', type_id: 'weight', kg: '12.4' }),

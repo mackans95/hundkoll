@@ -48,6 +48,23 @@ describe('stockholmInputToUtc', () => {
 	});
 });
 
+describe('sameMinute', () => {
+	it('holds across seconds and milliseconds, and stops at the boundary', () => {
+		const stored = new Date('2026-08-20T10:00:37.412Z');
+		expect(time.sameMinute(stored, new Date('2026-08-20T10:00:00.000Z'))).toBe(true);
+		expect(time.sameMinute(stored, new Date('2026-08-20T10:00:59.999Z'))).toBe(true);
+		expect(time.sameMinute(stored, new Date('2026-08-20T10:01:00.000Z'))).toBe(false);
+		expect(time.sameMinute(stored, new Date('2026-08-20T09:59:59.999Z'))).toBe(false);
+	});
+
+	it('recognises the value the edit form shows for an instant', () => {
+		const stored = new Date('2026-08-20T10:00:37.000Z');
+		const shown = time.stockholmInputToUtc(time.stockholmForInput(stored));
+		expect(shown).not.toBeNull();
+		expect(time.sameMinute(stored, shown!)).toBe(true);
+	});
+});
+
 describe('calendar arithmetic', () => {
 	it('addDays moves across month and year boundaries', () => {
 		expect(time.addDays('2026-08-14', -3)).toBe('2026-08-11');

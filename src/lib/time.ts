@@ -62,6 +62,15 @@ export function stockholmInputToUtc(input: string): Date | null {
 	return new Date(guess.getTime() - offsetMs(once));
 }
 
+/**
+ * Whether two instants fall in the same minute. Lets an edit tell "the time
+ * field was not touched" from "the time was moved to :00", which a
+ * minute-precision field cannot say for itself.
+ */
+export function sameMinute(a: Date, b: Date): boolean {
+	return Math.floor(a.getTime() / 60_000) === Math.floor(b.getTime() / 60_000);
+}
+
 const inputFormat = new Intl.DateTimeFormat('sv-SE', {
 	timeZone: TZ,
 	year: 'numeric',

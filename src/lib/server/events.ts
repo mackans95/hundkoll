@@ -23,6 +23,11 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 		.from('events')
 		.select(EVENT_COLUMNS)
 		.order('occurred_at', { ascending: false })
+		// Both the dialog and the live walk submit whole minutes, so two events
+		// sharing one are ordinary. Without a second key their order is
+		// unspecified, and an edit rewrites the row — so an unrelated edit could
+		// swap the pair, which reads as a row changing on its own.
+		.order('created_at', { ascending: false })
 		.limit(limit);
 
 	// `details` is jsonb; the keys it holds are the ones DETAIL_FIELDS wrote.
@@ -40,7 +45,9 @@ export async function monthEvents(db: Db, from: string, to: string): Promise<Eve
 		.gte('occurred_at', from)
 		// Exclusive: `to` is the next month's first midnight.
 		.lt('occurred_at', to)
-		.order('occurred_at');
+		.order('occurred_at')
+		// Same tie-break as recentEvents: a day cell's icons should not shuffle.
+		.order('created_at');
 
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
 }
@@ -156,10 +163,16 @@ export type ParsedEdit = { ok: true; patch: EventPatch } | { ok: false; message:
  * edit instead of being destroyed by it.
  */
 export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
-	const occurred = time.stockholmInputToUtc(String(form.get('occurred_at') ?? '').trim());
-	if (!occurred) {
+	const submitted = time.stockholmInputToUtc(String(form.get('occurred_at') ?? '').trim());
+	if (!submitted) {
 		return { ok: false, message: locale.errors.invalidTime };
 	}
+
+	// The field carries minutes only, so an untouched minute must keep the
+	// stored instant: editing a note is not permission to move the event.
+	// A minute that did change lands on :00, which is what was asked for.
+	const stored = new Date(event.occurred_at);
+	const occurred = time.sameMinute(submitted, stored) ? stored : submitted;
 
 	const parsed = parseDetails(form, event.type_id);
 	if (!parsed.ok) {
