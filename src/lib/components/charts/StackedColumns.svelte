@@ -37,6 +37,9 @@
 	// Only ever read inside event handlers, so it has no need to be reactive.
 	let containerEl: HTMLDivElement | undefined;
 	let containerW = $state(0);
+	// Measured, not derived from the viewBox ratio: the tooltip's placement
+	// depends on it, so it should be the box the tooltip actually sits in.
+	let containerH = $state(0);
 
 	/** Picks the column under the pointer from its position across the chart. */
 	function hoverFromEvent(e: PointerEvent) {
@@ -52,11 +55,11 @@
 	// array. A stale index simply means no tooltip.
 	const hoveredBucket = $derived(hovered !== null ? (buckets[hovered] ?? null) : null);
 
-	// Where the tooltip points: centred over the hovered column, just above
-	// the top of its bar. The tooltip clamps the centre itself.
+	// Where the tooltip points: centred over the hovered column, clear of the
+	// top of its bar. The tooltip clamps both, and picks its own side.
 	const tipCenterPx = $derived(hovered === null ? 0 : (((hovered + 0.5) * slot) / W) * containerW);
-	const tipTop = $derived(
-		hoveredBucket === null ? 0 : (y(total(hoveredBucket.segments)) * 100) / height
+	const tipBarTopPx = $derived(
+		hoveredBucket === null ? 0 : (y(total(hoveredBucket.segments)) / height) * containerH
 	);
 </script>
 
@@ -64,6 +67,7 @@
 <div
 	bind:this={containerEl}
 	bind:clientWidth={containerW}
+	bind:clientHeight={containerH}
 	class="relative touch-pan-y select-none"
 	onpointermove={hoverFromEvent}
 	onpointerdown={hoverFromEvent}
@@ -171,8 +175,9 @@
 		<ColumnTooltip
 			bucket={hoveredBucket}
 			centerPx={tipCenterPx}
-			topPercent={tipTop}
+			barTopPx={tipBarTopPx}
 			{containerW}
+			{containerH}
 		/>
 	{/if}
 </div>

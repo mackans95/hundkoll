@@ -4,6 +4,34 @@
 > charts view (especially on mobile) sometimes the tooltip gets hidden behind
 > the header section of that charts card".
 
+> **Status: ✅ Built and shipped** — PR #35: `placeTooltip` in
+> `charts/geometry.ts` with the decision unit-tested, `bind:clientHeight` on
+> the box, and the vertical clamp. `overflow-hidden` stays, the card stays
+> rounded, and nothing about the chart's coordinates leaves the component.
+>
+> **Deviations from the plan as written:**
+>
+> - **Three placements, not two.** "Flip below when there is no room above"
+>   is wrong for bars around the middle of the plot: an 86px box fits on
+>   neither side of a 140px chart, and flipping then clamping dragged the box
+>   back _over the bar it describes_ — measured on a bar whose top sat 91.6px
+>   down, a fifth of a pixel short of fitting above. The rule is now: above
+>   if it fits, below if it fits, otherwise the roomier side with the box
+>   pinned inside the plot. That third case covers part of the chart, which
+>   is the trade the plan already accepted, and it keeps the box whole.
+> - The tooltip is placed in **pixels rather than percent**, so
+>   `-translate-y-full` applies only to the bottom-anchored case and the
+>   clamped positions can be expressed at all. `StackedColumns` binds
+>   `clientHeight` and hands over the bar top in container pixels.
+>
+> Measured with the same CDP sweep as the investigation, at 430px and 360px,
+> over 30 columns spanning 0–10 walks a day. Before: **7 of 30** tooltips cut
+> off by the card's top edge, all 30 reaching into the header band. After:
+> **0 clipped, 0 in the header, 0 leaving the chart area at all.** Columns
+> 0–2 (the short bars) still sit above, so the common case looks exactly as
+> it did; 6 of 30 — the mid-height bars — overlap their own bar's top, which
+> is the third case above.
+
 ## Summary
 
 Real, reproducible, and **not a z-index problem** — so the obvious fix (raise

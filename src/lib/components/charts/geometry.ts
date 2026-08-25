@@ -19,6 +19,41 @@ export function niceCeil(v: number): number {
 	return 10 * pow;
 }
 
+/** Where the hover tooltip goes, in container pixels. */
+export type TooltipPlacement = {
+	/** The box hangs upward from `topPx`, which a transform does for free. */
+	bottomAnchored: boolean;
+	topPx: number;
+};
+
+/**
+ * Picks where the tooltip sits relative to the top of the hovered bar. Above
+ * it by preference, but a tall bar leaves less room than the box needs, and
+ * whatever overflows the chart is clipped by the card's `overflow-hidden`
+ * however high its z-index — so it goes below instead, into the chart, where
+ * a tall bar has room by definition. When neither side fits, the roomier one
+ * wins and the box is held inside the plot: covering part of the chart is a
+ * cost, being cut in half is a bug. Zero `tipH` is "not measured yet", which
+ * only the transform can place without knowing the height.
+ */
+export function placeTooltip(
+	barTopPx: number,
+	tipH: number,
+	plotH: number,
+	gap = 6
+): TooltipPlacement {
+	const above = barTopPx - gap;
+	const below = plotH - barTopPx - gap;
+
+	if (tipH === 0 || tipH <= above) {
+		return { bottomAnchored: true, topPx: above };
+	}
+	if (tipH <= below) {
+		return { bottomAnchored: false, topPx: barTopPx + gap };
+	}
+	return { bottomAnchored: false, topPx: above >= below ? 0 : Math.max(0, plotH - tipH) };
+}
+
 /** Adds a column's segments up to the height the whole bar reaches. */
 export function total(segments: number[]): number {
 	return segments.reduce((a, v) => a + v, 0);
