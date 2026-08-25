@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
 	import { fieldsFor } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
@@ -94,7 +95,7 @@
 
 		<div class="mt-2 flex gap-2">
 			<a
-				href="/"
+				href={resolve('/')}
 				onclick={cancel}
 				class="flex-1 btn btn-secondary"
 			>

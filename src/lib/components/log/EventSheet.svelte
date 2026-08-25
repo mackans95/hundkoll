@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
 	import { fieldsFor } from '$lib/events/fields';
@@ -139,7 +140,7 @@
 
 		<div class="mt-4 flex gap-2">
 			<a
-				href="/"
+				href={resolve('/')}
 				onclick={close}
 				class="flex-1 btn btn-secondary"
 			>

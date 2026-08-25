@@ -22,6 +22,8 @@
 	];
 
 	// Each tab bar changes its own parameter and leaves the other alone.
+	// Relative rather than resolve()'d: a tab swaps one parameter and stays
+	// where it is, so the path is deliberately whatever page this is.
 	const periodHref = (value: Period) => `?period=${value}&trend=${data.trend}`;
 	const trendHref = (value: Period) => `?period=${data.period}&trend=${value}`;
 </script>

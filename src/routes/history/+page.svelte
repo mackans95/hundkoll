@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import Card from '$lib/components/Card.svelte';
 	import MonthCalendar from '$lib/components/history/MonthCalendar.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
@@ -31,10 +32,12 @@
 		// Keeps the month and day on screen; only the sheet leaves the URL.
 		const next = new URL(page.url);
 		next.searchParams.delete('event');
-		replaceState(next.pathname + next.search, {});
+		replaceState(next, {});
 	}
 
 	// Selecting a day keeps the month, and vice versa — one parameter each.
+	// Relative rather than resolve()'d: both stay on this page, and the path
+	// is whatever page that is.
 	const dayHref = (day: string) => `?month=${data.month}&day=${day}`;
 	const monthHref = (month: string) => `?month=${month}`;
 </script>
@@ -45,7 +48,7 @@
 	<header class="flex items-baseline justify-between gap-2 px-1">
 		<h1 class="text-3xl font-bold">{locale.history.title}</h1>
 		<a
-			href="/"
+			href={resolve('/')}
 			class="text-sm text-ink-muted underline">{locale.history.backToLog}</a
 		>
 	</header>

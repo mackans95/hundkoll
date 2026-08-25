@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
 import * as locale from '$lib/locale';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
@@ -62,7 +63,7 @@ export const actions: Actions = {
 		}
 
 		// Also clears any ?detail= param, closing the dialog.
-		redirect(303, '/');
+		redirect(303, resolve('/'));
 	},
 
 	// Edits go straight to the server rather than through the offline queue:
@@ -75,7 +76,7 @@ export const actions: Actions = {
 
 		// Clears ?event=, closing the sheet, and reloads the lists — every
 		// stat is a SQL view, so the charts follow with no work here.
-		redirect(303, '/');
+		redirect(303, resolve('/'));
 	},
 
 	delete: async ({ request, locals: { supabase } }) => {
@@ -84,6 +85,6 @@ export const actions: Actions = {
 			return fail(outcome.status, { message: outcome.message });
 		}
 
-		redirect(303, '/');
+		redirect(303, resolve('/'));
 	}
 };
