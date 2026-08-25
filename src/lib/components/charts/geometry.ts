@@ -19,39 +19,72 @@ export function niceCeil(v: number): number {
 	return 10 * pow;
 }
 
-/** Where the hover tooltip goes, in container pixels. */
+/** Where the hover tooltip goes, in viewport pixels. */
 export type TooltipPlacement = {
+	/** The centre of the box; a transform does the half-width offset. */
+	centerX: number;
+	topPx: number;
 	/** The box hangs upward from `topPx`, which a transform does for free. */
 	bottomAnchored: boolean;
-	topPx: number;
 };
 
+/** The least clearance worth calling clear of a fingertip. */
+const MIN_GAP = 10;
+
 /**
- * Picks where the tooltip sits relative to the top of the hovered bar. Above
- * it by preference, but a tall bar leaves less room than the box needs, and
- * whatever overflows the chart is clipped by the card's `overflow-hidden`
- * however high its z-index — so it goes below instead, into the chart, where
- * a tall bar has room by definition. When neither side fits, the roomier one
- * wins and the box is held inside the plot: covering part of the chart is a
- * cost, being cut in half is a bug. Zero `tipH` is "not measured yet", which
- * only the transform can place without knowing the height.
+ * Places the tooltip against the screen rather than the chart, which is what
+ * makes it work on a phone: a 255px box has nowhere to go inside a 318px
+ * chart that a thumb or the card's own edge does not cover. The box is
+ * `fixed`, so only the viewport bounds it.
+ *
+ * A thumb reaches up the screen, so the room it leaves is above the touch —
+ * `gap` is fingertip-sized rather than decorative. Four placements, in order
+ * of how much of the finger they clear:
+ *
+ * 1. above the pointer, the full gap clear of it;
+ * 2. squeezed up against the top of the screen, still wholly above it;
+ * 3. beside the pointer, pinned to whichever edge clears it — for when the
+ *    chart is near the top of the screen and there is no room above at all;
+ * 4. below it, which the hand covers, when nothing else is possible.
  */
 export function placeTooltip(
-	barTopPx: number,
-	tipH: number,
-	plotH: number,
-	gap = 6
+	anchor: { x: number; y: number },
+	tip: { w: number; h: number },
+	viewport: { w: number; h: number },
+	gap = 28,
+	edge = 8
 ): TooltipPlacement {
-	const above = barTopPx - gap;
-	const below = plotH - barTopPx - gap;
+	const half = tip.w / 2;
+	// A box too wide to clamp into the viewport is centred in it instead.
+	const centerX =
+		tip.w + edge * 2 >= viewport.w
+			? viewport.w / 2
+			: Math.min(viewport.w - edge - half, Math.max(edge + half, anchor.x));
 
-	if (tipH === 0 || tipH <= above) {
-		return { bottomAnchored: true, topPx: above };
+	// Bottom-anchored on the pointer needs no height, which is also what
+	// places the box on the frame before it has been measured.
+	if (tip.h === 0 || anchor.y - gap - tip.h >= edge) {
+		return { centerX, topPx: anchor.y - gap, bottomAnchored: true };
 	}
-	if (tipH <= below) {
-		return { bottomAnchored: false, topPx: barTopPx + gap };
+
+	if (edge + tip.h + MIN_GAP <= anchor.y) {
+		return { centerX, topPx: edge, bottomAnchored: false };
 	}
-	return { bottomAnchored: false, topPx: above >= below ? 0 : Math.max(0, plotH - tipH) };
+
+	// Vertically there is nothing left, so try sideways: the box goes to the
+	// far edge, opposite the hand, and counts only if the pointer ends up
+	// outside it. Hold the left of the screen and it lands on the right.
+	const middleY = Math.max(edge, Math.min(anchor.y - tip.h / 2, viewport.h - edge - tip.h));
+	const far = anchor.x <= viewport.w / 2 ? viewport.w - edge - half : edge + half;
+	if (far - half >= anchor.x + MIN_GAP || far + half <= anchor.x - MIN_GAP) {
+		return { centerX: far, topPx: middleY, bottomAnchored: false };
+	}
+
+	return {
+		centerX,
+		topPx: Math.max(edge, Math.min(anchor.y + gap, viewport.h - edge - tip.h)),
+		bottomAnchored: false
+	};
 }
 
 /** Adds a column's segments up to the height the whole bar reaches. */

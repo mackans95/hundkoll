@@ -1,41 +1,78 @@
-// Where the hover tooltip sits. A tall bar leaves less room above it than
-// the box needs, and what overflows the chart is clipped by the card.
+// Where the hover tooltip sits. It is placed against the screen, not the
+// chart: a 255px box has nowhere to go inside a 318px chart that a thumb or
+// the card's own edge does not cover. A thumb reaches up the screen, so the
+// order of preference is above the touch, then beside it, then below.
 
 import { describe, expect, it } from 'vitest';
 import { placeTooltip } from '$lib/components/charts/geometry';
 
-const TIP = 86; // A two-row walk tooltip, measured.
-const PLOT = 140; // The chart at 430px wide.
+const TIP = { w: 255, h: 86 }; // The walk tooltip, measured.
+const PHONE = { w: 430, h: 900 };
 
 describe('placeTooltip', () => {
-	it('sits above a short bar, hanging upward from the bar top', () => {
-		expect(placeTooltip(120, TIP, PLOT)).toEqual({ bottomAnchored: true, topPx: 114 });
+	it('sits a fingertip above the pointer when there is room', () => {
+		expect(placeTooltip({ x: 215, y: 500 }, TIP, PHONE)).toEqual({
+			centerX: 215,
+			topPx: 472, // bottom-anchored: the box fills the 86px above this
+			bottomAnchored: true
+		});
 	});
 
-	it('goes below a tall bar, which is where the room is', () => {
-		expect(placeTooltip(20, TIP, PLOT)).toEqual({ bottomAnchored: false, topPx: 26 });
+	it('holds the box on screen when the column is near an edge', () => {
+		expect(placeTooltip({ x: 20, y: 500 }, TIP, PHONE).centerX).toBe(8 + 255 / 2);
+		expect(placeTooltip({ x: 420, y: 500 }, TIP, PHONE).centerX).toBe(430 - 8 - 255 / 2);
 	});
 
-	it('switches sides exactly when the gap and the box stop fitting above', () => {
-		expect(placeTooltip(92, TIP, PLOT).bottomAnchored).toBe(true);
-		expect(placeTooltip(91.9, TIP, PLOT).bottomAnchored).toBe(false);
+	it('centres a box too wide to clamp, rather than picking a side', () => {
+		expect(placeTooltip({ x: 40, y: 500 }, { w: 420, h: 86 }, PHONE).centerX).toBe(215);
 	});
 
-	// Bars around the middle of a short chart have room on neither side. The
-	// box must stay inside the plot; which bars it covers is secondary.
-	it('takes the roomier side when neither fits, and stays in the plot', () => {
-		// Just short of fitting above: 85.6px of room, so it pins to the top
-		// and still clears the bar.
-		expect(placeTooltip(91.6, TIP, PLOT)).toEqual({ bottomAnchored: false, topPx: 0 });
-		// Marginally roomier below: pinned to the bottom of the plot instead.
-		expect(placeTooltip(69, TIP, PLOT)).toEqual({ bottomAnchored: false, topPx: 54 });
+	// The stats page puts the walk chart high, so this is the ordinary case on
+	// a phone, not an edge case: 115 - 28 - 86 lands above the top of the
+	// screen, but the box still fits wholly above the finger.
+	it('squeezes up against the top of the screen rather than going below', () => {
+		expect(placeTooltip({ x: 215, y: 115 }, TIP, PHONE)).toEqual({
+			centerX: 215,
+			topPx: 8,
+			bottomAnchored: false
+		});
 	});
 
-	it('gives up gracefully when the box is taller than the whole plot', () => {
-		expect(placeTooltip(30, 200, PLOT)).toEqual({ bottomAnchored: false, topPx: 0 });
+	it('goes to the far side when the finger is too high for anything above', () => {
+		// Holding the left of the screen: the box lands on the right, clear of it.
+		const left = placeTooltip({ x: 60, y: 40 }, TIP, PHONE);
+		expect(left).toEqual({ centerX: 430 - 8 - 127.5, topPx: 8, bottomAnchored: false });
+		expect(left.centerX - TIP.w / 2).toBeGreaterThan(60);
+
+		// And the mirror image.
+		const right = placeTooltip({ x: 380, y: 40 }, TIP, PHONE);
+		expect(right.centerX).toBe(8 + 127.5);
+		expect(right.centerX + TIP.w / 2).toBeLessThan(380);
 	});
 
-	it('hangs upward until it has been measured, as it did before', () => {
-		expect(placeTooltip(20, 0, PLOT)).toEqual({ bottomAnchored: true, topPx: 14 });
+	it('falls back to below the pointer only when nothing else is possible', () => {
+		// Near the top and in the middle: no room above, and a 255px box
+		// cannot clear the middle of a 430px screen either way.
+		expect(placeTooltip({ x: 215, y: 40 }, TIP, PHONE)).toEqual({
+			centerX: 215,
+			topPx: 68,
+			bottomAnchored: false
+		});
+	});
+
+	it('keeps a below-pointer box inside the bottom of the screen', () => {
+		expect(placeTooltip({ x: 215, y: 60 }, TIP, { w: 430, h: 150 })).toEqual({
+			centerX: 215,
+			topPx: 56,
+			bottomAnchored: false
+		});
+	});
+
+	it('anchors upward until the box has been measured', () => {
+		expect(placeTooltip({ x: 215, y: 500 }, { w: 0, h: 0 }, PHONE)).toEqual({
+			centerX: 215,
+			topPx: 472,
+			bottomAnchored: true
+		});
 	});
 });

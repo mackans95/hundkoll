@@ -28,9 +28,65 @@
 > over 30 columns spanning 0–10 walks a day. Before: **7 of 30** tooltips cut
 > off by the card's top edge, all 30 reaching into the header band. After:
 > **0 clipped, 0 in the header, 0 leaving the chart area at all.** Columns
-> 0–2 (the short bars) still sit above, so the common case looks exactly as
-> it did; 6 of 30 — the mid-height bars — overlap their own bar's top, which
-> is the third case above.
+> 0–2 (the short bars) still sat above, so the common case looked exactly as
+> it did; 6 of 30 — the mid-height bars — overlapped their own bar's top,
+> which is the third case above.
+
+## Revisited: the box leaves the card — PR #36
+
+> Reported after testing #35 on a phone: "when you hold your thumb on a bar,
+> a lot of the time (especially if it now renders below) your thumb blocks a
+> lot of the tooltip."
+
+Keeping the box inside the chart fixed the clipping and left a worse problem
+behind: a thumb covers it, most of all when it renders below. **No placement
+inside the card can fix that**, and the arithmetic is the whole story:
+
+| Measurement                                       | 430px       | 360px      |
+| ------------------------------------------------- | ----------- | ---------- |
+| Chart width                                       | 318px       | 294px      |
+| Walk tooltip                                      | 255 × 86    | 255 × 86   |
+| Columns with room beside them (14px clearance)    | **10 / 30** | **6 / 30** |
+| Meal tooltip (231px wide) — columns with room     | 14 / 30     | 10 / 30    |
+| Accident tooltip (175px wide) — columns with room | 24 / 30     | 22 / 30    |
+
+The walk tooltip is 80% as wide as the chart, so there is no position inside
+that chart which a thumb, or the card's own edge, does not take. Pinning it to
+the far edge does not rescue it either: pinned right it spans 63–318, which
+still covers any touch outside the outer ~43px.
+
+So the box leaves the card: **`position: fixed`, placed against the viewport,
+a fingertip clear of the pointer.** `placeTooltip` now works in screen
+coordinates and tries four placements in order:
+
+1. above the pointer, the full 28px clear of it;
+2. squeezed against the top of the screen, still wholly above the finger;
+3. beside it, pinned to the far edge opposite the hand — hold the left of the
+   screen and the box lands on the right;
+4. below it, only when nothing else is possible.
+
+`overflow-hidden` and the rounded card are untouched; the clip stops mattering
+instead of being fought. This is the option the table below dismissed as
+"overkill" — correctly, while clipping was the only problem, and wrongly the
+moment the thumb became one. Checked first that it is even possible: no
+ancestor of the chart creates a containing block (no transform, filter,
+`contain` or `will-change`), so a fixed box really does escape the card, and a
+hit test confirms it lands on top.
+
+### Measured over CDP, touching each column where a thumb would land
+
+| Case                                         | Result                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Walk chart, page at rest                     | 30/30 wholly above the touch, **28px minimum clearance**, 0 covering it, 0 clipped |
+| Accident chart                               | 30/30 above, 28px clearance                                                        |
+| Chart scrolled to the very top of the screen | 6 above, 14 beside, 10 below; 10px worst-case clearance, still 0 covering it       |
+| 360px, all of the above                      | Same, with 4 boxes reaching over the card's top edge — which is now allowed        |
+
+The residual case is the third row: with the chart scrolled to within ~90px of
+the top of the screen and the finger near the middle, the box has to go below,
+where the hand is. The probe page is deliberately pessimistic — it puts the
+walk card first, while `/stats` has a header and the Trend card above it, so
+the real page has more room above the finger than this measures.
 
 ## Summary
 
