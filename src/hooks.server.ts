@@ -1,5 +1,7 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+// Aliased: `resolve` is already the name of the handle's own argument.
+import { resolve as resolvePath } from '$app/paths';
 import { safeGetSession } from '$lib/server/auth';
 import { createRequestClient } from '$lib/server/db';
 
@@ -22,10 +24,10 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
 
 	if (!session && path !== '/login') {
-		redirect(303, '/login');
+		redirect(303, resolvePath('/login'));
 	}
 	if (session && path === '/login') {
-		redirect(303, '/');
+		redirect(303, resolvePath('/'));
 	}
 
 	return resolve(event);

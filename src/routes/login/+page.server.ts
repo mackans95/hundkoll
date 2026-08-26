@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
 import * as locale from '$lib/locale';
 import type { Actions } from './$types';
 
@@ -23,6 +24,6 @@ export const actions: Actions = {
 			return fail(400, { email, message });
 		}
 
-		redirect(303, '/');
+		redirect(303, resolve('/'));
 	}
 };

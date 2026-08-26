@@ -6,6 +6,7 @@
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
 	import LogGrid from '$lib/components/log/LogGrid.svelte';
 	import { replaceState } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { LIVE_TYPE_IDS } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
@@ -29,7 +30,7 @@
 			// A task later: the router finishes starting after mount, and
 			// replaceState throws until then. Left in place, ?detail= would
 			// start a fresh walk on the next open.
-			setTimeout(() => replaceState('/', {}), 0);
+			setTimeout(() => replaceState(resolve('/'), {}), 0);
 		}
 	});
 
@@ -80,7 +81,7 @@
 		urlDialogClosed = true;
 		// Tidy ?detail= away so a reload does not reopen the dialog;
 		// replaceState because there is no new data to fetch.
-		replaceState('/', {});
+		replaceState(resolve('/'), {});
 	}
 
 	/** The stored event whose sheet is open, on the same pattern as above. */
@@ -97,7 +98,7 @@
 			return;
 		}
 		urlSheetClosed = true;
-		replaceState('/', {});
+		replaceState(resolve('/'), {});
 	}
 
 	const sheet = $derived<{ event: EventRow; origin: DOMRect | null } | null>(
@@ -162,7 +163,7 @@
 		     and history is an occasional lookup and repair tool. -->
 		{#snippet action()}
 			<a
-				href="/history"
+				href={resolve('/history')}
 				class="text-sm text-ink-muted underline">{locale.history.showAll}</a
 			>
 		{/snippet}

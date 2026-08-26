@@ -88,7 +88,9 @@
 			{@const extra = summarise(event.type_id, event.details, event.note)}
 			<li>
 				<!-- A link, so ?event= opens the sheet server-side before
-				     hydration and the row can be sent to the other phone. -->
+				     hydration and the row can be sent to the other phone.
+				     Relative, not resolve()'d: this list renders on both / and
+				     /history, and each must open its own page's sheet. -->
 				<a
 					href="?event={event.id}"
 					onclick={(clicked) => {

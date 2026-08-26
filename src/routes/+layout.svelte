@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import { navigating, page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
@@ -23,10 +24,10 @@
 	const pending = $derived(navigating.to?.url.pathname ?? null);
 
 	const tabs = [
-		{ href: '/', label: locale.nav.log, icon: '🐾' },
-		{ href: '/status', label: locale.nav.status, icon: '⏱️' },
-		{ href: '/stats', label: locale.nav.stats, icon: '📊' },
-		{ href: '/settings', label: locale.nav.settings, icon: '⚙️' }
+		{ href: resolve('/'), label: locale.nav.log, icon: '🐾' },
+		{ href: resolve('/status'), label: locale.nav.status, icon: '⏱️' },
+		{ href: resolve('/stats'), label: locale.nav.stats, icon: '📊' },
+		{ href: resolve('/settings'), label: locale.nav.settings, icon: '⚙️' }
 	];
 </script>
 
