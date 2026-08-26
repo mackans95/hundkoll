@@ -340,6 +340,23 @@ reached the server but lost its response collides on the primary key, which the 
 treats as success rather than logging the walk twice. The same mechanism makes a double tap
 on Spara harmless.
 
+### A cached launch has to catch up by itself
+
+The cache fallback has a cost: the app can be showing data it never fetched, because the
+worker answered the launch from its cache or the phone restored the page it had open
+yesterday. Both hydrate normally and look completely fresh, so the layout re-reads the page
+whenever the data predates the launch — `$lib/freshness.ts` decides, `renderedAt` from
+`+layout.server.ts` is the evidence, and `onMount`, `pageshow` and `visibilitychange` are
+the three ways back in. Calling it while offline is safe: the worker answers the data
+request from cache, so the revalidation resolves with what is already on screen instead of
+failing.
+
+**A page whose read failed must not become that cached copy.** A dropped connection used to
+render as "Inget loggat ännu" — indistinguishable from an empty database — and the worker
+then kept serving it. The list helpers now return `null` for a failed read rather than an
+empty array, the page says so, and the load sets `cache-control: no-store`, which the worker
+takes as "do not keep this one".
+
 ## Performance
 
 The Vercel function is pinned to `arn1` in `vite.config.ts`. Without it, requests entered

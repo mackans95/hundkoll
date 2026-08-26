@@ -1,10 +1,12 @@
 <script lang="ts">
 	import './layout.css';
+	import { invalidateAll } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
+	import { isStale } from '$lib/freshness';
 	import { loadQueue, sendPending } from '$lib/offline/queue.svelte';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
@@ -17,8 +19,23 @@
 	// the choice into state and lines up the theme-color metas.
 	onMount(() => {
 		loadTheme();
-		loadQueue().then(sendPending);
+		// Then revalidate: sendPending already re-reads the page when it flushed
+		// something, and that refreshes renderedAt, so this stays a no-op when
+		// the send has just done the work.
+		loadQueue().then(sendPending).then(refresh);
 	});
+
+	/**
+	 * Re-reads the page when what is on screen predates the launch. Safe
+	 * offline — the worker answers the data request from its cache, so the
+	 * call resolves with what is already there rather than failing.
+	 */
+	function refresh() {
+		if (document.visibilityState !== 'visible' || !isStale(data.renderedAt, Date.now())) {
+			return;
+		}
+		invalidateAll();
+	}
 
 	// Where a tap is heading; null unless a navigation is in flight.
 	const pending = $derived(navigating.to?.url.pathname ?? null);
@@ -31,7 +48,14 @@
 	];
 </script>
 
-<svelte:window ononline={sendPending} />
+<!-- Three ways back into the app, all of which can arrive with data nobody
+     fetched: a launch (onMount above), the browser restoring the page, and
+     the app being brought back to the front. -->
+<svelte:window
+	ononline={sendPending}
+	onpageshow={refresh}
+/>
+<svelte:document onvisibilitychange={refresh} />
 
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->

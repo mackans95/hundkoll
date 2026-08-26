@@ -20,7 +20,7 @@ function withoutEvent(url: URL): string {
 	return next.pathname + next.search;
 }
 
-export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase } }) => {
 	const today = time.stockholmDay(new Date());
 	const month = toMonth(url.searchParams.get('month'), today);
 	// Non-null: toMonth only returns a month these bounds exist for.
@@ -31,10 +31,17 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	const selected = dayParam?.startsWith(`${month}-`) ? dayParam : null;
 
 	const eventParam = url.searchParams.get('event');
-	const [events, editEvent] = await Promise.all([
+	const [read, editEvent] = await Promise.all([
 		monthEvents(supabase, bounds.from, bounds.to),
 		eventParam ? getEvent(supabase, eventParam) : null
 	]);
+
+	// As on the log page: an empty month and an unreadable one are different,
+	// and only the first is worth caching.
+	if (read === null) {
+		setHeaders({ 'cache-control': 'no-store' });
+	}
+	const events = read ?? [];
 
 	return {
 		month,
@@ -42,6 +49,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 		selected,
 		days: time.calendarDays(month),
 		summaries: summariseDays(events),
+		eventsFailed: read === null,
 		// The selected day's rows, out of the month already in hand.
 		dayEvents: selected
 			? events

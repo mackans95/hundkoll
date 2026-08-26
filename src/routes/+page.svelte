@@ -171,6 +171,7 @@
 		<EventList
 			events={data.events}
 			onOpen={openEvent}
+			empty={data.eventsFailed ? locale.log.loadFailed : locale.log.empty}
 		/>
 	</Card>
 </main>
