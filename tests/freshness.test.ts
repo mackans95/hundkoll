@@ -4,7 +4,7 @@
 // only evidence there is.
 
 import { describe, expect, it } from 'vitest';
-import { STALE_AFTER_MS, isStale } from '$lib/freshness';
+import { STALE_AFTER_MS, isStale } from '$lib/offline/freshness';
 
 const RENDERED = 1_800_000_000_000;
 
