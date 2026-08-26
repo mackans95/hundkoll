@@ -30,6 +30,9 @@ export const log = {
 	subtitle: 'Daglig logg',
 	recentHeading: 'Senaste händelser',
 	empty: 'Inget loggat ännu.',
+	// Shown instead of `empty` when the read failed: the list is unknown, not
+	// empty, and the app re-reads it by itself on the next launch.
+	loadFailed: 'Kunde inte läsa händelserna. Försök igen om en stund.',
 	/** Sits under a row that has been tried and could not get through. */
 	waitingRow: '⏳ väntar på signal',
 	/** Sits under a row the server refused, in place of its details. */
@@ -90,6 +93,7 @@ export const history = {
 	dayLabel: (day: string, count: number) =>
 		`${day}, ${count} ${count === 1 ? 'händelse' : 'händelser'}` as const,
 	emptyDay: 'Inget loggat den här dagen.',
+	loadFailed: 'Kunde inte läsa månaden. Försök igen om en stund.',
 	backToLog: '← Tillbaka'
 } as const;
 

@@ -5,19 +5,19 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
-	import { loadQueue, sendPending } from '$lib/offline/queue.svelte';
+	import { catchUp } from '$lib/offline/catchUp';
+	import { loadQueue } from '$lib/offline/queue.svelte';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	// Anything not yet stored is sent as soon as it can be — on launch here,
-	// and the moment the connection comes back via <svelte:window> below.
-	// The theme attribute is already on <html> (app.html); loadTheme reads
-	// the choice into state and lines up the theme-color metas.
+	// The theme attribute is already on <html> (app.html); loadTheme reads the
+	// choice into state and lines up the theme-color metas. The queue has to be
+	// read out of IndexedDB before catching up can send it.
 	onMount(() => {
 		loadTheme();
-		loadQueue().then(sendPending);
+		loadQueue().then(catchUp);
 	});
 
 	// Where a tap is heading; null unless a navigation is in flight.
@@ -31,7 +31,14 @@
 	];
 </script>
 
-<svelte:window ononline={sendPending} />
+<!-- The ways back into the app: a launch (onMount above), the browser
+     restoring the page, the app being brought to the front, and the
+     connection returning. What any of them implies is catchUp's decision. -->
+<svelte:window
+	ononline={catchUp}
+	onpageshow={catchUp}
+/>
+<svelte:document onvisibilitychange={catchUp} />
 
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->

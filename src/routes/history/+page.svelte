@@ -89,7 +89,7 @@
 				events={data.dayEvents}
 				onOpen={(event, origin) => (openedEvent = { event, origin })}
 				showQueued={false}
-				empty={locale.history.emptyDay}
+				empty={data.eventsFailed ? locale.history.loadFailed : locale.history.emptyDay}
 			/>
 		</Card>
 	{/if}

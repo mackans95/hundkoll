@@ -17,9 +17,12 @@ const EVENT_COLUMNS = 'id, type_id, occurred_at, note, details, type:event_types
 /**
  * Reads the most recently logged events, newest first, with each one's
  * catalogue row attached so the list can show a label and an icon.
+ * **Null means the read failed**, which is not the same thing as an empty
+ * list — a page that cannot tell them apart shows "nothing logged yet" for a
+ * dropped connection, and the service worker then keeps that copy.
  */
-export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
-	const { data } = await db
+export async function recentEvents(db: Db, limit = 10): Promise<EventRow[] | null> {
+	const { data, error } = await db
 		.from('events')
 		.select(EVENT_COLUMNS)
 		.order('occurred_at', { ascending: false })
@@ -30,6 +33,11 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
 		.order('created_at', { ascending: false })
 		.limit(limit);
 
+	if (error) {
+		console.error('recent events read failed:', error.code, error.message);
+		return null;
+	}
+
 	// `details` is jsonb; the keys it holds are the ones DETAIL_FIELDS wrote.
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
 }
@@ -38,8 +46,8 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[]> {
  * Reads one Stockholm month of events, oldest first — what the history
  * calendar groups into day cells. Bounds come from time.monthBoundsUtc.
  */
-export async function monthEvents(db: Db, from: string, to: string): Promise<EventRow[]> {
-	const { data } = await db
+export async function monthEvents(db: Db, from: string, to: string): Promise<EventRow[] | null> {
+	const { data, error } = await db
 		.from('events')
 		.select(EVENT_COLUMNS)
 		.gte('occurred_at', from)
@@ -48,6 +56,13 @@ export async function monthEvents(db: Db, from: string, to: string): Promise<Eve
 		.order('occurred_at')
 		// Same tie-break as recentEvents: a day cell's icons should not shuffle.
 		.order('created_at');
+
+	// Null for a failed read, as in recentEvents: an empty month and an
+	// unreachable database are different things to be told.
+	if (error) {
+		console.error('month events read failed:', error.code, error.message);
+		return null;
+	}
 
 	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
 }

@@ -7,10 +7,16 @@ import type { Db } from './db';
  * grid, the status screen and the settings form alike.
  */
 export async function listEventTypes(db: Db): Promise<EventType[]> {
-	const { data } = await db
+	const { data, error } = await db
 		.from('event_types')
 		.select('id, label, category, icon, interval_days, sort_order')
 		.order('sort_order');
+
+	// A failed read empties the log grid, which is loud enough on screen; what
+	// it is not is explicable without this line in the server log.
+	if (error) {
+		console.error('event types read failed:', error.code, error.message);
+	}
 
 	return (data ?? []).map((row) => ({ ...row, category: row.category as EventCategory }));
 }

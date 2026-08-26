@@ -14,7 +14,7 @@ import {
 import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase } }) => {
 	// ?event=<id> renders the edit sheet server-side, the same way ?detail=
 	// renders the log dialog — so both open without JavaScript.
 	const eventParam = url.searchParams.get('event');
@@ -30,10 +30,19 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	// opens (and closes, via a plain link to "/") without JavaScript.
 	const detailParam = url.searchParams.get('detail');
 
+	// A page with a hole in it must not become the copy the service worker
+	// serves on the next launch, which would keep showing the hole.
+	if (events === null) {
+		setHeaders({ 'cache-control': 'no-store' });
+	}
+
 	return {
 		dog,
 		types,
-		events,
+		events: events ?? [],
+		// Told apart from "nothing logged yet", which is what this used to
+		// look like whenever the read failed.
+		eventsFailed: events === null,
 		editEvent,
 		detailType: types.find((type) => type.id === detailParam) ?? null,
 		nowLocal: time.stockholmNowForInput(),

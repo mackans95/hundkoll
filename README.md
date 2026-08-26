@@ -75,7 +75,8 @@ src/lib/
   events/      the detail-field catalogue, shared by the form and the action
   stats/       pure row → chart-column and row → tile logic
   history.ts   pure row → calendar-cell logic, the same shape as stats/
-  offline/     the IndexedDB queue and the submit handler that feeds it
+  offline/     the IndexedDB queue, the submit handler that feeds it, and
+               catchUp: what a launch or a resume has to do to be current
   components/  ui primitives at the top, then charts/ log/ stats/ status/
   time.ts      computation: timezone conversion and calendar arithmetic
   format.ts    presentation: the same values as Swedish text
@@ -339,6 +340,27 @@ travels with the form.** Replaying a queued log is therefore idempotent — a se
 reached the server but lost its response collides on the primary key, which the action
 treats as success rather than logging the walk twice. The same mechanism makes a double tap
 on Spara harmless.
+
+### A cached launch has to catch up by itself
+
+The cache fallback has a cost: the app can be showing data it never fetched, because the
+worker answered the launch from its cache or the phone restored the page it had open
+yesterday. Both hydrate normally and look completely fresh.
+
+**`$lib/offline/catchUp.ts` is the one place that decides what coming back means**: send
+whatever the queue is holding, then re-read the page if its data predates our return.
+`renderedAt` from `+layout.server.ts` is the evidence a cached page cannot fake, and
+`freshness.ts` beside it holds the pure decision so it can be unit-tested. The layout's job is
+only to say "we are back" — from `onMount`, `pageshow`, `visibilitychange` and `online` —
+and every one of them calls the same function, so the policy cannot drift between them.
+Calling it while offline is safe: the worker answers the data request from cache, so the
+re-read resolves with what is already on screen instead of failing.
+
+**A page whose read failed must not become that cached copy.** A dropped connection used to
+render as "Inget loggat ännu" — indistinguishable from an empty database — and the worker
+then kept serving it. The list helpers now return `null` for a failed read rather than an
+empty array, the page says so, and the load sets `cache-control: no-store`, which the worker
+takes as "do not keep this one".
 
 ## Performance
 

@@ -93,8 +93,10 @@ async function respond(event: FetchEvent): Promise<Response> {
 		const response = await fetch(request);
 		// A redirected response belongs to a different URL — caching it under
 		// this one would, for an expired session, pin the login page in place
-		// of the app.
-		if (response.status === 200 && !response.redirected) {
+		// of the app. `no-store` is the app's own signal that a read failed
+		// and the page has a hole in it: serving that copy on the next launch
+		// would make one bad moment look permanent.
+		if (response.status === 200 && !response.redirected && !noStore(response)) {
 			event.waitUntil(cache.put(request, response.clone()));
 		}
 		return response;
@@ -113,6 +115,11 @@ async function respond(event: FetchEvent): Promise<Response> {
 		}
 		return offlineResponse();
 	}
+}
+
+/** Whether the server asked for this response not to be kept. */
+function noStore(response: Response): boolean {
+	return (response.headers.get('cache-control') ?? '').includes('no-store');
 }
 
 /**
