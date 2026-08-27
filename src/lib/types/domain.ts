@@ -52,6 +52,16 @@ export type MealDay = Pick<
 	'day' | 'n' | 'finished_true' | 'finished_false' | 'avg_gap_min'
 >;
 
+/**
+ * One detail field's headline numbers over the last 30 days. `events` counts
+ * every event of the type and `answered` only those carrying the field — the
+ * gap is what lets a share divide by every event, which is what a reveal needs.
+ */
+export type DetailMetric = Pick<
+	NotNull<Views<'stats_detail_metrics'>, 'field' | 'events' | 'answered'>,
+	'field' | 'events' | 'answered' | 'avg_number' | 'share_true' | 'share_not_true'
+>;
+
 /** Accidents binned by day, ISO week or month, split kiss/bajs. */
 export type AccidentBin = Pick<
 	NotNull<Views<'stats_accident_bins'>, 'bucket' | 'n' | 'pee' | 'poop'>,

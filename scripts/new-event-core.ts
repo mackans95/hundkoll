@@ -22,9 +22,30 @@ export type FieldSpec = {
 	revealedBy?: string;
 };
 
+/**
+ * A headline tile on a generated card. Every one of these reads a row of
+ * stats_detail_metrics, so adding one needs no SQL:
+ *
+ *   avg            the average of a number field      "~34 min"
+ *   share          events where a box was ticked      "18 %"
+ *   share-without  events where it was not            "82 %"
+ *
+ * `share-without` exists because that is the question usually worth asking of
+ * something that goes wrong: how often nothing did.
+ */
+export type MetricKind = 'avg' | 'share' | 'share-without';
+
+export type MetricSpec = {
+	kind: MetricKind;
+	/** The detail field it measures. */
+	field: string;
+	/** Swedish, the tile's caption. */
+	label: string;
+};
+
 export type StatsSpec =
 	| { kind: 'none' }
-	| { kind: 'counts-per-day' }
+	| { kind: 'counts-per-day'; metrics: MetricSpec[] }
 	| { kind: 'trend-line'; field: string; unit: string };
 
 export type EventSpec = {
@@ -178,6 +199,33 @@ export function validateSpec(spec: EventSpec, existingIds: string[]): string[] {
 			errors.push(
 				`trend-line can only plot a number field; '${target.name}' is a ${target.input}.`
 			);
+		}
+	}
+
+	if (spec.stats.kind === 'counts-per-day') {
+		const declared = new Set<string>();
+		for (const metric of spec.stats.metrics) {
+			const target = spec.fields.find((field) => field.name === metric.field);
+			if (!target) {
+				errors.push(`metric '${metric.kind}' measures '${metric.field}', which is not declared.`);
+			} else if (metric.kind === 'avg' && target.input !== 'number') {
+				// Averaging a checkbox is a share, and there is a kind for that.
+				errors.push(
+					`metric 'avg' needs a number field; '${target.name}' is a ${target.input} — use share instead.`
+				);
+			} else if (metric.kind !== 'avg' && target.input === 'number') {
+				errors.push(
+					`metric '${metric.kind}' needs something answered yes or no; '${target.name}' is a number.`
+				);
+			}
+			if (!metric.label.trim()) {
+				errors.push(`metric '${metric.kind}' on '${metric.field}' needs a Swedish label.`);
+			}
+			const key = `${metric.kind}:${metric.field}`;
+			if (declared.has(key)) {
+				errors.push(`metric '${metric.kind}' on '${metric.field}' is declared twice.`);
+			}
+			declared.add(key);
 		}
 	}
 
@@ -341,6 +389,45 @@ function fieldsSnippet(spec: EventSpec): string {
 	return `\t${spec.id}: [\n${entries.join(',\n')}\n\t],\n`;
 }
 
+/** The locale key one metric's caption lives under, inside its card's entry. */
+function metricKey(metric: MetricSpec): string {
+	const name = pascal(metric.field);
+	if (metric.kind === 'avg') {
+		return `avg${name}`;
+	}
+	return metric.kind === 'share' ? `share${name}` : `without${name}`;
+}
+
+/**
+ * How an average of this field is written. 'min' goes through minutesText,
+ * which switches to hours once a duration stops being readable in minutes;
+ * anything else takes its unit's own locale function.
+ */
+function unitWriter(field: FieldSpec): string {
+	const unit = field.unit?.trim() ?? '';
+	if (unit === 'min') {
+		return 'format.minutesText';
+	}
+	const fn = `locale.units.${KNOWN_UNITS[unit] ?? camel(unit.replace(/[^a-zA-Zåäö0-9]+/g, '_'))}`;
+	return `(value: number) => ${fn}(format.swedishNumber(value))`;
+}
+
+/** One entry in a generated card's `tiles` list. */
+function metricTile(spec: EventSpec, metric: MetricSpec): string {
+	const caption = `locale.stats.${camel(spec.id)}.${metricKey(metric)}`;
+	const row = `metricFor(metrics, '${metric.field}')`;
+
+	if (metric.kind === 'avg') {
+		const field = spec.fields.find((candidate) => candidate.name === metric.field);
+		return `\t\tavgTile(${caption}, ${row}, ${unitWriter(field ?? { name: '', label: '', input: 'number' })})`;
+	}
+
+	// The event count only matters when the field has no row at all — see
+	// shareTile — so it is read from the days the chart already has.
+	const without = metric.kind === 'share-without' ? ', true' : '';
+	return `\t\tshareTile(${caption}, ${row}, totalEvents(days)${without})`;
+}
+
 /** Locale entries for units the catalogue has not needed before. */
 function newUnitSnippets(spec: EventSpec): string[] {
 	const snippets: string[] = [];
@@ -488,12 +575,17 @@ export function generate(
 		});
 
 		if (spec.stats.kind === 'counts-per-day') {
+			const metrics = spec.stats.metrics;
+			const captions = metrics.map(
+				(metric) => `\t\t${metricKey(metric)}: '${tsString(metric.label)}',\n`
+			);
 			edits.push({
 				path: 'src/lib/locale.ts',
 				marker: 'codegen:stats-strings',
 				insert:
 					`\t${camelId}: {\n` +
 					`\t\theading: '${tsString(heading)}',\n` +
+					captions.join('') +
 					`\t\ttooltipLabel: '${tsString(spec.label)}'\n` +
 					`\t},\n`
 			});
@@ -523,6 +615,35 @@ export function generate(
 				marker: 'codegen:stats-return',
 				insert: `\t\t${camelId}Days: present((${camelId}Res.data ?? []).map(toSimpleDay)),\n`
 			});
+
+			// One query per type, however many tiles read it: the view is long, so
+			// every metric this card shows is a row of the same result.
+			if (metrics.length > 0) {
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-shape',
+					insert: `\t${camelId}Metrics: DetailMetric[];\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-results',
+					insert: `\t\t${camelId}MetricsRes,\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-queries',
+					insert:
+						`\t\tdb\n` +
+						`\t\t\t.from('stats_detail_metrics')\n` +
+						`\t\t\t.select(metricColumns)\n` +
+						`\t\t\t.eq('type_id', '${spec.id}'),\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-return',
+					insert: `\t\t${camelId}Metrics: present((${camelId}MetricsRes.data ?? []).map(toDetailMetric)),\n`
+				});
+			}
 			edits.push({
 				path: 'src/routes/stats/+page.svelte',
 				marker: 'codegen:stats-cards',
@@ -530,15 +651,44 @@ export function generate(
 					`\t<${pascalId}Card\n` +
 					`\t\tdays={data.${camelId}Days}\n` +
 					`\t\ttoday={data.today}\n` +
+					(metrics.length > 0 ? `\t\tmetrics={data.${camelId}Metrics}\n` : '') +
 					`\t/>\n`
 			});
 			creates.push({
 				path: `src/lib/components/stats/${pascalId}Card.svelte`,
 				content: renderTemplate(templates.counts, {
 					camelId,
-					COLOR_CONST: colorConst
+					COLOR_CONST: colorConst,
+					// Empty when no metrics were asked for, which leaves the card
+					// exactly the chart it has always been.
+					metricImports:
+						metrics.length > 0
+							? `\timport StatTile from '$lib/components/StatTile.svelte';\n` +
+								`\timport * as format from '$lib/format';\n` +
+								`\timport { metricFor, totalEvents } from '$lib/stats/metrics';\n` +
+								`\timport { avgTile, shareTile } from '$lib/stats/summary';\n`
+							: '',
+					metricTiles:
+						metrics.length > 0
+							? `\n\tconst tiles = $derived([\n` +
+								metrics.map((metric) => metricTile(spec, metric)).join(',\n') +
+								`\n\t]);\n`
+							: '',
+					metricBlock:
+						metrics.length > 0
+							? `\t<div class="grid grid-cols-2 gap-2">\n` +
+								`\t\t{#each tiles as tile (tile.label)}\n` +
+								`\t\t\t<StatTile {tile} />\n` +
+								`\t\t{/each}\n` +
+								`\t</div>\n`
+							: ''
 				})
 			});
+			if (metrics.length > 0) {
+				notes.push(
+					'Tile captions came from what you typed — shorten them in locale.ts if a tile wraps on a phone.'
+				);
+			}
 		} else {
 			edits.push({
 				path: 'src/lib/locale.ts',

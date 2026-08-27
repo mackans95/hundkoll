@@ -6,7 +6,7 @@
 
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
-import type { Period, StatSummary } from '$lib/types/domain';
+import type { DetailMetric, Period, StatSummary } from '$lib/types/domain';
 
 export type Tile = { label: string; value: string };
 
@@ -42,6 +42,46 @@ export function periodReady(period: Period, tracked: number): boolean {
 	}
 
 	return period === 'week' ? tracked >= 7 : tracked >= 30;
+}
+
+/**
+ * A generated card's average-of-a-field tile. Marked as an estimate like every
+ * other average here, and written in the field's own unit — the generator picks
+ * the writer from the field declaration, so minutes stay minutes.
+ * ("Snittlängd", row with avg_number 33.8, minutesText) → "~34 min"
+ */
+export function avgTile(
+	label: string,
+	metric: DetailMetric | null,
+	write: (value: number) => string
+): Tile {
+	return { label, value: approximately(metric?.avg_number, write) };
+}
+
+/**
+ * A generated card's share-of-events tile. No "~": a share is measured, not
+ * extrapolated, the same reason the meal finish rate carries none.
+ *
+ * `without` asks for the events where the field was *not* true, which is what
+ * "rides that went fine" means. A field nobody has ever answered has no row at
+ * all, and that is not the same as knowing nothing: with events behind it, an
+ * accident that never happened is 100 % fine — with no events, a dash.
+ */
+export function shareTile(
+	label: string,
+	metric: DetailMetric | null,
+	events: number,
+	without = false
+): Tile {
+	if (metric) {
+		const share = without ? metric.share_not_true : metric.share_true;
+		return { label, value: share == null ? DASH : format.percentageText(share) };
+	}
+
+	return {
+		label,
+		value: without && events > 0 ? format.percentageText(1) : DASH
+	};
 }
 
 /**

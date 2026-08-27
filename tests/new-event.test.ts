@@ -11,7 +11,8 @@ import {
 	nextSortOrder,
 	renderTemplate,
 	validateSpec,
-	type EventSpec
+	type EventSpec,
+	type MetricSpec
 } from '../scripts/new-event-core.ts';
 
 const templates = {
@@ -77,7 +78,7 @@ const fixture: EventSpec = {
 		{ name: 'bled', label: 'Blödde', input: 'checkbox' },
 		{ name: 'clipped', label: 'Klippt klo', input: 'count' }
 	],
-	stats: { kind: 'counts-per-day' }
+	stats: { kind: 'counts-per-day', metrics: [] }
 };
 
 describe('validateSpec', () => {
@@ -176,6 +177,58 @@ describe('validateSpec', () => {
 			expect(
 				reveal([{ name: 'accident', label: 'Olycka', input: 'reveal', revealedBy: 'accident' }])
 			).toContain("field 'accident' cannot reveal itself.");
+		});
+	});
+
+	// Metrics are the tiles under a generated chart. Every rule here is about
+	// asking a field a question it can answer.
+	describe('card metrics', () => {
+		const withMetrics = (metrics: MetricSpec[]) =>
+			validateSpec({ ...fixture, stats: { kind: 'counts-per-day', metrics } }, []);
+
+		it('accepts an average of a number and a share of a checkbox', () => {
+			expect(
+				withMetrics([
+					{ kind: 'avg', field: 'claw_len', label: 'Snittlängd' },
+					{ kind: 'share', field: 'bled', label: 'Blödde' },
+					{ kind: 'share-without', field: 'bled', label: 'Utan blod' }
+				])
+			).toEqual([]);
+		});
+
+		it('rejects a metric on a field that is not declared', () => {
+			expect(withMetrics([{ kind: 'avg', field: 'nope', label: 'x' }])).toEqual([
+				"metric 'avg' measures 'nope', which is not declared."
+			]);
+		});
+
+		it('sends an average of a checkbox to share instead', () => {
+			expect(withMetrics([{ kind: 'avg', field: 'bled', label: 'x' }])).toEqual([
+				"metric 'avg' needs a number field; 'bled' is a checkbox — use share instead."
+			]);
+		});
+
+		it('rejects a share of a number', () => {
+			expect(withMetrics([{ kind: 'share', field: 'claw_len', label: 'x' }])).toEqual([
+				"metric 'share' needs something answered yes or no; 'claw_len' is a number."
+			]);
+		});
+
+		it('requires a label, and refuses the same tile twice', () => {
+			expect(withMetrics([{ kind: 'avg', field: 'claw_len', label: '  ' }])).toEqual([
+				"metric 'avg' on 'claw_len' needs a Swedish label."
+			]);
+			expect(
+				withMetrics([
+					{ kind: 'avg', field: 'claw_len', label: 'A' },
+					{ kind: 'avg', field: 'claw_len', label: 'B' }
+				])
+			).toEqual(["metric 'avg' on 'claw_len' is declared twice."]);
+		});
+
+		// A count is answered yes or no in the sense a share needs: zero or not.
+		it('lets a share measure a count', () => {
+			expect(withMetrics([{ kind: 'share', field: 'clipped', label: 'x' }])).toEqual([]);
 		});
 	});
 
@@ -386,6 +439,90 @@ describe('generate', () => {
 			LOCALE_SOURCE
 		);
 		expect(output.edits.some((edit) => edit.marker === 'codegen:units')).toBe(false);
+	});
+
+	// The whole point of the generic view: two tiles, and not one line of SQL.
+	it('turns metrics into tiles, captions and exactly one query — no migration', () => {
+		const output = generate(
+			{
+				...fixture,
+				stats: {
+					kind: 'counts-per-day',
+					metrics: [
+						{ kind: 'avg', field: 'claw_len', label: 'Snittlängd' },
+						{ kind: 'share-without', field: 'bled', label: 'Utan blod' }
+					]
+				}
+			},
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+
+		// One migration, and it is the event_types insert — nothing else.
+		const sql = output.creates.filter((create) => create.path.endsWith('.sql'));
+		expect(sql).toHaveLength(1);
+		expect(sql[0].content).toContain('insert into event_types');
+
+		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
+		expect(card).toContain(
+			"avgTile(locale.stats.nailCheck.avgClawLen, metricFor(metrics, 'claw_len')"
+		);
+		expect(card).toContain(
+			"shareTile(locale.stats.nailCheck.withoutBled, metricFor(metrics, 'bled'), totalEvents(days), true)"
+		);
+		expect(card).toContain('<StatTile {tile} />');
+		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
+
+		const captions =
+			output.edits.find((edit) => edit.marker === 'codegen:stats-strings')?.insert ?? '';
+		expect(captions).toContain("avgClawLen: 'Snittlängd',");
+		expect(captions).toContain("withoutBled: 'Utan blod',");
+
+		// One query for both tiles: the view is long, so they are two rows of it.
+		const queries = output.edits.filter((edit) => edit.marker === 'codegen:stats-queries');
+		expect(queries).toHaveLength(2);
+		expect(queries.filter((q) => q.insert.includes('stats_detail_metrics'))).toHaveLength(1);
+
+		const card2 = output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert ?? '';
+		expect(card2).toContain('metrics={data.nailCheckMetrics}');
+	});
+
+	// A number in minutes goes through minutesText, which switches to hours; any
+	// other unit takes its own locale function.
+	it('writes an average in the unit its field declared', () => {
+		const card = (unit: string) =>
+			generate(
+				{
+					...fixture,
+					fields: [{ name: 'len', label: 'Längd', input: 'number', unit }],
+					stats: {
+						kind: 'counts-per-day',
+						metrics: [{ kind: 'avg', field: 'len', label: 'Snitt' }]
+					}
+				},
+				templates,
+				'20260820120000',
+				LOCALE_SOURCE
+			).creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
+
+		expect(card('min')).toContain('format.minutesText');
+		expect(card('kg')).toContain('locale.units.kilograms(format.swedishNumber(value))');
+	});
+
+	it('leaves a counts card without metrics exactly as it was', () => {
+		const output = generate(
+			{ ...fixture, stats: { kind: 'counts-per-day', metrics: [] } },
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
+		expect(card).not.toContain('StatTile');
+		expect(card).not.toContain('const tiles = $derived(');
+		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
+		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_metrics'))).toBe(false);
+		expect(output.edits.some((edit) => edit.insert.includes('metrics={data.'))).toBe(false);
 	});
 
 	it('generates nothing field-related for a bare timestamp type', () => {

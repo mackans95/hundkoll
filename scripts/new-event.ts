@@ -20,6 +20,7 @@ import {
 	type EventSpec,
 	type FieldInput,
 	type FieldSpec,
+	type MetricSpec,
 	type StatsSpec
 } from './new-event-core.ts';
 
@@ -42,10 +43,32 @@ Flags (anything missing is prompted for):
                               until one of them is answered; declare it first
   --field "name=vomit;label=Spydde;input=checkbox;revealed-by=accident"
   --stats <none|counts|trend> stats card scaffold
+  --metric "kind=avg;field=duration_min;label=Snittlängd"
+                              repeatable, counts cards only; kind is
+                              avg | share | share-without. Each one is a tile
+                              under the chart reading stats_detail_metrics —
+                              no migration needed for any of them.
   --trend-field <name>        trend only: which number field to plot
   --trend-unit <kg>           trend only: the unit on the chart's axis
   --dry-run                   print every planned write, write nothing
 `;
+
+/** One --metric flag: kind, the field it measures, and its Swedish caption. */
+function parseMetricFlag(raw: string): MetricSpec {
+	const parts = new Map<string, string>();
+	for (const pair of raw.split(';')) {
+		const eq = pair.indexOf('=');
+		parts.set(
+			eq === -1 ? pair.trim() : pair.slice(0, eq).trim(),
+			eq === -1 ? '' : pair.slice(eq + 1).trim()
+		);
+	}
+	return {
+		kind: (parts.get('kind') ?? 'avg') as MetricSpec['kind'],
+		field: parts.get('field') ?? '',
+		label: parts.get('label') ?? ''
+	};
+}
 
 /** One --field flag, parsed from its semicolon-separated key=value pairs. */
 function parseFieldFlag(raw: string): FieldSpec {
@@ -78,6 +101,7 @@ const { values: flags } = parseArgs({
 		'sort-order': { type: 'string' },
 		field: { type: 'string', multiple: true },
 		stats: { type: 'string' },
+		metric: { type: 'string', multiple: true },
 		'trend-field': { type: 'string' },
 		'trend-unit': { type: 'string' },
 		'dry-run': { type: 'boolean' },
@@ -179,10 +203,51 @@ the note. Most types have none — press Enter to skip.
 	}
 }
 
+/**
+ * The headline tiles a counts card shows, prompted for one at a time. Each one
+ * reads a row of stats_detail_metrics, so none of this generates SQL.
+ */
+async function askMetrics(): Promise<MetricSpec[]> {
+	const metrics: MetricSpec[] = (flags.metric ?? []).map(parseMetricFlag);
+	if (flags.metric !== undefined || fields.length === 0) {
+		return metrics;
+	}
+
+	const numbers = fields.filter((field) => field.input === 'number').map((field) => field.name);
+	const answerable = fields.filter((field) => field.input !== 'number').map((field) => field.name);
+
+	console.log(`
+Metrics are the tiles under the chart, like the walk card's "snittlängd".
+
+  avg            the average of a number field   ${numbers.join('/') || '(none declared)'}
+  share          how often a box was ticked      ${answerable.join('/') || '(none declared)'}
+  share-without  how often it was not            ${answerable.join('/') || '(none declared)'}
+`);
+
+	for (;;) {
+		const kind = (
+			await rl.question('  Metric (avg/share/share-without, empty when done): ')
+		).trim();
+		if (!kind) {
+			break;
+		}
+		if (kind !== 'avg' && kind !== 'share' && kind !== 'share-without') {
+			console.error(`  unknown metric '${kind}' — avg, share or share-without.`);
+			continue;
+		}
+		const choices = kind === 'avg' ? numbers : answerable;
+		const field = (await rl.question(`    Field (${choices.join('/')}): `)).trim();
+		const label = (await rl.question('    Swedish label: ')).trim();
+		metrics.push({ kind, field, label });
+	}
+
+	return metrics;
+}
+
 const statsAnswer = await ask(flags.stats, 'Stats card (none/counts/trend)', 'none');
 let stats: StatsSpec = { kind: 'none' };
 if (statsAnswer === 'counts') {
-	stats = { kind: 'counts-per-day' };
+	stats = { kind: 'counts-per-day', metrics: await askMetrics() };
 } else if (statsAnswer === 'trend') {
 	const numberFields = fields
 		.filter((field) => field.input === 'number')
