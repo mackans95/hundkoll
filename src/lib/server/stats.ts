@@ -16,7 +16,7 @@ import type {
 	WeightPoint
 } from '$lib/types/domain';
 import type { WalkDay } from '$lib/types/domain';
-import { weightHistory } from './events';
+import { detailDayCounts, weightHistory } from './events';
 import type { Db } from './db';
 
 export type Stats = {

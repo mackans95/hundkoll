@@ -379,6 +379,26 @@ checked-in components you edit freely afterwards. Anything fancier (an accidents
 period picker, stacked segments from details) starts from a generated card and gets
 hand-finished.
 
+A generated card's tooltip breaks each bar down by **every field the type collects that
+can be counted** — a checkbox, a count or a reveal — showing only what actually happened
+that day:
+
+```
+27/8
+Biltur 5
+Olycka? 3 · Bajsade 2 · Spydde 2
+```
+
+Nothing is declared for this: the fields come from `DETAIL_FIELDS` and their captions are
+the labels the dialog already renders, in declaration order. Numbers are left out, since
+"45" under a bar reads as a count and is not one.
+
+That count is the one aggregate on this screen that is **not** SQL. A per-day count of an
+arbitrary detail key would need a column per field — the same wide-view problem
+`stats_detail_metrics` exists to avoid — so `$lib/stats/detailDays.ts` counts the type's
+own events instead, the way `fieldHistory` does for trend cards. It is a month of one
+activity, and it means a tooltip row needs no migration.
+
 #### Metrics — the tiles under a generated chart
 
 A counts card can carry `StatTile`s like the walk card's, and **adding one needs no

@@ -3,10 +3,19 @@
 // "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
+import { fieldsFor } from '$lib/events/fields';
+import { dayBreakdown } from './detailDays';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
-import type { AccidentBin, MealDay, Period, SimpleDay, WalkDay } from '$lib/types/domain';
+import type {
+	AccidentBin,
+	DetailDayCount,
+	MealDay,
+	Period,
+	SimpleDay,
+	WalkDay
+} from '$lib/types/domain';
 import { MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
@@ -50,19 +59,35 @@ export function simpleCountBuckets(
 	days: SimpleDay[],
 	today: string,
 	label: string,
-	color: string
+	color: string,
+	/**
+	 * What to break each day's bar down by, when the type collects anything
+	 * countable: its own detail counts, plus the type they belong to so the
+	 * captions come from the catalogue rather than being passed in.
+	 */
+	breakdown?: { typeId: string; counts: DetailDayCount[] }
 ): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day.n]));
+	const fields = breakdown ? fieldsFor(breakdown.typeId) : [];
 
 	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
 		const n = byDay.get(day) ?? 0;
+		// Only what actually happened: a quiet day says the count and stops,
+		// rather than listing every field as a zero.
+		const detail = breakdown ? dayBreakdown(breakdown.counts, fields, day) : [];
+
 		return {
 			label: format.dayLabel(day),
 			tick: i % DAY_TICK_EVERY === 0,
 			segments: [n],
 			tooltip: {
 				heading: format.dayLabel(day),
-				rows: [tooltipRow(cell(label, String(n), color))]
+				rows: [
+					tooltipRow(cell(label, String(n), color)),
+					...(detail.length > 0
+						? [tooltipRow(...detail.map((entry) => cell(entry.label, String(entry.n))))]
+						: [])
+				]
 			}
 		};
 	});

@@ -324,12 +324,18 @@ describe('generate', () => {
 		const statsMarkers = output.edits
 			.filter((edit) => edit.path === 'src/lib/server/stats.ts')
 			.map((edit) => edit.marker);
-		expect(statsMarkers.sort()).toEqual([
+		expect([...new Set(statsMarkers)].sort()).toEqual([
 			'codegen:stats-queries',
 			'codegen:stats-results',
 			'codegen:stats-return',
 			'codegen:stats-shape'
 		]);
+		// The fixture collects a checkbox and a count, so its tooltip gets a
+		// breakdown as well as its chart — a second insertion at each marker.
+		expect(statsMarkers.filter((marker) => marker === 'codegen:stats-queries')).toHaveLength(2);
+		expect(
+			output.edits.some((edit) => edit.insert.includes("detailDayCounts(db, 'nail_check'"))
+		).toBe(true);
 		const card = output.creates.find((create) => create.path.endsWith('.svelte'));
 		expect(card?.path).toBe('src/lib/components/stats/NailCheckCard.svelte');
 		expect(card?.content).toContain('NAIL_CHECK_COLOR');
@@ -480,8 +486,9 @@ describe('generate', () => {
 		expect(captions).toContain("withoutBled: 'Utan blod',");
 
 		// One query for both tiles: the view is long, so they are two rows of it.
+		// Three queries in total — the chart, the tooltip breakdown, the metrics.
 		const queries = output.edits.filter((edit) => edit.marker === 'codegen:stats-queries');
-		expect(queries).toHaveLength(2);
+		expect(queries).toHaveLength(3);
 		expect(queries.filter((q) => q.insert.includes('stats_detail_metrics'))).toHaveLength(1);
 
 		const card2 = output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert ?? '';
@@ -523,6 +530,41 @@ describe('generate', () => {
 		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
 		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_metrics'))).toBe(false);
 		expect(output.edits.some((edit) => edit.insert.includes('metrics={data.'))).toBe(false);
+	});
+
+	// The tooltip breakdown is only offered something countable. A weight-shaped
+	// type has one number and nothing to break a bar down by.
+	it('gives a number-only type no tooltip breakdown', () => {
+		const output = generate(
+			{
+				...fixture,
+				fields: [{ name: 'len', label: 'Längd', input: 'number', unit: 'mm' }],
+				stats: { kind: 'counts-per-day', metrics: [] }
+			},
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
+
+		expect(output.edits.some((edit) => edit.insert.includes('detailDayCounts'))).toBe(false);
+		expect(card).not.toContain('counts: detailDays');
+		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
+	});
+
+	it('gives a type that counts something a breakdown, keyed by its own id', () => {
+		const output = generate(
+			{ ...fixture, stats: { kind: 'counts-per-day', metrics: [] } },
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
+
+		expect(card).toContain("{ typeId: 'nail_check', counts: detailDays }");
+		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toContain(
+			'detailDays={data.nailCheckDetailDays}'
+		);
 	});
 
 	it('generates nothing field-related for a bare timestamp type', () => {
