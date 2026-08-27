@@ -11,8 +11,33 @@
 > then run it on a local db with supabase?" — and `npm run new-event` should
 > **not** apply migrations itself; that stays a separate command.
 
-> **Status: 📋 Planned** — not built. The stack itself is already verified
-> working, see "What is already proven" below.
+> **Status: ✅ Built** — PR #40, as planned: the seed, the four scripts,
+> `dev:local`, the gitignored snapshot and the README section. Two departures
+> worth recording.
+>
+> **The `auth.users` insert needed more than the fiddly column list.** Its four
+> token columns — `confirmation_token`, `recovery_token`,
+> `email_change_token_new`, `email_change` — have no column default, and GoTrue
+> reads them into non-nullable strings, so leaving them NULL turned every login
+> into `Database error querying schema`. Setting them to `''` was the whole fix,
+> and the acceptance test really was just logging in.
+>
+> **`db-pull` needs no production queries beyond the dump.** The plan had it
+> reading the distinct user ids from production in order to rewrite them. It
+> does not have to: the rewriting can happen locally _after_ the load, keyed on
+> the seeded login's email, with the foreign keys quiet during the load. That
+> removed a second production connection and the uuid duplication between the
+> script and `seed.sql`, and it made the wrapping a pure function
+> (`buildSnapshot`) with a test per fix.
+>
+> **Verified end to end**, since the point of this plan is being able to see a
+> change before it ships: a throwaway migration written on the branch went live
+> locally through `npm run db-local`, and the app in `localdb` mode rendered its
+> tile next to the seeded dog. The snapshot half was verified against a local
+> dump with a foreign user id planted in it — five events survived a load that
+> would otherwise fail on the first foreign key, every author was re-pointed at
+> the local login, nothing dangled. The one part **not** exercised is the
+> production read itself, which needs the database password.
 
 ## Summary
 
@@ -200,14 +225,14 @@ mode=localdb      url=LOCAL       key=LOCAL
 
 ## Scripts
 
-| Script                  | Does                                                                 |
-| ----------------------- | -------------------------------------------------------------------- |
-| `npm run db-local`      | `supabase start` (idempotent), apply pending migrations, write `.env.localdb` |
-| `npm run db-local:reset`| `supabase db reset` — drop, re-run every migration, re-run the seeds  |
-| `npm run db-local:stop` | `supabase stop`                                                      |
-| `npm run db-pull`       | snapshot production's data into `supabase/seeds/prod-snapshot.sql`    |
-| `npm run dev:local`     | `vite dev --mode localdb`                                            |
-| `npm run db-push`       | **unchanged** — production, manual, after the merge                  |
+| Script                   | Does                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `npm run db-local`       | `supabase start` (idempotent), apply pending migrations, write `.env.localdb` |
+| `npm run db-local:reset` | `supabase db reset` — drop, re-run every migration, re-run the seeds          |
+| `npm run db-local:stop`  | `supabase stop`                                                               |
+| `npm run db-pull`        | snapshot production's data into `supabase/seeds/prod-snapshot.sql`            |
+| `npm run dev:local`      | `vite dev --mode localdb`                                                     |
+| `npm run db-push`        | **unchanged** — production, manual, after the merge                           |
 
 `npm run new-event` still writes files and touches no database, as decided; its
 closing checklist points at `npm run db-local` (plan 8, change 3), so the gap
@@ -235,16 +260,16 @@ The whole point is that production is untouched, so stating it plainly:
 
 ## Files
 
-| File                        | Change                                                            |
-| --------------------------- | ----------------------------------------------------------------- |
-| `supabase/config.toml`      | ✅ done: `auto_expose_new_tables`, four services off, `enable_signup` |
-| `supabase/config.toml`      | `sql_paths` gains `./seeds/*.sql`                                 |
-| `supabase/seed.sql`         | new, committed: the local login, household and dog                |
-| `scripts/db-pull.ts`        | new: dump production data, rewrite user ids, write the snapshot    |
-| `scripts/db-local.ts`       | new: start, migrate, write `.env.localdb`                          |
-| `package.json`              | the five scripts                                                  |
-| `.gitignore`                | `supabase/seeds/`                                                  |
-| `README.md`                 | a "Working against a local database" section; the `gen-types` note |
+| File                   | Change                                                                |
+| ---------------------- | --------------------------------------------------------------------- |
+| `supabase/config.toml` | ✅ done: `auto_expose_new_tables`, four services off, `enable_signup` |
+| `supabase/config.toml` | `sql_paths` gains `./seeds/*.sql`                                     |
+| `supabase/seed.sql`    | new, committed: the local login, household and dog                    |
+| `scripts/db-pull.ts`   | new: dump production data, rewrite user ids, write the snapshot       |
+| `scripts/db-local.ts`  | new: start, migrate, write `.env.localdb`                             |
+| `package.json`         | the five scripts                                                      |
+| `.gitignore`           | `supabase/seeds/`                                                     |
+| `README.md`            | a "Working against a local database" section; the `gen-types` note    |
 
 ## What I recommend not building
 

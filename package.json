@@ -14,6 +14,11 @@
 		"test": "vitest run",
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
+		"db-local": "node scripts/db-local.ts",
+		"db-local:reset": "supabase db reset",
+		"db-local:stop": "supabase stop",
+		"db-pull": "node scripts/db-pull.ts",
+		"dev:local": "vite dev --mode localdb",
 		"db-push": "supabase db push",
 		"gen-types": "supabase gen types typescript --linked > src/lib/types/database.ts"
 	},
