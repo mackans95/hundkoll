@@ -124,7 +124,14 @@ Two things the local stack does deliberately, both so that it does not lie:
 
 When a migration is what you are testing, `npm run gen-types` is the one command that
 still points at production: use `--local` while the migration is unmerged, or the
-generated types will not know about it.
+generated types will not know about it. One catch — `--local` output omits the
+`__InternalSupabase` block that pins `PostgrestVersion`, so put it back by hand and keep
+the diff purely additive.
+
+Also worth knowing when writing a migration by hand: **stamp its filename in UTC**, the
+way `npm run new-event` does. A stamp taken from the clock on the wall is an hour or two
+ahead in summer, so the next generated migration sorts before it and `migration up`
+refuses the out-of-order pair.
 
 ## Code layout
 
@@ -371,6 +378,39 @@ Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
 checked-in components you edit freely afterwards. Anything fancier (an accidents-style
 period picker, stacked segments from details) starts from a generated card and gets
 hand-finished.
+
+#### Metrics — the tiles under a generated chart
+
+A counts card can carry `StatTile`s like the walk card's, and **adding one needs no
+SQL**. Every hand-written metric is its own column in `stats_summary` with the type
+baked into a subquery (`avg_walk_duration_min`, `meal_finish_rate`); generated ones read
+`stats_detail_metrics` instead, which is **long rather than wide** — one row per dog ×
+type × detail field. A new type's tiles are rows of a view that already exists.
+
+Three kinds, and the generator asks for them when the card is a counts card:
+
+| Kind            | Reads                          | Wants                       |
+| --------------- | ------------------------------ | --------------------------- |
+| `avg`           | the average of a number field  | a `number` field            |
+| `share`         | how often something was ticked | `checkbox`/`count`/`reveal` |
+| `share-without` | how often it was not           | `checkbox`/`count`/`reveal` |
+
+You are not asked how to format it. The unit comes from the field's own declaration, so
+an average of minutes is written in minutes (and switches to hours past 90); a share is
+a percentage. And the `~` follows the kind, per the rule above: an average divides by
+what was measured and says so, a share is measured and does not.
+
+`share-without` is the one worth knowing about. It divides by **every** event of the
+type, not by the events carrying the field — which is what makes it work with a
+`reveal`, where a good day stores nothing at all. "Rides with no accident" is
+`share-without` on the reveal itself.
+
+Two consequences of a field that has never been logged once, which has no row at all:
+
+- an `avg` shows `–`, because there is genuinely nothing to average;
+- a `share-without` shows **100 %** when the type has events, because never having
+  happened is an answer. That decision is in `shareTile`, not in SQL, since the card
+  holds the event count already.
 
 ## Auth
 

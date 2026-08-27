@@ -35,7 +35,22 @@ try {
 // Applies migrations written since the stack was last started or reset, which
 // is the whole point on a feature branch: a new event type's row lands here
 // without production seeing it.
-run(['migration', 'up', '--local']);
+try {
+	run(['migration', 'up', '--local']);
+} catch {
+	// A Node stack trace says nothing useful here, and the common cause has a
+	// one-line fix: deleting a migration file that was already applied leaves
+	// the history table ahead of the directory, which a reset rebuilds.
+	console.error(`
+✖ applying migrations to the local database failed — the CLI's error is above.
+
+  If it mentions migration versions not found locally, a migration that was
+  applied here has since been deleted or renamed. Rebuild from the files:
+
+    npm run db-local:reset
+`);
+	process.exit(1);
+}
 
 const status = capture(['status', '-o', 'env']);
 const values = new Map<string, string>();

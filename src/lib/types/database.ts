@@ -309,6 +309,55 @@ export type Database = {
 					}
 				];
 			};
+			stats_detail_metrics: {
+				Row: {
+					answered: number | null;
+					avg_number: number | null;
+					dog_id: string | null;
+					events: number | null;
+					field: string | null;
+					share_not_true: number | null;
+					share_true: number | null;
+					type_id: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_summary';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			stats_period_summary: {
 				Row: {
 					accidents: number | null;

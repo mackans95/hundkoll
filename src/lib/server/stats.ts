@@ -6,6 +6,7 @@ import { trendBucketKeys } from '$lib/stats/trends';
 import * as time from '$lib/time';
 import type {
 	AccidentBin,
+	DetailMetric,
 	MealDay,
 	Period,
 	SimpleDay,
@@ -48,6 +49,10 @@ type SelectedDaily = Pick<
 	| 'finished_false'
 	| 'avg_gap_min'
 	| 'avg_duration_min'
+>;
+type SelectedMetric = Pick<
+	ViewRow<'stats_detail_metrics'>,
+	'field' | 'events' | 'answered' | 'avg_number' | 'share_true' | 'share_not_true'
 >;
 type SelectedBin = Pick<ViewRow<'stats_accident_bins'>, 'bucket' | 'n' | 'pee' | 'poop'>;
 type SelectedPeriod = Pick<
@@ -98,6 +103,21 @@ function toSimpleDay(row: Pick<ViewRow<'stats_daily_counts'>, 'day' | 'n'>): Sim
 	return { day: row.day, n: row.n ?? 0 };
 }
 
+/** Narrows one detail-field metric row; a row without a field names nothing. */
+function toDetailMetric(row: SelectedMetric): DetailMetric | null {
+	if (!row.field) {
+		return null;
+	}
+	return {
+		field: row.field,
+		events: row.events ?? 0,
+		answered: row.answered ?? 0,
+		avg_number: row.avg_number,
+		share_true: row.share_true,
+		share_not_true: row.share_not_true
+	};
+}
+
 /** Narrows one accident bin, whichever period it was binned by. */
 function toAccidentBin(row: SelectedBin): AccidentBin | null {
 	if (!row.bucket) {
@@ -142,6 +162,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	const dailyColumns =
 		'day, n, pee, poop, finished_true, finished_false, avg_gap_min, avg_duration_min';
+	// A generated card selects these for its own type; the view windows itself,
+	// so there is no date filter to keep in step with the charts.
+	const metricColumns = 'field, events, answered, avg_number, share_true, share_not_true';
 
 	const [
 		// codegen:stats-results — one name here per query below, same order
