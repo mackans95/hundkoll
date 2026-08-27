@@ -63,8 +63,68 @@ Other commands:
 | `npm run format`    | Prettier                                                                            |
 | `npm run build`     | production build                                                                    |
 | `npm run new-event` | generate a new tracked activity — see [Adding an event type](#adding-an-event-type) |
-| `npm run db-push`   | apply pending migrations to Supabase                                                |
-| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the schema                              |
+| `npm run db-push`   | apply pending migrations to **production** — only after a merge                     |
+| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the linked (production) schema          |
+
+And for the local database, see [Working against a local database](#working-against-a-local-database):
+
+| Command                  | Purpose                                                           |
+| ------------------------ | ----------------------------------------------------------------- |
+| `npm run db-local`       | start local Postgres, apply every migration, write `.env.localdb` |
+| `npm run dev:local`      | the dev server, pointed at that instead of production             |
+| `npm run db-pull`        | copy production's data into it (a read, never a write)            |
+| `npm run db-local:reset` | drop it, re-run every migration, re-run the seeds                 |
+| `npm run db-local:stop`  | stop the containers                                               |
+
+## Working against a local database
+
+A new event type is **invisible until a migration is applied**, because the log grid
+renders `event_types` rows. Without a local database the only way to see a new tile is to
+merge and push to the shared production database, which is exactly the wrong order — so
+there is a local one. It needs Docker running.
+
+```sh
+npm run db-local     # Postgres + PostgREST + GoTrue + Studio, every migration applied
+npm run dev:local    # the app, against it — log in as dev@local / localdev
+```
+
+`npm run db-local` writes `.env.localdb`, which only `--mode localdb` reads. Vite loads
+`.env` first and lets the mode file win, so **the production `.env` is never touched** and
+plain `npm run dev` still points at production. The two are one flag apart.
+
+`supabase/seed.sql` creates the login, a household and a dog, which is enough to see a
+tile and open its dialog. For a history worth looking at:
+
+```sh
+npm run db-pull      # a snapshot of production's data, loaded locally
+```
+
+That is the one command that reads production, and reading is all it does. With it loaded
+the events list has content and every stats card draws real bars, which is the difference
+between reviewing a new chart and guessing at one. The snapshot is real data about a real
+dog: it lands in `supabase/seeds/`, which is gitignored, and `db-pull` refuses to write
+there if git ever stops ignoring it.
+
+> **Nothing in this workflow writes to production.** `npm run db-push` is untouched, still
+> manual, and still only after a merge. `db-local:reset` is destructive to the local
+> container alone.
+
+Two things the local stack does deliberately, both so that it does not lie:
+
+- **`auto_expose_new_tables = true`** in `config.toml`. The migrations contain no
+  `grant select` anywhere; production works because it was created before Supabase flipped
+  that default, and inherited implicit grants for `anon` and `authenticated`. Without the
+  flag every read fails locally with `42501 permission denied`. That config field is
+  documented as **removed on 2026-10-30** — existing tables keep their grants, but a table
+  added by a migration after that will land unreadable, and it will look like an RLS
+  problem while being a `GRANT` problem. The durable fix is explicit grants in a migration.
+- **Only the services the app uses** are enabled — no realtime, storage, edge functions or
+  analytics — and `enable_signup` is off, matching production, where the two users were
+  made by hand.
+
+When a migration is what you are testing, `npm run gen-types` is the one command that
+still points at production: use `--local` while the migration is unmerged, or the
+generated types will not know about it.
 
 ## Code layout
 
@@ -223,6 +283,10 @@ Schema lives in `supabase/migrations/` and is applied with `npm run db-push`.
 > **Never change the schema in the Supabase web UI.** The migration files are the source of
 > truth. And do not push a migration from an unmerged branch — the database is shared with
 > production, so schema changes land when the branch merges.
+
+Until it merges, `npm run db-local` applies it to the local database instead, which is
+where an unmerged migration is meant to be tried: see
+[Working against a local database](#working-against-a-local-database).
 
 ## Adding an event type
 

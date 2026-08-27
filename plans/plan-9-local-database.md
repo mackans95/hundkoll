@@ -200,14 +200,14 @@ mode=localdb      url=LOCAL       key=LOCAL
 
 ## Scripts
 
-| Script                  | Does                                                                 |
-| ----------------------- | -------------------------------------------------------------------- |
-| `npm run db-local`      | `supabase start` (idempotent), apply pending migrations, write `.env.localdb` |
-| `npm run db-local:reset`| `supabase db reset` — drop, re-run every migration, re-run the seeds  |
-| `npm run db-local:stop` | `supabase stop`                                                      |
-| `npm run db-pull`       | snapshot production's data into `supabase/seeds/prod-snapshot.sql`    |
-| `npm run dev:local`     | `vite dev --mode localdb`                                            |
-| `npm run db-push`       | **unchanged** — production, manual, after the merge                  |
+| Script                   | Does                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `npm run db-local`       | `supabase start` (idempotent), apply pending migrations, write `.env.localdb` |
+| `npm run db-local:reset` | `supabase db reset` — drop, re-run every migration, re-run the seeds          |
+| `npm run db-local:stop`  | `supabase stop`                                                               |
+| `npm run db-pull`        | snapshot production's data into `supabase/seeds/prod-snapshot.sql`            |
+| `npm run dev:local`      | `vite dev --mode localdb`                                                     |
+| `npm run db-push`        | **unchanged** — production, manual, after the merge                           |
 
 `npm run new-event` still writes files and touches no database, as decided; its
 closing checklist points at `npm run db-local` (plan 8, change 3), so the gap
@@ -235,16 +235,16 @@ The whole point is that production is untouched, so stating it plainly:
 
 ## Files
 
-| File                        | Change                                                            |
-| --------------------------- | ----------------------------------------------------------------- |
-| `supabase/config.toml`      | ✅ done: `auto_expose_new_tables`, four services off, `enable_signup` |
-| `supabase/config.toml`      | `sql_paths` gains `./seeds/*.sql`                                 |
-| `supabase/seed.sql`         | new, committed: the local login, household and dog                |
-| `scripts/db-pull.ts`        | new: dump production data, rewrite user ids, write the snapshot    |
-| `scripts/db-local.ts`       | new: start, migrate, write `.env.localdb`                          |
-| `package.json`              | the five scripts                                                  |
-| `.gitignore`                | `supabase/seeds/`                                                  |
-| `README.md`                 | a "Working against a local database" section; the `gen-types` note |
+| File                   | Change                                                                |
+| ---------------------- | --------------------------------------------------------------------- |
+| `supabase/config.toml` | ✅ done: `auto_expose_new_tables`, four services off, `enable_signup` |
+| `supabase/config.toml` | `sql_paths` gains `./seeds/*.sql`                                     |
+| `supabase/seed.sql`    | new, committed: the local login, household and dog                    |
+| `scripts/db-pull.ts`   | new: dump production data, rewrite user ids, write the snapshot       |
+| `scripts/db-local.ts`  | new: start, migrate, write `.env.localdb`                             |
+| `package.json`         | the five scripts                                                      |
+| `.gitignore`           | `supabase/seeds/`                                                     |
+| `README.md`            | a "Working against a local database" section; the `gen-types` note    |
 
 ## What I recommend not building
 

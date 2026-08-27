@@ -61,12 +61,12 @@ inte upp", and a missing key would be indistinguishable from an old row. A
 reveal has no such reading — there is nothing to say about the causes of an
 accident that did not happen.
 
-| what happened          | stored details                                        | reads back                  |
-| ---------------------- | ----------------------------------------------------- | --------------------------- |
-| 45 min, nothing        | `{duration_min: 45}`                                  | `45 min`                    |
-| 45 min, sick           | `{duration_min: 45, accident: true, vomit: true}`     | `45 min · spydde`           |
-| 45 min, both           | `…, accident: true, vomit: true, poop: true`          | `45 min · spydde · bajsade` |
-| ticked, nothing chosen | — rejected, see below                                 | —                           |
+| what happened          | stored details                                    | reads back                  |
+| ---------------------- | ------------------------------------------------- | --------------------------- |
+| 45 min, nothing        | `{duration_min: 45}`                              | `45 min`                    |
+| 45 min, sick           | `{duration_min: 45, accident: true, vomit: true}` | `45 min · spydde`           |
+| 45 min, both           | `…, accident: true, vomit: true, poop: true`      | `45 min · spydde · bajsade` |
+| ticked, nothing chosen | — rejected, see below                             | —                           |
 
 Because a ticked reveal always has a cause, the reveal itself contributes **no
 summary word**: `olycka` can never be the only thing there is to say, so nothing
@@ -101,8 +101,7 @@ reports a bad number, and both callers already have somewhere to put it:
 
 ```ts
 export type ParsedDetails =
-	| { ok: true; details: EventDetails }
-	| { ok: false; field: string; reason: 'value' | 'choice' };
+	{ ok: true; details: EventDetails } | { ok: false; field: string; reason: 'value' | 'choice' };
 ```
 
 `reason: 'choice'` maps to a new `locale.errors.chooseOne(label)` — _"Välj vad
@@ -111,7 +110,7 @@ som hände: olycka."_ — next to the existing `invalidValue`.
 **This exposes a real defect to fix on the way.** `queueLog` today does:
 
 ```ts
-details: parsed.ok ? parsed.details : {}
+details: parsed.ok ? parsed.details : {};
 ```
 
 A detail field that fails to parse throws away **every** detail on the row and
@@ -137,8 +136,16 @@ _siblings_, so the checkbox stops being wrapped in its `<label>` and gets an
 
 ```svelte
 <div class="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-3">
-	<input id={field.name} name={field.name} type="checkbox" class="peer rounded border-edge-strong" />
-	<label for={field.name} class="text-sm font-medium text-ink-label">{field.label}</label>
+	<input
+		id={field.name}
+		name={field.name}
+		type="checkbox"
+		class="peer rounded border-edge-strong"
+	/>
+	<label
+		for={field.name}
+		class="text-sm font-medium text-ink-label">{field.label}</label
+	>
 	<div class="col-span-2 ml-6 hidden flex-col gap-3 peer-checked:flex">
 		<!-- the fields whose revealedBy is this one, rendered by the same
 		     {#each} branch as any other field -->
@@ -291,17 +298,17 @@ and the note. Most types have none — press Enter to skip.
 
 ## Files
 
-| File                                         | Change                                                          |
-| -------------------------------------------- | --------------------------------------------------------------- |
-| `src/lib/events/fields.ts`                   | `'reveal'` input and `revealedBy?` on `DetailField`              |
-| `src/lib/events/details.ts`                  | gating, store-only-what-was-answered, the "choose one" failure   |
-| `src/lib/offline/submit.ts`                  | refuse to enqueue an invalid row, surface the message            |
-| `src/lib/components/log/LogDialog.svelte`    | show a local validation message, not only the server's           |
-| `src/lib/components/log/DetailFields.svelte` | sibling checkbox + `peer-checked:` reveal block                  |
-| `src/lib/locale.ts`                          | `chooseOne` — no type-specific strings, see Scope                |
-| `scripts/new-event-core.ts`                  | `reveal` in the spec, validation, locale-key reuse               |
-| `scripts/new-event.ts`                       | nested prompt loop, flag form, the two message fixes             |
-| `README.md`                                  | the reveal in the "Detail fields" step                           |
+| File                                         | Change                                                         |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| `src/lib/events/fields.ts`                   | `'reveal'` input and `revealedBy?` on `DetailField`            |
+| `src/lib/events/details.ts`                  | gating, store-only-what-was-answered, the "choose one" failure |
+| `src/lib/offline/submit.ts`                  | refuse to enqueue an invalid row, surface the message          |
+| `src/lib/components/log/LogDialog.svelte`    | show a local validation message, not only the server's         |
+| `src/lib/components/log/DetailFields.svelte` | sibling checkbox + `peer-checked:` reveal block                |
+| `src/lib/locale.ts`                          | `chooseOne` — no type-specific strings, see Scope              |
+| `scripts/new-event-core.ts`                  | `reveal` in the spec, validation, locale-key reuse             |
+| `scripts/new-event.ts`                       | nested prompt loop, flag form, the two message fixes           |
+| `README.md`                                  | the reveal in the "Detail fields" step                         |
 
 Also stale and worth fixing while in there: the header comment in `fields.ts`
 says `count` is "a checkbox that reveals a stepper", which `CountStepper`
