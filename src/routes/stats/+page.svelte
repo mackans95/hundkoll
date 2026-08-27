@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Tab } from '$lib/components/TabBar.svelte';
 	// codegen:stats-imports — npm run new-event inserts card imports here
+	import CarRideCard from '$lib/components/stats/CarRideCard.svelte';
 	import AccidentCard from '$lib/components/stats/AccidentCard.svelte';
 	import MealCard from '$lib/components/stats/MealCard.svelte';
 	import TrendCard from '$lib/components/stats/TrendCard.svelte';
@@ -71,4 +72,10 @@
 	<WeightCard weights={data.weights} />
 
 	<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
+	<CarRideCard
+		days={data.carRideDays}
+		today={data.today}
+		metrics={data.carRideMetrics}
+		detailDays={data.carRideDetailDays}
+	/>
 </main>

@@ -193,6 +193,9 @@ export const units = {
 export const activities = {
 	fields: {
 		// codegen:field-labels — npm run new-event inserts field labels here
+		accident: 'Olycka?',
+		pooped: 'Bajsade',
+		threwUp: 'Spydde',
 		durationMin: 'Längd (minuter)',
 		pee: 'Kiss',
 		poop: 'Bajs',
@@ -202,6 +205,8 @@ export const activities = {
 	/** Lower case: these are fragments joined into one line under an event. */
 	summary: {
 		// codegen:summary-words — npm run new-event inserts summary fragments here
+		pooped: 'bajsade',
+		threwUp: 'spydde',
 		pee: 'kiss',
 		poop: 'bajs',
 		finished: 'åt upp',
@@ -223,6 +228,12 @@ const symbols = {
 
 export const stats = {
 	// codegen:stats-strings — npm run new-event inserts card strings here
+	carRide: {
+		heading: '🚗 Biltur',
+		avgDurationMin: 'Snittlängd',
+		withoutAccident: 'Utan olycka',
+		tooltipLabel: 'Biltur'
+	},
 	title: nav.stats,
 	subtitle: (days: number) => `Snitt över de senaste ${days} dagarna.` as const,
 	// `as const satisfies`: keeps the literal types, and still fails if a
