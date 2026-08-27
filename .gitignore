@@ -20,6 +20,7 @@ Thumbs.db
 
 # Supabase CLI session state
 supabase/.temp/
+supabase/.branches/
 
 # Vite
 vite.config.js.timestamp-*
