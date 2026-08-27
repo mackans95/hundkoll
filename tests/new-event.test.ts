@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+	existingKeysAfter,
 	existingTypeIds,
 	generate,
 	nextSortOrder,
@@ -36,6 +37,33 @@ const FIELDS_SOURCE = `export const DETAIL_FIELDS: Record<string, DetailField[]>
 	meal: [
 	]
 };`;
+
+// Shaped like locale.ts around its markers, since that shape is what
+// existingKeysAfter reads: keys at the marker's own indentation, the block
+// ending at the first line indented less.
+const LOCALE_SOURCE = `export const units = {
+	// codegen:units — npm run new-event inserts unfamiliar units here
+	minutes: (value: string) => \`\${value} min\` as const,
+	kilograms: (value: string) => \`\${value} kg\` as const
+} as const;
+
+export const activities = {
+	fields: {
+		// codegen:field-labels — npm run new-event inserts field labels here
+		durationMin: 'Längd (minuter)',
+		poop: 'Bajs'
+	},
+	summary: {
+		// codegen:summary-words — npm run new-event inserts summary fragments here
+		poop: 'bajs',
+		separator: ' · '
+	}
+} as const;
+
+export const stats = {
+	// codegen:stats-strings — npm run new-event inserts card strings here
+	title: nav.stats
+} as const;`;
 
 const fixture: EventSpec = {
 	id: 'nail_check',
@@ -93,6 +121,64 @@ describe('validateSpec', () => {
 		).not.toEqual([]);
 	});
 
+	// A reveal is a checkbox that uncovers other fields, and the rules exist
+	// because parsing walks the list once, deciding each field by its parent.
+	describe('a reveal and the fields under it', () => {
+		const reveal = (fields: EventSpec['fields']) =>
+			validateSpec({ ...fixture, stats: { kind: 'none' }, fields }, []);
+
+		const VALID: EventSpec['fields'] = [
+			{ name: 'accident', label: 'Olycka', input: 'reveal' },
+			{ name: 'vomit', label: 'Spydde', input: 'checkbox', revealedBy: 'accident' }
+		];
+
+		it('accepts a reveal declared before what it uncovers', () => {
+			expect(reveal(VALID)).toEqual([]);
+		});
+
+		it('rejects a reveal that uncovers nothing', () => {
+			expect(reveal([{ name: 'accident', label: 'Olycka', input: 'reveal' }])).toEqual([
+				"reveal 'accident' uncovers nothing — a reveal with no fields is a checkbox."
+			]);
+		});
+
+		it('rejects a revealedBy naming a field that is not declared', () => {
+			expect(
+				reveal([{ name: 'vomit', label: 'Spydde', input: 'checkbox', revealedBy: 'nope' }])
+			).toEqual(["field 'vomit' is revealed by 'nope', which is not declared."]);
+		});
+
+		it('rejects a field declared before the reveal that uncovers it', () => {
+			expect(reveal([VALID[1], VALID[0]])).toEqual([
+				"field 'vomit' must be declared after 'accident', which reveals it."
+			]);
+		});
+
+		it('rejects being revealed by an ordinary checkbox', () => {
+			expect(
+				reveal([
+					{ name: 'accident', label: 'Olycka', input: 'checkbox' },
+					{ name: 'vomit', label: 'Spydde', input: 'checkbox', revealedBy: 'accident' }
+				])
+			).toEqual(["field 'vomit' is revealed by 'accident', which is a checkbox, not a reveal."]);
+		});
+
+		it('rejects a reveal inside a reveal — one level only', () => {
+			const errors = reveal([
+				...VALID,
+				{ name: 'inner', label: 'Mer', input: 'reveal', revealedBy: 'accident' },
+				{ name: 'deep', label: 'Djupt', input: 'checkbox', revealedBy: 'inner' }
+			]);
+			expect(errors).toContain("field 'inner' is a reveal, so it cannot itself be revealed.");
+		});
+
+		it('rejects a field revealing itself', () => {
+			expect(
+				reveal([{ name: 'accident', label: 'Olycka', input: 'reveal', revealedBy: 'accident' }])
+			).toContain("field 'accident' cannot reveal itself.");
+		});
+	});
+
 	it('only lets a trend line plot a declared number field', () => {
 		expect(
 			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'claw_len', unit: 'mm' } }, [])
@@ -117,6 +203,29 @@ describe('catalogue parsing', () => {
 	});
 });
 
+describe('existingKeysAfter', () => {
+	// The boundary matters: locale.ts nests these blocks, and reading past one
+	// would report keys that are not there and skip strings that are needed.
+	it('reads one block and stops where it ends', () => {
+		expect([...existingKeysAfter(LOCALE_SOURCE, 'codegen:field-labels')].sort()).toEqual([
+			'durationMin',
+			'poop'
+		]);
+		expect([...existingKeysAfter(LOCALE_SOURCE, 'codegen:summary-words')].sort()).toEqual([
+			'poop',
+			'separator'
+		]);
+		expect([...existingKeysAfter(LOCALE_SOURCE, 'codegen:units')].sort()).toEqual([
+			'kilograms',
+			'minutes'
+		]);
+	});
+
+	it('reports nothing for a marker that is not there', () => {
+		expect(existingKeysAfter(LOCALE_SOURCE, 'codegen:nope').size).toBe(0);
+	});
+});
+
 describe('renderTemplate', () => {
 	it('fills every token and refuses leftovers', () => {
 		expect(renderTemplate('a {{x}} b {{x}}', { x: '1' })).toBe('a 1 b 1');
@@ -125,7 +234,7 @@ describe('renderTemplate', () => {
 });
 
 describe('generate', () => {
-	const output = generate(fixture, templates, '20260820120000');
+	const output = generate(fixture, templates, '20260820120000', LOCALE_SOURCE);
 
 	it('writes the one insert the type needs', () => {
 		const migration = output.creates.find((create) => create.path.endsWith('.sql'));
@@ -179,7 +288,8 @@ describe('generate', () => {
 		const trend = generate(
 			{ ...fixture, stats: { kind: 'trend-line', field: 'claw_len', unit: 'mm' } },
 			templates,
-			'20260820120000'
+			'20260820120000',
+			LOCALE_SOURCE
 		);
 		const query = trend.edits.find((edit) => edit.marker === 'codegen:stats-queries');
 		expect(query?.insert).toContain("fieldHistory(db, 'nail_check', 'claw_len')");
@@ -188,11 +298,102 @@ describe('generate', () => {
 		expect(card?.content).not.toMatch(/{{[A-Za-z]+}}/);
 	});
 
+	// The nested prompt flattens into this, and the flat list is what the parser
+	// and the renderer both read.
+	it('declares a reveal flat, in order, with no wording of its own', () => {
+		const output = generate(
+			{
+				...fixture,
+				stats: { kind: 'none' },
+				fields: [
+					{ name: 'accident', label: 'Olycka', input: 'reveal' },
+					{ name: 'vomit', label: 'Spydde', input: 'checkbox', revealedBy: 'accident' },
+					{ name: 'minute', label: 'Minut', input: 'number', unit: 'min', step: '1' }
+				]
+			},
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		const fields =
+			output.edits.find((edit) => edit.marker === 'codegen:detail-fields')?.insert ?? '';
+
+		expect(fields).toContain("input: 'reveal'");
+		expect(fields).toContain("revealedBy: 'accident'");
+		expect(fields.indexOf("name: 'accident'")).toBeLessThan(fields.indexOf("name: 'vomit'"));
+
+		// The reveal gets no summarize; the cause it uncovers gets one with no
+		// "inte …" branch, since it is never stored false.
+		const reveal = fields.slice(
+			fields.indexOf("name: 'accident'"),
+			fields.indexOf("name: 'vomit'")
+		);
+		expect(reveal).not.toContain('summarize');
+		expect(fields).toContain('value === true ? locale.activities.summary.vomit : null');
+		expect(fields).not.toContain('notVomit');
+
+		const words =
+			output.edits.find((edit) => edit.marker === 'codegen:summary-words')?.insert ?? '';
+		expect(words).toContain("vomit: 'spydde',");
+		expect(words).not.toContain('notVomit');
+		expect(words).not.toContain('accident');
+
+		// A number keeps its unit and step wherever it is declared.
+		expect(fields).toContain("step: '1'");
+		expect(output.edits.some((edit) => edit.marker === 'codegen:units')).toBe(false);
+	});
+
+	// The duplicate-key bug: locale.ts already has poop, and TypeScript rejects
+	// an object literal with the same property twice — so a second poop field
+	// would break npm run check after the files were written.
+	it('reuses a locale string that already exists instead of re-declaring it', () => {
+		const output = generate(
+			{
+				...fixture,
+				stats: { kind: 'none' },
+				fields: [
+					{ name: 'poop', label: 'Bajs', input: 'count' },
+					{ name: 'bled', label: 'Blödde', input: 'checkbox' }
+				]
+			},
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+
+		const labels =
+			output.edits.find((edit) => edit.marker === 'codegen:field-labels')?.insert ?? '';
+		expect(labels).toContain('bled:');
+		expect(labels).not.toContain('poop:');
+
+		const words =
+			output.edits.find((edit) => edit.marker === 'codegen:summary-words')?.insert ?? '';
+		expect(words).not.toContain("poop: 'bajs'");
+		expect(words).toContain("bled: 'blödde'");
+
+		expect(output.notes.join(' ')).toContain('Reused the existing locale strings for poop');
+	});
+
+	it('does not re-declare a unit locale.units already has', () => {
+		const output = generate(
+			{
+				...fixture,
+				stats: { kind: 'none' },
+				fields: [{ name: 'len', label: 'Längd', input: 'number', unit: 'min' }]
+			},
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		expect(output.edits.some((edit) => edit.marker === 'codegen:units')).toBe(false);
+	});
+
 	it('generates nothing field-related for a bare timestamp type', () => {
 		const bare = generate(
 			{ ...fixture, fields: [], stats: { kind: 'none' } },
 			templates,
-			'20260820120000'
+			'20260820120000',
+			LOCALE_SOURCE
 		);
 		expect(bare.creates).toHaveLength(1);
 		expect(bare.edits).toEqual([]);

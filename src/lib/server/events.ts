@@ -1,5 +1,6 @@
 import * as locale from '$lib/locale';
-import { parseDetails } from '$lib/events/details';
+import { detailsMessage, parseDetails } from '$lib/events/details';
+import { fieldsFor } from '$lib/events/fields';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type {
@@ -134,7 +135,7 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	if (form.has('detailed')) {
 		const parsed = parseDetails(form, typeId);
 		if (!parsed.ok) {
-			return { ok: false, message: locale.errors.invalidValue(parsed.field) };
+			return { ok: false, message: detailsMessage(parsed) };
 		}
 		if (Object.keys(parsed.details).length > 0) {
 			// Every value DETAIL_FIELDS produces is a number or a boolean.
@@ -175,7 +176,8 @@ export type ParsedEdit = { ok: true; patch: EventPatch } | { ok: false; message:
  *
  * Parsed values are merged *over* the stored details rather than replacing
  * them, so keys the form never showed (a legacy portion_g, say) survive an
- * edit instead of being destroyed by it.
+ * edit instead of being destroyed by it. A reveal is the exception — see
+ * below.
  */
 export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
 	const submitted = time.stockholmInputToUtc(String(form.get('occurred_at') ?? '').trim());
@@ -191,17 +193,31 @@ export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
 
 	const parsed = parseDetails(form, event.type_id);
 	if (!parsed.ok) {
-		return { ok: false, message: locale.errors.invalidValue(parsed.field) };
+		return { ok: false, message: detailsMessage(parsed) };
 	}
 
 	const note = String(form.get('note') ?? '').trim();
+
+	// A reveal and its causes are dropped from the parse when the box is
+	// unticked, so merging would keep an accident on the row forever — there
+	// would be no way to correct one that was logged by mistake. Those keys are
+	// replaced wholesale; every other key keeps the merge above.
+	const revealed = new Set<string>();
+	for (const field of fieldsFor(event.type_id)) {
+		if (field.input === 'reveal' || field.revealedBy) {
+			revealed.add(field.name);
+		}
+	}
+	const kept = Object.fromEntries(
+		Object.entries(event.details).filter(([key]) => !revealed.has(key))
+	);
 
 	return {
 		ok: true,
 		patch: {
 			occurred_at: occurred.toISOString(),
 			// Every value DETAIL_FIELDS produces is a number or a boolean.
-			details: { ...event.details, ...parsed.details } as Json,
+			details: { ...kept, ...parsed.details } as Json,
 			note: note || null
 		}
 	};

@@ -13,7 +13,56 @@
 > occured" — and revealed fields take any input type, "might not need it right
 > now, but if I do need it in the future it will already be built".
 
-> **Status: 📋 Planned** — not built.
+> **Status: ✅ Built** — PR #41: the `reveal` input, the nested prompt, the
+> locale-key reuse and the two message fixes as planned. Four things the plan
+> did not see.
+>
+> **The edit path would never have let an accident be corrected.** `parseEventEdit`
+> merges parsed details _over_ the stored ones, so that keys no form shows (a
+> legacy `portion_g`) survive an edit. A reveal is dropped from the parse when
+> unticked, so the merge would have kept `accident: true` on the row forever.
+> Reveal-owned keys are now replaced wholesale; every other key keeps the merge.
+> Nothing in the plan pointed at this file.
+>
+> **The failure needed one phrasing, not per-caller phrasing.** `parseDetails`
+> deliberately returned a field rather than a message "so the caller decides".
+> With the choice rule there are three callers — the log action, the edit action
+> and the queue — and a rule enforced in one place should not be worded in
+> three, so `detailsMessage` moved into the shared module beside it.
+>
+> **`--dry-run` never printed the notes**, which is most of what a dry run is
+> for: it exited before them. Fixed on the way past.
+>
+> **Six validation rules, not seven.** A field revealing itself is already
+> caught by "declared before its reveal"; the explicit rule stays for the better
+> message, but it is not independent.
+>
+> **Verified** against the local database from plan 9, by generating a throwaway
+> type with a reveal through the real prompts and driving it:
+>
+> - CSS reveal: hidden `display: none` at rest → `display: flex` with both
+>   causes 16×16 after a tick → hidden again.
+> - **With page scripts disabled** (confirmed by SvelteKit never bootstrapping):
+>   the server-rendered dialog still carries the sibling structure, and a real
+>   mouse click still uncovers the block — 312×100 where there had been no box
+>   at all.
+> - The choice rule, offline: saving a ticked reveal with nothing chosen left
+>   the dialog open with _"Välj minst ett alternativ under olycka."_ and **zero
+>   rows in IndexedDB** — refused before the queue, which is the whole point.
+> - The choice rule, no JavaScript: the same submission came back
+>   `{"type":"failure","status":400}` with the same sentence.
+> - Stored shapes: `{duration_min: 45}` for a plain ride,
+>   `{accident: true, vomit: true}` for a sick one, and `{}` for a cause posted
+>   with its reveal unticked.
+> - The generator reused the existing `poop` and `durationMin` strings instead
+>   of re-declaring them, and said so in a note — the duplicate-key break that
+>   prompted this.
+>
+> One thing **not** verified the way the plan implied: the prompt cannot be
+> driven by piped stdin at all — `readline/promises` drops every line after the
+> first once stdin is not a TTY, which is pre-existing (checked against master)
+> and is why plan 2 verified through flags. The nested loop was driven through a
+> real PTY instead.
 
 > **Scope:** the mechanism only. The Biltur type itself is **not** part of this
 > plan — the generated car-ride files were discarded, and the type gets

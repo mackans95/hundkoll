@@ -91,5 +91,15 @@ export async function finishWalk(
 	if (!walk) {
 		return;
 	}
-	await queueLog(type, buildWalkFields(walk, new Date(), minutesOverride), discardWalk);
+	const outcome = await queueLog(
+		type,
+		buildWalkFields(walk, new Date(), minutesOverride),
+		discardWalk
+	);
+	// buildWalkFields writes these fields itself, so a rejection is a bug here
+	// rather than something the user typed. The walk is deliberately kept:
+	// discardWalk only runs once the row is queued.
+	if (!outcome.ok) {
+		console.warn('finishing the walk was rejected:', outcome.message);
+	}
 }

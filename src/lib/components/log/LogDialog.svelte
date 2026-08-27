@@ -29,11 +29,20 @@
 
 	const fields = $derived(fieldsFor(type.id));
 
+	// What the device itself refused, as opposed to `message`, which is what the
+	// server said. Both read the same on screen; only one of them can happen,
+	// since a rejected form never reaches the action.
+	let rejected = $state<string | null>(null);
+
 	// Saving closes the dialog without waiting for the server — that is what
 	// the queue behind createLogSubmit is for. use:enhance captures this
 	// function once: the {#key} around this dialog in +page.svelte is what
 	// remounts form and handler together when the activity changes.
-	const submit = $derived(createLogSubmit(type, onClose));
+	const submit = $derived(
+		createLogSubmit(type, onClose, (reason) => {
+			rejected = reason;
+		})
+	);
 
 	/** Closes without leaving the page, but stays a real link without JS. */
 	function cancel(event: MouseEvent) {
@@ -51,8 +60,8 @@
 >
 	<h2 class="mb-4 text-xl font-bold">{type.icon} {type.label}</h2>
 
-	{#if message}
-		<p class="mb-3 rounded-lg bg-danger-surface p-3 text-danger-ink">{message}</p>
+	{#if rejected ?? message}
+		<p class="mb-3 rounded-lg bg-danger-surface p-3 text-danger-ink">{rejected ?? message}</p>
 	{/if}
 
 	<form

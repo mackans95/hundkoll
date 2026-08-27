@@ -1,17 +1,25 @@
 // Per-type detail fields, shared by the dialog form (rendering), the form
 // action (parsing) and the recent-events list (summarize) — declaring a field
 // here is all it takes to collect it and show it back.
-// 'count' is a checkbox that reveals a stepper, submitted as the checkbox
-// plus "<name>_count", so a no-JS submission degrades to a count of 1.
+//
+// 'count' is a −/+ stepper. 'reveal' is a checkbox that uncovers the fields
+// naming it in revealedBy, and is not valid until one of them is answered:
+// "olycka" with no cause is not something that happened.
 
 import * as locale from '$lib/locale';
 
 export type DetailField = {
 	name: string;
 	label: string;
-	input: 'number' | 'checkbox' | 'count';
+	input: 'number' | 'checkbox' | 'count' | 'reveal';
 	step?: string;
 	required?: boolean;
+	/**
+	 * The reveal that has to be ticked before this field exists. Declare the
+	 * reveal first: parsing reads the list in order, and a child is decided by
+	 * its parent's value.
+	 */
+	revealedBy?: string;
 	/** How the value reads in the events list; null hides it. */
 	summarize?: (value: unknown) => string | null;
 };
@@ -126,4 +134,9 @@ export const LIVE_TYPE_IDS = new Set(['walk']);
  */
 export function fieldsFor(typeId: string): DetailField[] {
 	return DETAIL_FIELDS[typeId] ?? [];
+}
+
+/** The fields one reveal uncovers, in declaration order. */
+export function fieldsRevealedBy(fields: DetailField[], name: string): DetailField[] {
+	return fields.filter((field) => field.revealedBy === name);
 }

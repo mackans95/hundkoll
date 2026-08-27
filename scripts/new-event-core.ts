@@ -2,7 +2,7 @@
 // No filesystem, no prompts — that lives in new-event.ts — so the whole
 // generator is testable against a fixture spec (tests/new-event.test.ts).
 
-export type FieldInput = 'number' | 'checkbox' | 'count';
+export type FieldInput = 'number' | 'checkbox' | 'count' | 'reveal';
 
 export type FieldSpec = {
 	/** English snake_case, the key in the event's details jsonb. */
@@ -14,6 +14,12 @@ export type FieldSpec = {
 	required?: boolean;
 	/** number fields: the unit suffix summaries append, e.g. 'min' or 'kg'. */
 	unit?: string;
+	/**
+	 * The `reveal` field that has to be ticked before this one exists. The
+	 * prompt nests these under their reveal; the generated declaration is flat,
+	 * in the order the parser reads it.
+	 */
+	revealedBy?: string;
 };
 
 export type StatsSpec =
@@ -116,12 +122,50 @@ export function validateSpec(spec: EventSpec, existingIds: string[]): string[] {
 		if (seen.has(field.name)) {
 			errors.push(`field '${field.name}' is declared twice.`);
 		}
-		seen.add(field.name);
 		if (!field.label.trim()) {
 			errors.push(`field '${field.name}' needs a Swedish label.`);
 		}
 		if (field.input === 'number' && !field.unit?.trim()) {
 			errors.push(`field '${field.name}' is a number, so its summary needs a unit (like 'min').`);
+		}
+
+		if (field.revealedBy) {
+			const parent = spec.fields.find((other) => other.name === field.revealedBy);
+			if (field.revealedBy === field.name) {
+				errors.push(`field '${field.name}' cannot reveal itself.`);
+			} else if (!parent) {
+				errors.push(
+					`field '${field.name}' is revealed by '${field.revealedBy}', which is not declared.`
+				);
+			} else if (!seen.has(parent.name)) {
+				// Parsing walks the list once and decides a field by its parent's
+				// value, so a parent read afterwards would decide nothing.
+				errors.push(
+					`field '${field.name}' must be declared after '${parent.name}', which reveals it.`
+				);
+			} else if (parent.input !== 'reveal') {
+				// A plain checkbox stores false and means something by it; only a
+				// reveal drops what it did not collect.
+				errors.push(
+					`field '${field.name}' is revealed by '${parent.name}', which is a ${parent.input}, not a reveal.`
+				);
+			}
+			if (field.input === 'reveal') {
+				errors.push(`field '${field.name}' is a reveal, so it cannot itself be revealed.`);
+			}
+		}
+
+		seen.add(field.name);
+	}
+
+	for (const field of spec.fields) {
+		if (field.input !== 'reveal') {
+			continue;
+		}
+		if (!spec.fields.some((other) => other.revealedBy === field.name)) {
+			errors.push(
+				`reveal '${field.name}' uncovers nothing — a reveal with no fields is a checkbox.`
+			);
 		}
 	}
 
@@ -138,6 +182,43 @@ export function validateSpec(spec: EventSpec, existingIds: string[]): string[] {
 	}
 
 	return errors;
+}
+
+/**
+ * The keys already declared under one `codegen:` marker in locale.ts.
+ *
+ * Inserting a duplicate is not a soft failure: TypeScript rejects an object
+ * literal with two properties of the same name, so a second `poop` field on any
+ * type would break `npm run check` — after the files were written. Cheaper to
+ * reuse the string that is already there.
+ *
+ * Keys are the lines at the marker's own indentation; the block ends at the
+ * first line indented less than it.
+ */
+export function existingKeysAfter(source: string, marker: string): Set<string> {
+	const keys = new Set<string>();
+	const lines = source.split('\n');
+	const at = lines.findIndex((line) => line.includes(marker));
+	if (at === -1) {
+		return keys;
+	}
+
+	const indent = /^\t*/.exec(lines[at])?.[0].length ?? 0;
+	for (const line of lines.slice(at + 1)) {
+		if (!line.trim()) {
+			continue;
+		}
+		const depth = /^\t*/.exec(line)?.[0].length ?? 0;
+		if (depth < indent) {
+			break;
+		}
+		const key = new RegExp(`^\\t{${indent}}([A-Za-z][A-Za-z0-9]*):`).exec(line);
+		if (key) {
+			keys.add(key[1]);
+		}
+	}
+
+	return keys;
 }
 
 /**
@@ -210,6 +291,12 @@ function summarizeSource(field: FieldSpec): string {
 		return `(value) => countText(value, ${word})`;
 	}
 	if (field.input === 'checkbox') {
+		// A revealed checkbox is never stored false — an unpicked cause is left
+		// out — so the "inte …" branch would be unreachable and its locale
+		// string unused.
+		if (field.revealedBy) {
+			return `(value) => (value === true ? ${word} : null)`;
+		}
 		return (
 			`(value) =>\n` +
 			`\t\t\t\tvalue === true\n` +
@@ -235,13 +322,20 @@ function fieldsSnippet(spec: EventSpec): string {
 			`\t\t\tlabel: locale.activities.fields.${camel(field.name)}`,
 			`\t\t\tinput: '${field.input}'`
 		];
+		if (field.revealedBy) {
+			props.push(`\t\t\trevealedBy: '${field.revealedBy}'`);
+		}
 		if (field.step) {
 			props.push(`\t\t\tstep: '${field.step}'`);
 		}
 		if (field.required) {
 			props.push(`\t\t\trequired: true`);
 		}
-		props.push(`\t\t\tsummarize: ${summarizeSource(field)}`);
+		// A reveal needs no wording: it cannot be stored without one of its
+		// causes, and the causes are what there is to say.
+		if (field.input !== 'reveal') {
+			props.push(`\t\t\tsummarize: ${summarizeSource(field)}`);
+		}
 		return `\t\t{\n${props.join(',\n')}\n\t\t}`;
 	});
 	return `\t${spec.id}: [\n${entries.join(',\n')}\n\t],\n`;
@@ -270,7 +364,9 @@ function newUnitSnippets(spec: EventSpec): string[] {
 export function generate(
 	spec: EventSpec,
 	templates: { counts: string; trend: string },
-	stamp: string
+	stamp: string,
+	/** locale.ts as it stands, so keys already there are reused, not duplicated. */
+	localeSource: string
 ): Generated {
 	const creates: FileCreate[] = [];
 	const edits: FileEdit[] = [];
@@ -287,24 +383,46 @@ export function generate(
 			marker: 'codegen:detail-fields',
 			insert: fieldsSnippet(spec)
 		});
-		edits.push({
-			path: 'src/lib/locale.ts',
-			marker: 'codegen:field-labels',
-			insert: spec.fields
-				.map((field) => `\t\t${camel(field.name)}: '${tsString(field.label)}',\n`)
-				.join('')
-		});
+
+		// Words the catalogue already has are reused rather than re-declared —
+		// see existingKeysAfter. Whatever is skipped goes into a note, because
+		// the same word is usually right and occasionally is not.
+		const reused = new Set<string>();
+		const fresh = (marker: string, key: string): boolean => {
+			if (existingKeysAfter(localeSource, marker).has(key)) {
+				reused.add(key);
+				return false;
+			}
+			return true;
+		};
+
+		const labels = spec.fields
+			.filter((field) => fresh('codegen:field-labels', camel(field.name)))
+			.map((field) => `\t\t${camel(field.name)}: '${tsString(field.label)}',\n`);
+		if (labels.length > 0) {
+			edits.push({
+				path: 'src/lib/locale.ts',
+				marker: 'codegen:field-labels',
+				insert: labels.join('')
+			});
+		}
 
 		const summaryWords = spec.fields.flatMap((field) => {
 			const lower = field.label.toLowerCase();
+			const own = fresh('codegen:summary-words', camel(field.name))
+				? [`\t\t${camel(field.name)}: '${tsString(lower)}',\n`]
+				: [];
 			if (field.input === 'count') {
-				return [`\t\t${camel(field.name)}: '${tsString(lower)}',\n`];
+				return own;
+			}
+			// A revealed checkbox is never stored false, so it needs no "inte …".
+			if (field.input === 'checkbox' && !field.revealedBy) {
+				return fresh('codegen:summary-words', `not${pascal(field.name)}`)
+					? [...own, `\t\tnot${pascal(field.name)}: 'inte ${tsString(lower)}',\n`]
+					: own;
 			}
 			if (field.input === 'checkbox') {
-				return [
-					`\t\t${camel(field.name)}: '${tsString(lower)}',\n`,
-					`\t\tnot${pascal(field.name)}: 'inte ${tsString(lower)}',\n`
-				];
+				return own;
 			}
 			return [];
 		});
@@ -321,7 +439,9 @@ export function generate(
 			}
 		}
 
-		const units = newUnitSnippets(spec);
+		const units = newUnitSnippets(spec).filter((snippet) =>
+			fresh('codegen:units', /^\t([A-Za-z0-9]+):/.exec(snippet)?.[1] ?? '')
+		);
 		if (units.length > 0) {
 			edits.push({
 				path: 'src/lib/locale.ts',
@@ -330,6 +450,13 @@ export function generate(
 			});
 			notes.push(
 				'New unit entries were added to locale.units — rename their keys if a fuller word fits better.'
+			);
+		}
+
+		if (reused.size > 0) {
+			notes.push(
+				`Reused the existing locale strings for ${[...reused].join(', ')} — check they read right ` +
+					`for ${spec.label} too, and rename the field if one does not.`
 			);
 		}
 	}
