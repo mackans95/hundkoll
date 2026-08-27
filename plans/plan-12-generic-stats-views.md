@@ -117,10 +117,8 @@ Anything else outside SQL is drift, not a fourth member.
   and `countDetailDays`'s Stockholm-day guarantee is pinned by a test today and would
   become a SQL expression verified only by query. Reconsider if reading raw events for a
   tooltip ever becomes the odd one out for another reason.
-- **Explicit grants on the tables.** `events`, `event_types`, `dogs` and `dog_care_status`
-  still rely on the implicit `anon`/`authenticated` grants Supabase stopped giving new
-  projects; the config escape hatch is documented as removed **2026-10-30**. This plan
-  closed the stats-view half.
+- ~~**Explicit grants on the tables.**~~ Done straight afterwards — see
+  [plan 13](plan-13-explicit-grants.md).
 - **A share of a `count` in the generator's wording.** The kinds are now honest about
   counting a count, but nothing offers "how many" as a tile — only "how often". A `total`
   kind reading `stats_detail_buckets` is the obvious next one, the day a card wants it.

@@ -111,16 +111,21 @@ there if git ever stops ignoring it.
 
 Two things the local stack does deliberately, both so that it does not lie:
 
-- **`auto_expose_new_tables = true`** in `config.toml`. The migrations contain no
-  `grant select` anywhere; production works because it was created before Supabase flipped
-  that default, and inherited implicit grants for `anon` and `authenticated`. Without the
-  flag every read fails locally with `42501 permission denied`. That config field is
-  documented as **removed on 2026-10-30** — existing tables keep their grants, but a table
-  added by a migration after that will land unreadable, and it will look like an RLS
-  problem while being a `GRANT` problem. The durable fix is explicit grants in a migration.
+- **`auto_expose_new_tables` is left unset** in `config.toml`, so nothing is reachable
+  without a `GRANT` a migration asked for. It was `true` for a while: production was
+  created before Supabase flipped that default and inherited implicit grants no migration
+  ever stated, so the flag was the only way for local to match. `20260827140000_explicit_grants.sql`
+  states them instead — which matters because the flag is **removed on 2026-10-30**, and
+  while it was set a new table read fine locally and would have landed unreadable in
+  production, looking like an RLS problem while being a `GRANT` problem.
 - **Only the services the app uses** are enabled — no realtime, storage, edge functions or
   analytics — and `enable_signup` is off, matching production, where the two users were
   made by hand.
+
+> **A new table or view needs its grant in the same migration.** There is no longer
+> anything to fall back on: `grant select on <name> to authenticated;` (and `to anon` only
+> if it is genuinely public, which so far only `event_types` is). Forget it and every read
+> fails with `42501 permission denied` — locally, which is the point.
 
 When a migration is what you are testing, `npm run gen-types` is the one command that
 still points at production: use `--local` while the migration is unmerged, or the
@@ -479,10 +484,18 @@ The app sends no email at all, so there is no SMTP to configure. `hooks.server.t
 a per-request Supabase client from cookies, validates the session with `getUser()` rather
 than trusting the cookie, and guards every route except `/login`.
 
-RLS is the only wall, since the publishable key is public: a row is visible and writable
-only if the user is a member of the owning household. `event_types` is readable by anyone
-and writable only in `interval_days`, via a column grant, so the Settings screen can adjust
-schedules without being able to rewrite the catalogue.
+RLS decides which rows; **grants decide which verbs**, and both walls are needed because
+the publishable key is public. A row is visible and writable only if the user is a member
+of the owning household. `event_types` is readable by anyone and writable only in
+`interval_days`, via a column grant, so the Settings screen can adjust schedules without
+being able to rewrite the catalogue.
+
+The verbs are stated in `20260827140000_explicit_grants.sql`, and the list is short:
+`authenticated` may read the five tables and five views, insert and delete an event, and
+update three of its columns. Nothing else — `anon` reads `event_types` and nothing more.
+Until that migration those grants were inherited rather than asked for, and `anon` in
+production held INSERT, UPDATE, DELETE and TRUNCATE on every table, with RLS as the only
+thing standing in front of them.
 
 `events` follows the same policy-plus-column-grant shape, and the reason is worth knowing.
 The original `member_access` policy's `with check` requires `created_by = auth.uid()`, and
