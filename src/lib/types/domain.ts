@@ -38,19 +38,73 @@ export type StatusRow = Omit<
 	'category'
 > & { category: EventCategory };
 
-/** The headline averages, one row per dog. */
-export type StatSummary = NotNull<Views<'stats_summary'>, 'dog_id'>;
+/**
+ * The generic view rows, narrowed. The views are per type and per detail field
+ * and name neither, so a card's columns are picked out of these by
+ * $lib/stats/rows.ts rather than selected by name.
+ */
+export type TypeBucketRow = {
+	type_id: string;
+	bucket: string;
+	n: number;
+	avg_gap_min: number | null;
+};
+export type DetailBucketRow = {
+	type_id: string;
+	bucket: string;
+	field: string;
+	answered: number;
+	happened: number;
+	total: number;
+	avg_number: number | null;
+	share_answered: number | null;
+};
+export type TypeWindowRow = {
+	dog_id: string;
+	type_id: string;
+	window_days: number;
+	events: number;
+	days_counted: number;
+	per_day: number;
+	per_week: number;
+	per_month: number;
+	avg_gap_min: number | null;
+};
 
-/** Per-type per-day counts; the walk and meal charts read different columns. */
-type DailyCounts = NotNull<Views<'stats_daily_counts'>, 'day' | 'type_id' | 'n'>;
-export type WalkDay = Pick<
-	NotNull<DailyCounts, 'pee' | 'poop'>,
-	'day' | 'n' | 'pee' | 'poop' | 'avg_gap_min' | 'avg_duration_min'
->;
-export type MealDay = Pick<
-	NotNull<DailyCounts, 'finished_true' | 'finished_false'>,
-	'day' | 'n' | 'finished_true' | 'finished_false' | 'avg_gap_min'
->;
+/**
+ * The headline averages for one dog. Assembled from the window views rather
+ * than read from one wide row, so the shape is stated here — and the rates are
+ * non-null, because a type with no events counts zero rather than nothing.
+ */
+export type StatSummary = {
+	dog_id: string;
+	walks_per_day: number;
+	avg_walk_gap_min: number | null;
+	avg_walk_duration_min: number | null;
+	avg_meal_gap_min: number | null;
+	meal_finish_rate: number | null;
+	accidents_per_day: number;
+	accidents_per_week: number;
+	accidents_per_month: number;
+	days_counted: number;
+};
+
+/** Per-day counts; the walk and meal charts read different fields. */
+export type WalkDay = {
+	day: string;
+	n: number;
+	pee: number;
+	poop: number;
+	avg_gap_min: number | null;
+	avg_duration_min: number | null;
+};
+export type MealDay = {
+	day: string;
+	n: number;
+	finished_true: number;
+	finished_false: number;
+	avg_gap_min: number | null;
+};
 
 /**
  * One detail field's headline numbers over the last 30 days. `events` counts
@@ -58,9 +112,17 @@ export type MealDay = Pick<
  * gap is what lets a share divide by every event, which is what a reveal needs.
  */
 export type DetailMetric = Pick<
-	NotNull<Views<'stats_detail_metrics'>, 'field' | 'events' | 'answered'>,
+	NotNull<Views<'stats_detail_windows'>, 'field' | 'events' | 'answered'>,
 	'field' | 'events' | 'answered' | 'avg_number' | 'share_true' | 'share_not_true'
 >;
+
+/**
+ * The same row with its type, for the cards that read more than one. It also
+ * carries `share_answered`, which divides by the events that answered rather
+ * than by every event — the meal finish rate, where a meal logged from the tile
+ * without opening the dialog is not a meal she left.
+ */
+export type DetailWindowRow = DetailMetric & { type_id: string; share_answered: number | null };
 
 /**
  * How much one detail field accounted for on one Stockholm day — what a
@@ -70,22 +132,18 @@ export type DetailMetric = Pick<
 export type DetailDayCount = { day: string; field: string; n: number };
 
 /** Accidents binned by day, ISO week or month, split kiss/bajs. */
-export type AccidentBin = Pick<
-	NotNull<Views<'stats_accident_bins'>, 'bucket' | 'n' | 'pee' | 'poop'>,
-	'bucket' | 'n' | 'pee' | 'poop'
->;
+export type AccidentBin = { bucket: string; n: number; pee: number; poop: number };
 
 /** One period bucket of the Trender comparison. */
-export type TrendBucket = Pick<
-	NotNull<Views<'stats_period_summary'>, 'bucket' | 'walks' | 'accidents'>,
-	| 'bucket'
-	| 'walks'
-	| 'walk_gap_min'
-	| 'walk_duration_min'
-	| 'meal_gap_min'
-	| 'meal_finish_rate'
-	| 'accidents'
->;
+export type TrendBucket = {
+	bucket: string;
+	walks: number;
+	walk_gap_min: number | null;
+	walk_duration_min: number | null;
+	meal_gap_min: number | null;
+	meal_finish_rate: number | null;
+	accidents: number;
+};
 
 /** A single weighing, flattened out of the event's details. */
 export type WeightPoint = { occurred_at: string; kg: number };

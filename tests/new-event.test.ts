@@ -336,6 +336,18 @@ describe('generate', () => {
 		expect(
 			output.edits.some((edit) => edit.insert.includes("detailDayCounts(db, 'nail_check'"))
 		).toBe(true);
+		// The chart reads the generic bucket view for its own type and day period,
+		// and pairs the rows up through rows.ts like every hand-written card.
+		const chart = output.edits.find(
+			(edit) =>
+				edit.marker === 'codegen:stats-queries' && edit.insert.includes('stats_type_buckets')
+		);
+		expect(chart?.insert).toContain("eq('period', 'day')");
+		expect(
+			output.edits.some(
+				(edit) => edit.insert.includes('rows.simpleDays(') && edit.insert.includes("'nail_check'")
+			)
+		).toBe(true);
 		const card = output.creates.find((create) => create.path.endsWith('.svelte'));
 		expect(card?.path).toBe('src/lib/components/stats/NailCheckCard.svelte');
 		expect(card?.content).toContain('NAIL_CHECK_COLOR');
@@ -489,7 +501,11 @@ describe('generate', () => {
 		// Three queries in total — the chart, the tooltip breakdown, the metrics.
 		const queries = output.edits.filter((edit) => edit.marker === 'codegen:stats-queries');
 		expect(queries).toHaveLength(3);
-		expect(queries.filter((q) => q.insert.includes('stats_detail_metrics'))).toHaveLength(1);
+		const metricQuery = queries.filter((q) => q.insert.includes('stats_detail_windows'));
+		expect(metricQuery).toHaveLength(1);
+		// The window view holds three trailing windows; a tile means the 30-day one,
+		// the same window every other headline number on the screen uses.
+		expect(metricQuery[0].insert).toContain("eq('window_days', 30)");
 
 		const card2 = output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert ?? '';
 		expect(card2).toContain('metrics={data.nailCheckMetrics}');
@@ -528,7 +544,7 @@ describe('generate', () => {
 		expect(card).not.toContain('StatTile');
 		expect(card).not.toContain('const tiles = $derived(');
 		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
-		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_metrics'))).toBe(false);
+		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_windows'))).toBe(false);
 		expect(output.edits.some((edit) => edit.insert.includes('metrics={data.'))).toBe(false);
 	});
 

@@ -24,7 +24,7 @@ export type FieldSpec = {
 
 /**
  * A headline tile on a generated card. Every one of these reads a row of
- * stats_detail_metrics, so adding one needs no SQL:
+ * stats_detail_windows, so adding one needs no SQL:
  *
  *   avg            the average of a number field      "~34 min"
  *   share          events where a box was ticked      "18 %"
@@ -604,16 +604,19 @@ export function generate(
 				marker: 'codegen:stats-queries',
 				insert:
 					`\t\tdb\n` +
-					`\t\t\t.from('stats_daily_counts')\n` +
-					`\t\t\t.select('day, n')\n` +
+					`\t\t\t.from('stats_type_buckets')\n` +
+					`\t\t\t.select(TYPE_BUCKET_COLUMNS)\n` +
 					`\t\t\t.eq('type_id', '${spec.id}')\n` +
-					`\t\t\t.gte('day', daysAgo(DAILY_WINDOW_DAYS))\n` +
-					`\t\t\t.order('day'),\n`
+					`\t\t\t.eq('period', 'day')\n` +
+					`\t\t\t.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))\n` +
+					`\t\t\t.order('bucket'),\n`
 			});
 			edits.push({
 				path: 'src/lib/server/stats.ts',
 				marker: 'codegen:stats-return',
-				insert: `\t\t${camelId}Days: present((${camelId}Res.data ?? []).map(toSimpleDay)),\n`
+				insert:
+					`\t\t${camelId}Days: rows.simpleDays(` +
+					`present((${camelId}Res.data ?? []).map(toTypeBucket)), '${spec.id}'),\n`
 			});
 
 			// A tooltip can break its bar down by whatever the type counts, which
@@ -662,9 +665,10 @@ export function generate(
 					marker: 'codegen:stats-queries',
 					insert:
 						`\t\tdb\n` +
-						`\t\t\t.from('stats_detail_metrics')\n` +
-						`\t\t\t.select(metricColumns)\n` +
-						`\t\t\t.eq('type_id', '${spec.id}'),\n`
+						`\t\t\t.from('stats_detail_windows')\n` +
+						`\t\t\t.select(METRIC_COLUMNS)\n` +
+						`\t\t\t.eq('type_id', '${spec.id}')\n` +
+						`\t\t\t.eq('window_days', 30),\n`
 				});
 				edits.push({
 					path: 'src/lib/server/stats.ts',

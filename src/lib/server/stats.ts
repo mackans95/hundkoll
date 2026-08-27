@@ -1,18 +1,27 @@
 // The stats queries. Aggregation happens in SQL — see supabase/migrations —
-// so this module only reads and narrows the nullable view columns into the
-// domain types, once, so pages never handle a `number | null` count.
+// so this module only reads, narrows the nullable view columns into the domain
+// types once, and hands the rows to $lib/stats/rows.ts to be paired up.
+//
+// The four views are generic: per type and per detail field, at bucket grain
+// and at window grain. None of them names a type, so which columns a walk or a
+// meal consists of is decided on this side.
 
+import * as rows from '$lib/stats/rows';
 import { trendBucketKeys } from '$lib/stats/trends';
 import * as time from '$lib/time';
 import type {
 	AccidentBin,
+	DetailBucketRow,
 	DetailDayCount,
 	DetailMetric,
+	DetailWindowRow,
 	MealDay,
 	Period,
 	SimpleDay,
 	StatSummary,
 	TrendBucket,
+	TypeBucketRow,
+	TypeWindowRow,
 	ViewRow,
 	WeightPoint
 } from '$lib/types/domain';
@@ -43,68 +52,96 @@ export type Stats = {
 
 // The mappers take exactly the columns their query selects, so a select and
 // its reader drifting apart is a compile error rather than an empty chart.
-type SelectedDaily = Pick<
-	ViewRow<'stats_daily_counts'>,
-	| 'day'
-	| 'n'
-	| 'pee'
-	| 'poop'
-	| 'finished_true'
-	| 'finished_false'
+type SelectedTypeBucket = Pick<
+	ViewRow<'stats_type_buckets'>,
+	'type_id' | 'bucket' | 'n' | 'avg_gap_min'
+>;
+type SelectedDetailBucket = Pick<
+	ViewRow<'stats_detail_buckets'>,
+	| 'type_id'
+	| 'bucket'
+	| 'field'
+	| 'answered'
+	| 'happened'
+	| 'total'
+	| 'avg_number'
+	| 'share_answered'
+>;
+type SelectedTypeWindow = Pick<
+	ViewRow<'stats_type_windows'>,
+	| 'dog_id'
+	| 'type_id'
+	| 'window_days'
+	| 'events'
+	| 'days_counted'
+	| 'per_day'
+	| 'per_week'
+	| 'per_month'
 	| 'avg_gap_min'
-	| 'avg_duration_min'
 >;
 type SelectedMetric = Pick<
-	ViewRow<'stats_detail_metrics'>,
+	ViewRow<'stats_detail_windows'>,
 	'field' | 'events' | 'answered' | 'avg_number' | 'share_true' | 'share_not_true'
 >;
-type SelectedBin = Pick<ViewRow<'stats_accident_bins'>, 'bucket' | 'n' | 'pee' | 'poop'>;
-type SelectedPeriod = Pick<
-	ViewRow<'stats_period_summary'>,
-	| 'bucket'
-	| 'walks'
-	| 'walk_gap_min'
-	| 'walk_duration_min'
-	| 'meal_gap_min'
-	| 'meal_finish_rate'
-	| 'accidents'
->;
+type SelectedDetailWindow = SelectedMetric &
+	Pick<ViewRow<'stats_detail_windows'>, 'type_id' | 'share_answered'>;
 
-/** Narrows a daily-counts row into the columns the walk chart reads. */
-function toWalkDay(row: SelectedDaily): WalkDay | null {
-	if (!row.day) {
+const TYPE_BUCKET_COLUMNS = 'type_id, bucket, n, avg_gap_min';
+const DETAIL_BUCKET_COLUMNS =
+	'type_id, bucket, field, answered, happened, total, avg_number, share_answered';
+const TYPE_WINDOW_COLUMNS =
+	'dog_id, type_id, window_days, events, days_counted, per_day, per_week, per_month, avg_gap_min';
+// A generated card selects these for its own type; the view windows itself,
+// so there is no date filter to keep in step with the charts.
+const METRIC_COLUMNS = 'field, events, answered, avg_number, share_true, share_not_true';
+const DETAIL_WINDOW_COLUMNS = `type_id, ${METRIC_COLUMNS}, share_answered`;
+
+/** Narrows a type bucket; a row without a bucket or a type names nothing. */
+function toTypeBucket(row: SelectedTypeBucket): TypeBucketRow | null {
+	if (!row.bucket || !row.type_id) {
 		return null;
 	}
 	return {
-		day: row.day,
+		type_id: row.type_id,
+		bucket: row.bucket,
 		n: row.n ?? 0,
-		pee: row.pee ?? 0,
-		poop: row.poop ?? 0,
-		avg_gap_min: row.avg_gap_min,
-		avg_duration_min: row.avg_duration_min
-	};
-}
-
-/** Narrows a daily-counts row into the columns the meal chart reads. */
-function toMealDay(row: SelectedDaily): MealDay | null {
-	if (!row.day) {
-		return null;
-	}
-	return {
-		day: row.day,
-		n: row.n ?? 0,
-		finished_true: row.finished_true ?? 0,
-		finished_false: row.finished_false ?? 0,
 		avg_gap_min: row.avg_gap_min
 	};
 }
 
-/** Narrows a daily-counts row into just the day and its count. */
-function toSimpleDay(row: Pick<ViewRow<'stats_daily_counts'>, 'day' | 'n'>): SimpleDay | null {
-	if (!row.day) {
+/** Narrows one detail field's bucket row. */
+function toDetailBucket(row: SelectedDetailBucket): DetailBucketRow | null {
+	if (!row.bucket || !row.type_id || !row.field) {
 		return null;
 	}
-	return { day: row.day, n: row.n ?? 0 };
+	return {
+		type_id: row.type_id,
+		bucket: row.bucket,
+		field: row.field,
+		answered: row.answered ?? 0,
+		happened: row.happened ?? 0,
+		total: row.total ?? 0,
+		avg_number: row.avg_number,
+		share_answered: row.share_answered
+	};
+}
+
+/** Narrows one type's trailing-window row. */
+function toTypeWindow(row: SelectedTypeWindow): TypeWindowRow | null {
+	if (!row.dog_id || !row.type_id || row.window_days === null) {
+		return null;
+	}
+	return {
+		dog_id: row.dog_id,
+		type_id: row.type_id,
+		window_days: row.window_days,
+		events: row.events ?? 0,
+		days_counted: row.days_counted ?? 1,
+		per_day: row.per_day ?? 0,
+		per_week: row.per_week ?? 0,
+		per_month: row.per_month ?? 0,
+		avg_gap_min: row.avg_gap_min
+	};
 }
 
 /** Narrows one detail-field metric row; a row without a field names nothing. */
@@ -122,28 +159,13 @@ function toDetailMetric(row: SelectedMetric): DetailMetric | null {
 	};
 }
 
-/** Narrows one accident bin, whichever period it was binned by. */
-function toAccidentBin(row: SelectedBin): AccidentBin | null {
-	if (!row.bucket) {
+/** The same row with the type and the answered-share the summary reads. */
+function toDetailWindow(row: SelectedDetailWindow): DetailWindowRow | null {
+	const metric = toDetailMetric(row);
+	if (!metric || !row.type_id) {
 		return null;
 	}
-	return { bucket: row.bucket, n: row.n ?? 0, pee: row.pee ?? 0, poop: row.poop ?? 0 };
-}
-
-/** Narrows one period bucket into the metrics the Trender card compares. */
-function toTrendBucket(row: SelectedPeriod): TrendBucket | null {
-	if (!row.bucket) {
-		return null;
-	}
-	return {
-		bucket: row.bucket,
-		walks: row.walks ?? 0,
-		walk_gap_min: row.walk_gap_min,
-		walk_duration_min: row.walk_duration_min,
-		meal_gap_min: row.meal_gap_min,
-		meal_finish_rate: row.meal_finish_rate,
-		accidents: row.accidents ?? 0
-	};
+	return { ...metric, type_id: row.type_id, share_answered: row.share_answered };
 }
 
 /** Keeps the rows that survived narrowing and drops the ones that did not. */
@@ -164,70 +186,107 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	// cutoff would disagree with them for the hours around midnight.
 	const daysAgo = (days: number) => time.addDays(today, -days);
 
-	const dailyColumns =
-		'day, n, pee, poop, finished_true, finished_false, avg_gap_min, avg_duration_min';
-	// A generated card selects these for its own type; the view windows itself,
-	// so there is no date filter to keep in step with the charts.
-	const metricColumns = 'field, events, answered, avg_number, share_true, share_not_true';
+	// The daily charts read two types and four fields out of one pair of reads,
+	// which is what a per-type-per-field view buys over a column per metric.
+	const DAILY_TYPES = ['walk', 'meal'];
+	const DAILY_FIELDS = ['pee', 'poop', 'finished', 'duration_min'];
 
 	const [
 		// codegen:stats-results — one name here per query below, same order
 		carRideDetailDays,
 		carRideMetricsRes,
 		carRideRes,
-		summaryRes,
-		walksRes,
-		mealsRes,
+		dailyRes,
+		dailyDetailRes,
+		windowsRes,
+		windowDetailRes,
 		binsRes,
-		weights,
-		trendRes
+		binDetailRes,
+		trendRes,
+		trendDetailRes,
+		weights
 	] = await Promise.all([
 		// codegen:stats-queries — npm run new-event inserts card queries here
 		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
-		db.from('stats_detail_metrics').select(metricColumns).eq('type_id', 'car_ride'),
 		db
-			.from('stats_daily_counts')
-			.select('day, n')
+			.from('stats_detail_windows')
+			.select(METRIC_COLUMNS)
 			.eq('type_id', 'car_ride')
-			.gte('day', daysAgo(DAILY_WINDOW_DAYS))
-			.order('day'),
-		db.from('stats_summary').select('*').limit(1).maybeSingle(),
+			.eq('window_days', 30),
 		db
-			.from('stats_daily_counts')
-			.select(dailyColumns)
-			.eq('type_id', 'walk')
-			.gte('day', daysAgo(DAILY_WINDOW_DAYS))
-			.order('day'),
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
+			.eq('type_id', 'car_ride')
+			.eq('period', 'day')
+			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
+			.order('bucket'),
 		db
-			.from('stats_daily_counts')
-			.select(dailyColumns)
-			.eq('type_id', 'meal')
-			.gte('day', daysAgo(DAILY_WINDOW_DAYS))
-			.order('day'),
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
+			.in('type_id', DAILY_TYPES)
+			.eq('period', 'day')
+			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
+			.order('bucket'),
 		db
-			.from('stats_accident_bins')
-			.select('bucket, n, pee, poop')
+			.from('stats_detail_buckets')
+			.select(DETAIL_BUCKET_COLUMNS)
+			.in('type_id', DAILY_TYPES)
+			.in('field', DAILY_FIELDS)
+			.eq('period', 'day')
+			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS)),
+		db
+			.from('stats_type_windows')
+			.select(TYPE_WINDOW_COLUMNS)
+			.in('type_id', ['walk', 'meal', 'accident']),
+		db
+			.from('stats_detail_windows')
+			.select(DETAIL_WINDOW_COLUMNS)
+			.in('type_id', ['walk', 'meal'])
+			.in('field', ['duration_min', 'finished'])
+			.eq('window_days', 30),
+		db
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
+			.eq('type_id', 'accident')
 			.eq('period', period)
 			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period]))
 			.order('bucket'),
-		weightHistory(db),
 		db
-			.from('stats_period_summary')
-			.select(
-				'bucket, walks, walk_gap_min, walk_duration_min, meal_gap_min, meal_finish_rate, accidents'
-			)
+			.from('stats_detail_buckets')
+			.select(DETAIL_BUCKET_COLUMNS)
+			.eq('type_id', 'accident')
+			.in('field', ['pee', 'poop'])
+			.eq('period', period)
+			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period])),
+		// No type filter: a bucket the wide view produced exists if *anything*
+		// was logged in it, so a week of only car rides still compares.
+		db
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
 			.eq('period', trend)
-			.in('bucket', [trendPrevBucket, trendLatestBucket])
+			.in('bucket', [trendPrevBucket, trendLatestBucket]),
+		db
+			.from('stats_detail_buckets')
+			.select(DETAIL_BUCKET_COLUMNS)
+			.in('type_id', DAILY_TYPES)
+			.in('field', ['duration_min', 'finished'])
+			.eq('period', trend)
+			.in('bucket', [trendPrevBucket, trendLatestBucket]),
+		weightHistory(db)
 	]);
 
-	const trendRows = present((trendRes.data ?? []).map(toTrendBucket));
-	const summary = summaryRes.data;
+	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
+	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
+	const trendRows = rows.trendBuckets(
+		present((trendRes.data ?? []).map(toTypeBucket)),
+		present((trendDetailRes.data ?? []).map(toDetailBucket))
+	);
 
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
 		carRideDetailDays,
 		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
-		carRideDays: present((carRideRes.data ?? []).map(toSimpleDay)),
+		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),
 		period,
 		trend,
 		today,
@@ -235,10 +294,16 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		trendLatest: trendRows.find((row) => row.bucket === trendLatestBucket) ?? null,
 		trendPrevBucket,
 		trendLatestBucket,
-		summary: summary?.dog_id ? { ...summary, dog_id: summary.dog_id } : null,
-		walkDays: present((walksRes.data ?? []).map(toWalkDay)),
-		mealDays: present((mealsRes.data ?? []).map(toMealDay)),
-		accidentBins: present((binsRes.data ?? []).map(toAccidentBin)),
+		summary: rows.statSummary(
+			present((windowsRes.data ?? []).map(toTypeWindow)),
+			present((windowDetailRes.data ?? []).map(toDetailWindow))
+		),
+		walkDays: rows.walkDays(dailyBuckets, dailyDetails),
+		mealDays: rows.mealDays(dailyBuckets, dailyDetails),
+		accidentBins: rows.accidentBins(
+			present((binsRes.data ?? []).map(toTypeBucket)),
+			present((binDetailRes.data ?? []).map(toDetailBucket))
+		),
 		weights
 	};
 }

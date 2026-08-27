@@ -1,4 +1,4 @@
-// Picking one field's row out of a type's metric rows. stats_detail_metrics is
+// Picking one field's row out of a type's metric rows. stats_detail_windows is
 // long — a row per field — and a field nobody has ever logged has no row, which
 // is a different answer from a zero.
 

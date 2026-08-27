@@ -1,6 +1,6 @@
 // Finding one detail field's metrics among a type's rows.
 //
-// stats_detail_metrics is long — a row per field — so a card holding "the
+// stats_detail_windows is long — a row per field — so a card holding "the
 // metrics for this type" has to pick the field it wants. Absent is a real
 // answer: a field nobody has ever logged has no row at all, and the tile
 // builders in summary.ts decide what that means per metric.
