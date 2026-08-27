@@ -11,8 +11,33 @@
 > then run it on a local db with supabase?" — and `npm run new-event` should
 > **not** apply migrations itself; that stays a separate command.
 
-> **Status: 📋 Planned** — not built. The stack itself is already verified
-> working, see "What is already proven" below.
+> **Status: ✅ Built** — PR #40, as planned: the seed, the four scripts,
+> `dev:local`, the gitignored snapshot and the README section. Two departures
+> worth recording.
+>
+> **The `auth.users` insert needed more than the fiddly column list.** Its four
+> token columns — `confirmation_token`, `recovery_token`,
+> `email_change_token_new`, `email_change` — have no column default, and GoTrue
+> reads them into non-nullable strings, so leaving them NULL turned every login
+> into `Database error querying schema`. Setting them to `''` was the whole fix,
+> and the acceptance test really was just logging in.
+>
+> **`db-pull` needs no production queries beyond the dump.** The plan had it
+> reading the distinct user ids from production in order to rewrite them. It
+> does not have to: the rewriting can happen locally _after_ the load, keyed on
+> the seeded login's email, with the foreign keys quiet during the load. That
+> removed a second production connection and the uuid duplication between the
+> script and `seed.sql`, and it made the wrapping a pure function
+> (`buildSnapshot`) with a test per fix.
+>
+> **Verified end to end**, since the point of this plan is being able to see a
+> change before it ships: a throwaway migration written on the branch went live
+> locally through `npm run db-local`, and the app in `localdb` mode rendered its
+> tile next to the seeded dog. The snapshot half was verified against a local
+> dump with a foreign user id planted in it — five events survived a load that
+> would otherwise fail on the first foreign key, every author was re-pointed at
+> the local login, nothing dangled. The one part **not** exercised is the
+> production read itself, which needs the database password.
 
 ## Summary
 
