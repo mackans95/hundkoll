@@ -62,6 +62,13 @@ export type DetailMetric = Pick<
 	'field' | 'events' | 'answered' | 'avg_number' | 'share_true' | 'share_not_true'
 >;
 
+/**
+ * How much one detail field accounted for on one Stockholm day — what a
+ * generated card's tooltip breaks its bar down by. Counted in TypeScript
+ * rather than SQL; see $lib/stats/detailDays.ts for why.
+ */
+export type DetailDayCount = { day: string; field: string; n: number };
+
 /** Accidents binned by day, ISO week or month, split kiss/bajs. */
 export type AccidentBin = Pick<
 	NotNull<Views<'stats_accident_bins'>, 'bucket' | 'n' | 'pee' | 'poop'>,

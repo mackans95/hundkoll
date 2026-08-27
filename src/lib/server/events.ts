@@ -1,9 +1,11 @@
 import * as locale from '$lib/locale';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import { fieldsFor } from '$lib/events/fields';
+import { countDetailDays } from '$lib/stats/detailDays';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type {
+	DetailDayCount,
 	EventDetails,
 	EventInsert,
 	EventRow,
@@ -93,6 +95,40 @@ export async function fieldHistory(db: Db, typeId: string, field: string): Promi
 	return (data ?? [])
 		.map((row) => ({ occurred_at: row.occurred_at, value: (row.details as EventDetails)?.[field] }))
 		.filter((point): point is FieldPoint => typeof point.value === 'number');
+}
+
+/**
+ * Per-day counts of a type's countable detail fields, for a generated card's
+ * tooltip. Reads the events themselves because the detail keys are per type and
+ * no view can name them — the same reason fieldHistory above does.
+ *
+ * `since` is a Stockholm day (`2026-08-01`); the window is generous by a few
+ * hours at the edge rather than exact, since the day a row lands in is decided
+ * by countDetailDays, not by this filter.
+ */
+export async function detailDayCounts(
+	db: Db,
+	typeId: string,
+	since: string
+): Promise<DetailDayCount[]> {
+	const { data, error } = await db
+		.from('events')
+		.select('occurred_at, details')
+		.eq('type_id', typeId)
+		.gte('occurred_at', since);
+
+	// A tooltip is not worth failing a page for; it just loses its breakdown.
+	if (error) {
+		console.error('detail day counts read failed:', error.code, error.message);
+	}
+
+	return countDetailDays(
+		(data ?? []).map((row) => ({
+			occurred_at: row.occurred_at,
+			details: (row.details ?? {}) as EventDetails
+		})),
+		fieldsFor(typeId)
+	);
 }
 
 /** Reads every weighing, oldest first, lifting the kilos out of the details. */

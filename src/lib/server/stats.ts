@@ -6,6 +6,7 @@ import { trendBucketKeys } from '$lib/stats/trends';
 import * as time from '$lib/time';
 import type {
 	AccidentBin,
+	DetailDayCount,
 	DetailMetric,
 	MealDay,
 	Period,
@@ -16,11 +17,14 @@ import type {
 	WeightPoint
 } from '$lib/types/domain';
 import type { WalkDay } from '$lib/types/domain';
-import { weightHistory } from './events';
+import { detailDayCounts, weightHistory } from './events';
 import type { Db } from './db';
 
 export type Stats = {
 	// codegen:stats-shape — npm run new-event inserts card data fields here
+	carRideDetailDays: DetailDayCount[];
+	carRideMetrics: DetailMetric[];
+	carRideDays: SimpleDay[];
 	period: Period;
 	trend: Period;
 	/** The Stockholm day the query windows were cut from, for the charts to
@@ -168,6 +172,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	const [
 		// codegen:stats-results — one name here per query below, same order
+		carRideDetailDays,
+		carRideMetricsRes,
+		carRideRes,
 		summaryRes,
 		walksRes,
 		mealsRes,
@@ -176,6 +183,14 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		trendRes
 	] = await Promise.all([
 		// codegen:stats-queries — npm run new-event inserts card queries here
+		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
+		db.from('stats_detail_metrics').select(metricColumns).eq('type_id', 'car_ride'),
+		db
+			.from('stats_daily_counts')
+			.select('day, n')
+			.eq('type_id', 'car_ride')
+			.gte('day', daysAgo(DAILY_WINDOW_DAYS))
+			.order('day'),
 		db.from('stats_summary').select('*').limit(1).maybeSingle(),
 		db
 			.from('stats_daily_counts')
@@ -210,6 +225,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
+		carRideDetailDays,
+		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
+		carRideDays: present((carRideRes.data ?? []).map(toSimpleDay)),
 		period,
 		trend,
 		today,

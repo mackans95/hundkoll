@@ -4,19 +4,25 @@
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 {{metricImports}}	import { simpleCountBuckets } from '$lib/stats/buckets';
 	import { {{COLOR_CONST}} } from '$lib/stats/palette';
-	import type { DetailMetric, SimpleDay } from '$lib/types/domain';
+	import type { DetailDayCount, DetailMetric, SimpleDay } from '$lib/types/domain';
 
-	// metrics is optional so a card can gain tiles later without the page
-	// having to pass anything until it does — see the metric kinds in
-	// scripts/new-event-core.ts.
+	// metrics and detailDays are optional so a card can gain tiles or a tooltip
+	// breakdown later without the page having to pass anything until it does —
+	// see the metric kinds in scripts/new-event-core.ts.
 	let {
 		days,
 		today,
-		metrics = []
-	}: { days: SimpleDay[]; today: string; metrics?: DetailMetric[] } = $props();
+		metrics = [],
+		detailDays = []
+	}: {
+		days: SimpleDay[];
+		today: string;
+		metrics?: DetailMetric[];
+		detailDays?: DetailDayCount[];
+	} = $props();
 
 	const buckets = $derived(
-		simpleCountBuckets(days, today, locale.stats.{{camelId}}.tooltipLabel, {{COLOR_CONST}})
+		simpleCountBuckets(days, today, locale.stats.{{camelId}}.tooltipLabel, {{COLOR_CONST}}{{breakdown}})
 	);
 {{metricTiles}}</script>
 

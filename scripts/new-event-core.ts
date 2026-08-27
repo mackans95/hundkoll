@@ -616,6 +616,34 @@ export function generate(
 				insert: `\t\t${camelId}Days: present((${camelId}Res.data ?? []).map(toSimpleDay)),\n`
 			});
 
+			// A tooltip can break its bar down by whatever the type counts, which
+			// is every field that is not a number: a checkbox, a count or a
+			// reveal. Captions come from the field labels the card already has,
+			// so this adds no locale strings and asks no questions.
+			const countable = spec.fields.filter((field) => field.input !== 'number');
+			if (countable.length > 0) {
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-shape',
+					insert: `\t${camelId}DetailDays: DetailDayCount[];\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-results',
+					insert: `\t\t${camelId}DetailDays,\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-queries',
+					insert: `\t\tdetailDayCounts(db, '${spec.id}', daysAgo(DAILY_WINDOW_DAYS)),\n`
+				});
+				edits.push({
+					path: 'src/lib/server/stats.ts',
+					marker: 'codegen:stats-return',
+					insert: `\t\t${camelId}DetailDays,\n`
+				});
+			}
+
 			// One query per type, however many tiles read it: the view is long, so
 			// every metric this card shows is a row of the same result.
 			if (metrics.length > 0) {
@@ -652,6 +680,7 @@ export function generate(
 					`\t\tdays={data.${camelId}Days}\n` +
 					`\t\ttoday={data.today}\n` +
 					(metrics.length > 0 ? `\t\tmetrics={data.${camelId}Metrics}\n` : '') +
+					(countable.length > 0 ? `\t\tdetailDays={data.${camelId}DetailDays}\n` : '') +
 					`\t/>\n`
 			});
 			creates.push({
@@ -659,6 +688,7 @@ export function generate(
 				content: renderTemplate(templates.counts, {
 					camelId,
 					COLOR_CONST: colorConst,
+					breakdown: countable.length > 0 ? `, { typeId: '${spec.id}', counts: detailDays }` : '',
 					// Empty when no metrics were asked for, which leaves the card
 					// exactly the chart it has always been.
 					metricImports:

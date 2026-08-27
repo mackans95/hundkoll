@@ -4,6 +4,7 @@
 // and the tooltip/legend swatches reach them.
 
 // codegen:chart-colors — npm run new-event inserts card colors here
+export const CAR_RIDE_COLOR = 'var(--chart-car-ride)';
 export const WALK_COLOR = 'var(--chart-walk)';
 export const WEIGHT_COLOR = 'var(--chart-weight)';
 

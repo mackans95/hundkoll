@@ -41,6 +41,35 @@ function countText(value: unknown, word: string): string | null {
 
 export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 	// codegen:detail-fields — npm run new-event inserts new types here
+	car_ride: [
+		{
+			name: 'duration_min',
+			label: locale.activities.fields.durationMin,
+			input: 'number',
+			required: true,
+			summarize: (value) =>
+				typeof value === 'number' ? locale.units.minutes(String(value).replace('.', ',')) : null
+		},
+		{
+			name: 'accident',
+			label: locale.activities.fields.accident,
+			input: 'reveal'
+		},
+		{
+			name: 'pooped',
+			label: locale.activities.fields.pooped,
+			input: 'checkbox',
+			revealedBy: 'accident',
+			summarize: (value) => (value === true ? locale.activities.summary.pooped : null)
+		},
+		{
+			name: 'threw_up',
+			label: locale.activities.fields.threwUp,
+			input: 'checkbox',
+			revealedBy: 'accident',
+			summarize: (value) => (value === true ? locale.activities.summary.threwUp : null)
+		}
+	],
 	walk: [
 		{
 			name: 'duration_min',
