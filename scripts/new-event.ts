@@ -46,7 +46,7 @@ Flags (anything missing is prompted for):
   --metric "kind=avg;field=duration_min;label=Snittlängd"
                               repeatable, counts cards only; kind is
                               avg | share | share-without. Each one is a tile
-                              under the chart reading stats_detail_metrics —
+                              under the chart reading stats_detail_windows —
                               no migration needed for any of them.
   --trend-field <name>        trend only: which number field to plot
   --trend-unit <kg>           trend only: the unit on the chart's axis
@@ -205,7 +205,7 @@ the note. Most types have none — press Enter to skip.
 
 /**
  * The headline tiles a counts card shows, prompted for one at a time. Each one
- * reads a row of stats_detail_metrics, so none of this generates SQL.
+ * reads a row of stats_detail_windows, so none of this generates SQL.
  */
 async function askMetrics(): Promise<MetricSpec[]> {
 	const metrics: MetricSpec[] = (flags.metric ?? []).map(parseMetricFlag);

@@ -148,7 +148,7 @@ export type Database = {
 						foreignKeyName: 'events_dog_id_fkey';
 						columns: ['dog_id'];
 						isOneToOne: false;
-						referencedRelation: 'stats_summary';
+						referencedRelation: 'stats_type_windows';
 						referencedColumns: ['dog_id'];
 					},
 					{
@@ -164,6 +164,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'event_types';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
 					}
 				];
 			};
@@ -224,51 +231,18 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			stats_accident_bins: {
+			stats_detail_buckets: {
 				Row: {
+					answered: number | null;
+					avg_number: number | null;
 					bucket: string | null;
 					dog_id: string | null;
-					n: number | null;
-					pee: number | null;
+					events: number | null;
+					field: string | null;
+					happened: number | null;
 					period: string | null;
-					poop: number | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'dog_care_status';
-						referencedColumns: ['dog_id'];
-					},
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'dogs';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'stats_summary';
-						referencedColumns: ['dog_id'];
-					}
-				];
-			};
-			stats_daily_counts: {
-				Row: {
-					avg_duration_min: number | null;
-					avg_gap_min: number | null;
-					day: string | null;
-					dog_id: string | null;
-					duration_min: number | null;
-					finished_false: number | null;
-					finished_true: number | null;
-					n: number | null;
-					pee: number | null;
-					poop: number | null;
+					share_answered: number | null;
+					total: number | null;
 					type_id: string | null;
 				};
 				Relationships: [
@@ -290,7 +264,7 @@ export type Database = {
 						foreignKeyName: 'events_dog_id_fkey';
 						columns: ['dog_id'];
 						isOneToOne: false;
-						referencedRelation: 'stats_summary';
+						referencedRelation: 'stats_type_windows';
 						referencedColumns: ['dog_id'];
 					},
 					{
@@ -306,18 +280,81 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'event_types';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
 					}
 				];
 			};
-			stats_detail_metrics: {
+			stats_detail_windows: {
 				Row: {
 					answered: number | null;
 					avg_number: number | null;
 					dog_id: string | null;
 					events: number | null;
 					field: string | null;
+					share_answered: number | null;
 					share_not_true: number | null;
 					share_true: number | null;
+					type_id: string | null;
+					window_days: number | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
+					}
+				];
+			};
+			stats_type_buckets: {
+				Row: {
+					avg_gap_min: number | null;
+					bucket: string | null;
+					dog_id: string | null;
+					n: number | null;
+					period: string | null;
 					type_id: string | null;
 				};
 				Relationships: [
@@ -339,7 +376,7 @@ export type Database = {
 						foreignKeyName: 'events_dog_id_fkey';
 						columns: ['dog_id'];
 						isOneToOne: false;
-						referencedRelation: 'stats_summary';
+						referencedRelation: 'stats_type_windows';
 						referencedColumns: ['dog_id'];
 					},
 					{
@@ -355,62 +392,33 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'event_types';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'events_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
 					}
 				];
 			};
-			stats_period_summary: {
+			stats_type_windows: {
 				Row: {
-					accidents: number | null;
-					bucket: string | null;
-					dog_id: string | null;
-					meal_finish_rate: number | null;
-					meal_gap_min: number | null;
-					period: string | null;
-					walk_duration_min: number | null;
-					walk_gap_min: number | null;
-					walks: number | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'dog_care_status';
-						referencedColumns: ['dog_id'];
-					},
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'dogs';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'events_dog_id_fkey';
-						columns: ['dog_id'];
-						isOneToOne: false;
-						referencedRelation: 'stats_summary';
-						referencedColumns: ['dog_id'];
-					}
-				];
-			};
-			stats_summary: {
-				Row: {
-					accidents_per_day: number | null;
-					accidents_per_month: number | null;
-					accidents_per_week: number | null;
-					avg_meal_gap_min: number | null;
-					avg_walk_duration_min: number | null;
-					avg_walk_gap_min: number | null;
+					avg_gap_min: number | null;
 					days_counted: number | null;
 					dog_id: string | null;
-					meal_finish_rate: number | null;
-					walks_per_day: number | null;
+					events: number | null;
+					per_day: number | null;
+					per_month: number | null;
+					per_week: number | null;
+					type_id: string | null;
+					window_days: number | null;
 				};
 				Relationships: [];
 			};
 		};
 		Functions: {
+			detail_happened: { Args: { value: Json }; Returns: boolean };
 			is_household_member: { Args: { hid: string }; Returns: boolean };
 		};
 		Enums: {
