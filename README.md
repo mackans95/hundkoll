@@ -311,9 +311,34 @@ merge-then-`db-push` path. Doing it by hand is three steps, of which two are opt
 
 2. **Detail fields** — only if the type collects data: one entry in
    `src/lib/events/fields.ts`, labels in `locale.ts`. A field declares its input
-   (`number` / `checkbox` / `count`) and its `summarize`, and the dialog form, the
-   server parsing, the queue's optimistic row and the events-list summary line all
-   follow from that one declaration.
+   (`number` / `checkbox` / `count` / `reveal`) and its `summarize`, and the dialog
+   form, the server parsing, the queue's optimistic row and the events-list summary
+   line all follow from that one declaration.
+
+   A **`reveal`** is a checkbox that uncovers the fields naming it in `revealedBy`,
+   and is not valid until one of them is answered — "olycka" with no cause is not
+   something that happened. The list stays flat, in the order the parser reads it:
+
+   ```ts
+   { name: 'accident', label: …, input: 'reveal' },
+   { name: 'vomit',    label: …, input: 'checkbox', revealedBy: 'accident' },
+   { name: 'poop',     label: …, input: 'checkbox', revealedBy: 'accident' }
+   ```
+
+   Three things follow from that, and each is deliberate:
+
+   - **Only what was answered is stored.** An untouched reveal stores no keys at
+     all, unlike a plain `checkbox`, which stores `false` because "she did not
+     finish" is a real answer. So a reveal declares no `summarize` either: its
+     causes are always what there is to say.
+   - **The dialog reveals with CSS, not state.** `peer-checked:` on the sibling
+     after the checkbox, which is why that checkbox sits next to its `<label>`
+     rather than inside it. No `$effect`, and it works in the server-rendered
+     `?detail=` dialog with JavaScript off.
+   - **The "needs a cause" rule lives in `parseDetails`.** Not in the form action:
+     logging is offline-first, so a rule only the server knew would accept the
+     event, close the dialog, and surface a failed row minutes later. That module
+     is already shared with the queue, so both paths enforce it identically.
 
 3. **Stats** — only if the type deserves a chart: see the next section.
 

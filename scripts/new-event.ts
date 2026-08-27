@@ -36,7 +36,11 @@ Flags (anything missing is prompted for):
   --interval <days>           expected days between, empty/none for no schedule
   --sort-order <n>            grid position (default: after everything)
   --field "name=claw_len;label=Klolängd;input=number;step=0.1;unit=mm;required"
-                              repeatable; input is number | checkbox | count
+                              repeatable; input is number | checkbox | count | reveal
+                              a reveal is a checkbox that uncovers the fields
+                              carrying revealed-by=<its name>, and is not valid
+                              until one of them is answered; declare it first
+  --field "name=vomit;label=Spydde;input=checkbox;revealed-by=accident"
   --stats <none|counts|trend> stats card scaffold
   --trend-field <name>        trend only: which number field to plot
   --trend-unit <kg>           trend only: the unit on the chart's axis
@@ -59,7 +63,8 @@ function parseFieldFlag(raw: string): FieldSpec {
 		input: (parts.get('input') ?? 'checkbox') as FieldInput,
 		step: parts.get('step') || undefined,
 		required: parts.has('required'),
-		unit: parts.get('unit') || undefined
+		unit: parts.get('unit') || undefined,
+		revealedBy: parts.get('revealed-by') || undefined
 	};
 }
 
@@ -107,24 +112,70 @@ const icon = await ask(flags.icon, 'Icon (emoji)');
 const category = await ask(flags.category, 'Category (routine/care/health/other)', 'other');
 const intervalRaw = await ask(flags.interval, 'Interval in days (empty for none)');
 
+/**
+ * One field, prompted for. Returns null on an empty name, which ends the loop.
+ * `revealedBy` set means this is a field inside a reveal: it is indented, and
+ * `reveal` is off the menu — one level only.
+ */
+async function askField(indent: string, revealedBy?: string): Promise<FieldSpec | null> {
+	const prompt = revealedBy
+		? `${indent}Revealed field name (english snake_case, empty when done): `
+		: `${indent}Field name (english snake_case, empty when done): `;
+	const name = (await rl.question(prompt)).trim();
+	if (!name) {
+		return null;
+	}
+
+	const inner = `${indent}  `;
+	const label = (await rl.question(`${inner}Swedish label: `)).trim();
+	const choices = revealedBy ? 'number/checkbox/count' : 'number/checkbox/count/reveal';
+	const input = ((await rl.question(`${inner}Input (${choices}) [checkbox]: `)).trim() ||
+		'checkbox') as FieldInput;
+
+	const field: FieldSpec = { name, label, input, revealedBy };
+	if (input === 'number') {
+		field.unit = (await rl.question(`${inner}Unit for summaries (like 'min' or 'kg'): `)).trim();
+		field.step =
+			(await rl.question(`${inner}Step (empty for whole numbers): `)).trim() || undefined;
+		field.required = (await rl.question(`${inner}Required? (y/N): `)).trim().toLowerCase() === 'y';
+	}
+	return field;
+}
+
 const fields: FieldSpec[] = (flags.field ?? []).map(parseFieldFlag);
 if (flags.field === undefined) {
+	console.log(`
+Detail fields are the extra inputs inside the log dialog, beyond the time and
+the note. Most types have none — press Enter to skip.
+
+  number    a number input      weight: 'Vikt (kg)', step 0,1
+  checkbox  yes / no            meal: 'Åt upp'
+  count     a −/+ stepper       walk: 'Kiss', reads back as 'kiss ×3'
+  reveal    a checkbox that     accident: 'Olycka', uncovering 'Spydde'
+            uncovers more,      and 'Bajsade' — one of which must then
+            and needs one       be chosen
+`);
+
 	// Field loop: an empty name ends it, so zero fields is one keypress.
 	for (;;) {
-		const name = (await rl.question('Field name (english snake_case, empty when done): ')).trim();
-		if (!name) {
+		const field = await askField('');
+		if (!field) {
 			break;
 		}
-		const fieldLabel = (await rl.question('  Swedish label: ')).trim();
-		const input = ((await rl.question('  Input (number/checkbox/count) [checkbox]: ')).trim() ||
-			'checkbox') as FieldInput;
-		const field: FieldSpec = { name, label: fieldLabel, input };
-		if (input === 'number') {
-			field.unit = (await rl.question("  Unit for summaries (like 'min' or 'kg'): ")).trim();
-			field.step = (await rl.question('  Step (empty for whole numbers): ')).trim() || undefined;
-			field.required = (await rl.question('  Required? (y/N): ')).trim().toLowerCase() === 'y';
-		}
 		fields.push(field);
+
+		// A reveal's fields are prompted for here, under it, so nothing has to
+		// name a field typed several prompts ago. They flatten into the same
+		// list, in the order the parser reads them.
+		if (field.input === 'reveal') {
+			for (;;) {
+				const revealed = await askField('  ', field.name);
+				if (!revealed) {
+					break;
+				}
+				fields.push(revealed);
+			}
+		}
 	}
 }
 
@@ -150,6 +201,7 @@ const migrationSources = readdirSync(MIGRATIONS_DIR)
 	.filter((name) => name.endsWith('.sql'))
 	.map((name) => readFileSync(join(MIGRATIONS_DIR, name), 'utf8'));
 const fieldsSource = readFileSync(join(ROOT, 'src/lib/events/fields.ts'), 'utf8');
+const localeSource = readFileSync(join(ROOT, 'src/lib/locale.ts'), 'utf8');
 
 // Not prompted for: the end of the grid is right for a new tile, and the
 // flag is there for the rare deliberate placement.
@@ -184,7 +236,7 @@ const templates = {
 	trend: readFileSync(new URL('./templates/trend-card.svelte.tpl', import.meta.url), 'utf8')
 };
 const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-const { creates, edits, notes } = generate(spec, templates, stamp);
+const { creates, edits, notes } = generate(spec, templates, stamp, localeSource);
 
 /** The snippet goes on the line after its marker, indentation carried by it. */
 function applyEdit(source: string, marker: string, insert: string): string {
@@ -218,6 +270,11 @@ if (flags['dry-run']) {
 	for (const edit of edits) {
 		console.log(`\n── would insert at ${edit.marker} in ${edit.path} ──\n${edit.insert}`);
 	}
+	// The notes say which generated strings to look at, which is most of what a
+	// dry run is for; exiting before them hid exactly that.
+	for (const note of notes) {
+		console.log(`\nnote: ${note}`);
+	}
 	process.exit(0);
 }
 
@@ -243,7 +300,16 @@ try {
 for (const note of notes) {
 	console.log(`\nnote: ${note}`);
 }
+// Said outright because leaving it implied is what made a generated type look
+// half-broken: the stats card appeared immediately (it is code) and the tile did
+// not (it is a row).
 console.log(`
+The tile is not live yet — the log grid renders from event_types rows, and this
+migration has not been applied to any database.
+
+  npm run db-local     apply it locally and see it now
+  npm run db-push      production — only after the PR merges
+
 Next (the house rules):
   1. Review the diff.
   2. npm run format && npm run check && npm test

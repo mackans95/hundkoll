@@ -2,7 +2,9 @@
 // declarative summarize path in DETAIL_FIELDS cannot drift silently.
 
 import { describe, expect, it } from 'vitest';
-import { detailSummary } from '$lib/events/summary';
+import type { DetailField } from '$lib/events/fields';
+import { detailSummary, summarize } from '$lib/events/summary';
+import * as locale from '$lib/locale';
 
 describe('detailSummary', () => {
 	it('joins a walk’s duration and counts with the separator', () => {
@@ -36,5 +38,37 @@ describe('detailSummary', () => {
 	it('says nothing for types without declared fields', () => {
 		expect(detailSummary('bath', {})).toBe('');
 		expect(detailSummary('unknown_type', { anything: 1 })).toBe('');
+	});
+});
+
+// A reveal declares no summarize of its own, because it cannot be stored
+// without one of its causes — wording it too would read "olycka · spydde",
+// saying the same thing twice.
+describe('summarize with a reveal', () => {
+	const FIELDS: DetailField[] = [
+		{
+			name: 'duration_min',
+			label: 'Längd',
+			input: 'number',
+			summarize: (value) => (typeof value === 'number' ? locale.units.minutes(String(value)) : null)
+		},
+		{ name: 'accident', label: 'Olycka', input: 'reveal' },
+		{
+			name: 'vomit',
+			label: 'Spydde',
+			input: 'checkbox',
+			revealedBy: 'accident',
+			summarize: (value) => (value === true ? 'spydde' : null)
+		}
+	];
+
+	it('names the cause, not the reveal', () => {
+		expect(summarize(FIELDS, { duration_min: 45, accident: true, vomit: true })).toBe(
+			'45 min · spydde'
+		);
+	});
+
+	it('says nothing about an accident that did not happen', () => {
+		expect(summarize(FIELDS, { duration_min: 45 })).toBe('45 min');
 	});
 });

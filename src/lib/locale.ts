@@ -146,6 +146,8 @@ export const errors = {
 	noDog: 'Ingen hund hittades. Har seed-SQL:en körts?',
 	invalidTime: 'Ogiltig tidpunkt.',
 	invalidValue: (field: string) => `Ogiltigt värde för ${field.toLowerCase()}.` as const,
+	/** A reveal was ticked with none of its causes picked. */
+	chooseOne: (field: string) => `Välj minst ett alternativ under ${field.toLowerCase()}.` as const,
 	logFailed: 'Kunde inte logga händelsen.',
 	intervalRange: 'Intervall måste vara ett antal dagar (minst 1).',
 	saveFailed: 'Kunde inte spara.',
