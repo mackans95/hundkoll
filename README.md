@@ -266,22 +266,47 @@ any migration.
 
 ### Aggregation lives in SQL
 
-Pages format, they do not compute. Five views:
+Pages format, they do not compute. Five views — one for Status, and four for the whole
+stats screen on two axes: **per type** and **per type × detail field**, each at bucket
+grain (a chart's columns) and window grain (a headline number).
 
-| View                   | Answers                                                                    |
-| ---------------------- | -------------------------------------------------------------------------- |
-| `dog_care_status`      | last done and next due per activity — powers the Status screen             |
-| `stats_summary`        | every headline average, one row per dog                                    |
-| `stats_daily_counts`   | per type per day: counts, pee/poop, finished meals, gap and duration means |
-| `stats_accident_bins`  | accidents binned per day, ISO week and month, split kiss/bajs              |
-| `stats_period_summary` | one row per period bucket — powers the Trender comparisons                 |
+| View                   | Answers                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `dog_care_status`      | last done and next due per activity — powers the Status screen                                              |
+| `stats_type_buckets`   | per type per Stockholm day / ISO week / month: how many, and the mean gap                                   |
+| `stats_detail_buckets` | the same buckets per detail field: answered, happened, the sum and the mean                                 |
+| `stats_type_windows`   | per type per trailing window (30/84/180 days): the count, the days tracked, and the per-day/week/month rate |
+| `stats_detail_windows` | the same windows per detail field: the mean of a number, and the share of events something happened in      |
 
-Two rules these views follow, both learned the hard way:
+**None of them names a type or a detail key.** The four they replaced did —
+`stats_summary` carried a column per metric with the type baked into a subquery — and
+since `create or replace view` may only _append_ columns, they were a one-way ratchet no
+new type could ever read. Every generic feature had to route around them. Which columns a
+walk or a meal consists of is now decided in `src/lib/stats/rows.ts` instead, because
+that is the side that knows.
+
+Three rules these views follow, all learned the hard way:
 
 - **Days are Stockholm days.** A 00:30 walk belongs to the day it felt like, not to UTC.
 - **Averages divide by what was actually measured.** Rates divide by days tracked (capped
   at the window), not by the window length, and "time between" pools only gaps _within_ a
   day — otherwise the overnight 22:00 → 07:30 stretch dominates every number.
+- **"It happened" is one rule in one place.** `detail_happened(jsonb)`: `true` for a
+  checkbox or a reveal, above zero for a count. Both detail views call it, and
+  `contribution()` in `$lib/stats/detailDays.ts` counts a tooltip by the same rule — so a
+  tile and a tooltip cannot disagree about the same field. Before it existed, a share over
+  a `count` field asked whether the value was literally `true` and read 0 % forever.
+
+And the boundary itself, which is worth stating precisely rather than as a slogan:
+
+> **Aggregation over the event log lives in SQL. Anything that needs to know what a detail
+> key _means_ is computed in TypeScript, because only `DETAIL_FIELDS` knows.**
+
+The second half has exactly three members, and each is there for that reason:
+`fieldHistory` (which key holds a number), `detailDayCounts` (which keys are countable —
+`duration_min` and `pee` are both JSON numbers, and no view can tell a measurement from a
+count), and `shareTile`'s missing-row rule (a never-logged accident is 100 % fine).
+Anything else computing outside SQL is drift, not a fourth member.
 
 ### Migrations
 
@@ -362,8 +387,9 @@ are the generic layer, and a card is 30–60 lines composing them; a config obje
 expressive enough to cover the real cards would be a worse programming language than
 Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
 
-1. **SQL** — for counts per day nothing is needed: `stats_daily_counts` is already
-   grouped per `type_id`. A genuinely new shape means a new view migration.
+1. **SQL** — nothing is needed for either shape: the four views are per type and per
+   detail field already, so a new type is rows of views that exist. A genuinely new
+   _shape_ — not a new type — is what means a new migration.
 2. **Query + narrowing** in `src/lib/server/stats.ts` — select exactly the columns the
    card reads and narrow the nullable view columns once, so pages never handle
    `number | null`.
@@ -393,27 +419,32 @@ Nothing is declared for this: the fields come from `DETAIL_FIELDS` and their cap
 the labels the dialog already renders, in declaration order. Numbers are left out, since
 "45" under a bar reads as a count and is not one.
 
-That count is the one aggregate on this screen that is **not** SQL. A per-day count of an
-arbitrary detail key would need a column per field — the same wide-view problem
-`stats_detail_metrics` exists to avoid — so `$lib/stats/detailDays.ts` counts the type's
-own events instead, the way `fieldHistory` does for trend cards. It is a month of one
-activity, and it means a tooltip row needs no migration.
+That count is the one aggregate on this screen that is **not** SQL, and it is there by the
+rule above rather than for convenience: `stats_detail_buckets` could sum it, but it could
+not _choose_ the fields. `duration_min` and `pee` are both JSON numbers, so only
+`DETAIL_FIELDS` can say which of them is a count worth putting under a bar. The card has
+to ask the catalogue either way, so `$lib/stats/detailDays.ts` reads the type's own events
+and counts them there — a month of one activity, the way `fieldHistory` does for trend
+cards.
 
 #### Metrics — the tiles under a generated chart
 
-A counts card can carry `StatTile`s like the walk card's, and **adding one needs no
-SQL**. Every hand-written metric is its own column in `stats_summary` with the type
-baked into a subquery (`avg_walk_duration_min`, `meal_finish_rate`); generated ones read
-`stats_detail_metrics` instead, which is **long rather than wide** — one row per dog ×
-type × detail field. A new type's tiles are rows of a view that already exists.
+A counts card can carry `StatTile`s like the walk card's, and **adding one needs no SQL**:
+every tile is a row of `stats_detail_windows`, one per dog × type × window × detail field.
+So is every hand-written tile — `avg_walk_duration_min` and `meal_finish_rate` used to be
+columns of a wide summary view, and are now the same rows a generated tile reads.
 
 Three kinds, and the generator asks for them when the card is a counts card:
 
-| Kind            | Reads                          | Wants                       |
-| --------------- | ------------------------------ | --------------------------- |
-| `avg`           | the average of a number field  | a `number` field            |
-| `share`         | how often something was ticked | `checkbox`/`count`/`reveal` |
-| `share-without` | how often it was not           | `checkbox`/`count`/`reveal` |
+| Kind            | Reads                         | Wants                       |
+| --------------- | ----------------------------- | --------------------------- |
+| `avg`           | the average of a number field | a `number` field            |
+| `share`         | how often something happened  | `checkbox`/`count`/`reveal` |
+| `share-without` | how often it did not          | `checkbox`/`count`/`reveal` |
+
+"Happened" is `detail_happened`, so a `count` counts as happened when it is above zero:
+`share` on the walk `pee` field is the share of walks she peed on, not the share where the
+value was the boolean `true`.
 
 You are not asked how to format it. The unit comes from the field's own declaration, so
 an average of minutes is written in minutes (and switches to hours past 90); a share is
