@@ -1,3 +1,4 @@
+import { readsFailed } from '$lib/server/reads';
 import { loadStats } from '$lib/server/stats';
 import type { Period } from '$lib/types/domain';
 import type { PageServerLoad } from './$types';
@@ -16,10 +17,14 @@ function toPeriod(raw: string | null): Period {
 	return raw !== null && Object.hasOwn(PERIODS, raw) ? (raw as Period) : 'day';
 }
 
-export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase } }) => {
 	// Both selections live in the URL, so a reload comes back to the same view.
 	const period = toPeriod(url.searchParams.get('period'));
 	const trend = toPeriod(url.searchParams.get('trend'));
 
-	return loadStats(supabase, period, trend);
+	const stats = await loadStats(supabase, period, trend);
+	// The guard reads nulls; loadStats has eleven reads and reports them as one.
+	readsFailed(setHeaders, stats.failed ? null : stats);
+
+	return stats;
 };

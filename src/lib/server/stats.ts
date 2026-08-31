@@ -48,6 +48,9 @@ export type Stats = {
 	mealDays: MealDay[];
 	accidentBins: AccidentBin[];
 	weights: WeightPoint[];
+	/** Whether any read failed. Empty charts and unreadable ones look the same
+	 * otherwise, and the second must not be cached as the first. */
+	failed: boolean;
 };
 
 // The mappers take exactly the columns their query selects, so a select and
@@ -191,21 +194,10 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	const DAILY_TYPES = ['walk', 'meal'];
 	const DAILY_FIELDS = ['pee', 'poop', 'finished', 'duration_min'];
 
-	const [
-		// codegen:stats-results — one name here per query below, same order
-		carRideDetailDays,
-		carRideMetricsRes,
-		carRideRes,
-		dailyRes,
-		dailyDetailRes,
-		windowsRes,
-		windowDetailRes,
-		binsRes,
-		binDetailRes,
-		trendRes,
-		trendDetailRes,
-		weights
-	] = await Promise.all([
+	// Kept as an array as well as destructured, so the failure check below sees
+	// every read — including the ones npm run new-event adds, which would
+	// otherwise need listing a second time and eventually would not be.
+	const results = await Promise.all([
 		// codegen:stats-queries — npm run new-event inserts card queries here
 		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
 		db
@@ -275,6 +267,30 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		weightHistory(db)
 	]);
 
+	const [
+		// codegen:stats-results — one name here per query above, same order
+		carRideDetailDays,
+		carRideMetricsRes,
+		carRideRes,
+		dailyRes,
+		dailyDetailRes,
+		windowsRes,
+		windowDetailRes,
+		binsRes,
+		binDetailRes,
+		trendRes,
+		trendDetailRes,
+		weights
+	] = results;
+
+	// Asked of the array rather than of each name, so a query added here later —
+	// by hand or by the generator — is covered without being remembered. The
+	// two entries that are not view reads report their own failures already and
+	// carry no `error` to find.
+	const failed = results.some(
+		(result) => result !== null && typeof result === 'object' && 'error' in result && result.error
+	);
+
 	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
 	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
 	const trendRows = rows.trendBuckets(
@@ -304,6 +320,7 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 			present((binsRes.data ?? []).map(toTypeBucket)),
 			present((binDetailRes.data ?? []).map(toDetailBucket))
 		),
-		weights
+		weights,
+		failed
 	};
 }

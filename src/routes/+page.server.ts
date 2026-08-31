@@ -11,6 +11,7 @@ import {
 	parseEventForm,
 	recentEvents
 } from '$lib/server/events';
+import { readsFailed } from '$lib/server/reads';
 import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -30,21 +31,22 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 	// opens (and closes, via a plain link to "/") without JavaScript.
 	const detailParam = url.searchParams.get('detail');
 
-	// A page with a hole in it must not become the copy the service worker
-	// serves on the next launch, which would keep showing the hole.
-	if (events === null) {
-		setHeaders({ 'cache-control': 'no-store' });
-	}
+	// Both reads, not just the events one. A failed catalogue read is the more
+	// visible of the two — it takes the log buttons with it.
+	readsFailed(setHeaders, types, events);
 
 	return {
 		dog,
-		types,
+		types: types ?? [],
 		events: events ?? [],
 		// Told apart from "nothing logged yet", which is what this used to
 		// look like whenever the read failed.
 		eventsFailed: events === null,
+		// Same distinction for the grid: no activities and no answer are not
+		// the same screen.
+		typesFailed: types === null,
 		editEvent,
-		detailType: types.find((type) => type.id === detailParam) ?? null,
+		detailType: types?.find((type) => type.id === detailParam) ?? null,
 		nowLocal: time.stockholmNowForInput(),
 		// Travels with the form so a resubmit collides on the primary key
 		// instead of inserting the same walk twice.

@@ -33,6 +33,9 @@ export const log = {
 	// Shown instead of `empty` when the read failed: the list is unknown, not
 	// empty, and the app re-reads it by itself on the next launch.
 	loadFailed: 'Kunde inte läsa händelserna. Försök igen om en stund.',
+	// In place of the log buttons when the catalogue could not be read. Without
+	// it the grid was simply absent, which read as a broken app.
+	gridFailed: 'Kunde inte läsa aktiviteterna. Appen försöker igen automatiskt.',
 	/** Sits under a row that has been tried and could not get through. */
 	waitingRow: '⏳ väntar på signal',
 	/** Sits under a row the server refused, in place of its details. */
@@ -99,6 +102,7 @@ export const history = {
 
 export const status = {
 	title: nav.status,
+	loadFailed: 'Kunde inte läsa statusen. Försök igen om en stund.',
 	noIntervals: 'Inga aktiviteter har något intervall. Sätt intervall under Inställningar.',
 	lastLoggedHeading: 'Senast loggat',
 	neverLogged: 'Aldrig loggat',
@@ -112,6 +116,7 @@ export const status = {
 
 export const settings = {
 	title: nav.settings,
+	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra intervall.',
 	saved: 'Sparat!',
 	intervalsHeading: 'Intervall',
 	intervalsHelp: 'Antal dagar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
@@ -227,6 +232,7 @@ const symbols = {
 } as const;
 
 export const stats = {
+	loadFailed: 'Kunde inte läsa statistiken. Försök igen om en stund.',
 	// codegen:stats-strings — npm run new-event inserts card strings here
 	carRide: {
 		heading: '🚗 Biltur',

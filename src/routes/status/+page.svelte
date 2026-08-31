@@ -14,8 +14,14 @@
 		<h1 class="text-3xl font-bold">{locale.status.title}</h1>
 	</header>
 
+	{#if data.statusFailed}
+		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.status.loadFailed}</p>
+	{/if}
+
 	<section class="flex flex-col gap-2">
-		{#if data.timed.length === 0}
+		<!-- Only when the read landed: "no intervals set" is advice, and advice
+		     about a screen we could not read is misleading. -->
+		{#if data.timed.length === 0 && !data.statusFailed}
 			<p class="px-1 text-ink-muted">{locale.status.noIntervals}</p>
 		{/if}
 		{#each data.timed as row (row.type_id)}
