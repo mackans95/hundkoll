@@ -37,6 +37,10 @@
 		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30)}</p>
 	</header>
 
+	{#if data.failed}
+		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
+	{/if}
+
 	<TrendCard
 		period={data.trend}
 		prev={data.trendPrev}

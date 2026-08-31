@@ -6,18 +6,18 @@
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
 	import { catchUp } from '$lib/offline/catchUp';
-	import { loadQueue } from '$lib/offline/queue.svelte';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	// The theme attribute is already on <html> (app.html); loadTheme reads the
-	// choice into state and lines up the theme-color metas. The queue has to be
-	// read out of IndexedDB before catching up can send it.
+	// choice into state and lines up the theme-color metas. Reading the queue off
+	// disk is part of catching up rather than a step before it — as two steps
+	// they raced, and pageshow won.
 	onMount(() => {
 		loadTheme();
-		loadQueue().then(catchUp);
+		catchUp();
 	});
 
 	// Where a tap is heading; null unless a navigation is in flight.

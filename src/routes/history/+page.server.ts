@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { summariseDays } from '$lib/history';
 import { applyEventDelete, applyEventEdit, getEvent, monthEvents } from '$lib/server/events';
+import { readsFailed } from '$lib/server/reads';
 import * as time from '$lib/time';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -38,9 +39,7 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 
 	// As on the log page: an empty month and an unreadable one are different,
 	// and only the first is worth caching.
-	if (read === null) {
-		setHeaders({ 'cache-control': 'no-store' });
-	}
+	readsFailed(setHeaders, read);
 	const events = read ?? [];
 
 	return {

@@ -26,6 +26,9 @@
 	{#if form?.message}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
+	{#if data.typesFailed}
+		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.settings.loadFailed}</p>
+	{/if}
 
 	<section class="flex flex-col gap-2">
 		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">

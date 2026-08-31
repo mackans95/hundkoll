@@ -7,7 +7,8 @@
 		types,
 		onOpen,
 		onStartLive,
-		liveTypeId = null
+		liveTypeId = null,
+		failed = false
 	}: {
 		types: EventType[];
 		/**
@@ -19,6 +20,13 @@
 		onStartLive: (type: EventType) => void;
 		/** The type currently running live, so its tile can say so. */
 		liveTypeId?: string | null;
+		/**
+		 * Whether the catalogue read failed, as opposed to coming back empty.
+		 * Without this the grid was `{#each types}` over nothing, so the log
+		 * buttons were simply absent — which reads as a broken app, not as a
+		 * failed read, and is what this component is mostly for.
+		 */
+		failed?: boolean;
 	} = $props();
 
 	// Category identity is carried by the tile colours alone — one grid, no
@@ -50,6 +58,12 @@
 		onOpen(type, event.currentTarget.getBoundingClientRect());
 	}
 </script>
+
+{#if failed && types.length === 0}
+	<p class="rounded-lg bg-danger-surface p-4 text-center text-danger-ink">
+		{locale.log.gridFailed}
+	</p>
+{/if}
 
 <!-- Wrapping flex, not grid: basis 30% caps a row at three tiles, and flex-1
      lets whatever lands on the last row stretch to fill it — 7 tiles become

@@ -155,6 +155,7 @@
 			onOpen={open}
 			onStartLive={startLive}
 			liveTypeId={liveType?.id ?? null}
+			failed={data.typesFailed}
 		/>
 	</Card>
 
