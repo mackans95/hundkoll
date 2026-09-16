@@ -19,8 +19,23 @@
 	{/if}
 
 	<section class="flex flex-col gap-2">
+		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
+			{locale.status.dailyHeading}
+		</h2>
+		{#each data.daily as row (row.type_id)}
+			<StatusCard
+				{row}
+				now={data.now}
+			/>
+		{/each}
+	</section>
+
+	<section class="flex flex-col gap-2">
 		<!-- Only when the read landed: "no intervals set" is advice, and advice
 		     about a screen we could not read is misleading. -->
+		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
+			{locale.status.intervalHeading}
+		</h2>
 		{#if data.timed.length === 0 && !data.statusFailed}
 			<p class="px-1 text-ink-muted">{locale.status.noIntervals}</p>
 		{/if}

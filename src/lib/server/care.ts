@@ -1,6 +1,7 @@
 import * as locale from '$lib/locale';
-import type { EventCategory, EventType, StatusRow, ViewRow } from '$lib/types/domain';
+import type { EventCategory, EventType, StatusRow, ViewRow, IntervalType } from '$lib/types/domain';
 import type { Db } from './db';
+import { isDaily, isScheduled } from '$lib/status/schedule';
 
 /**
  * Lists the activity catalogue in display order — the rows that drive the log
@@ -24,7 +25,11 @@ export async function listEventTypes(db: Db): Promise<EventType[] | null> {
 		return null;
 	}
 
-	return (data ?? []).map((row) => ({ ...row, category: row.category as EventCategory }));
+	return (data ?? []).map((row) => ({
+		...row,
+		category: row.category as EventCategory,
+		interval_type: row.interval_type as IntervalType
+	}));
 }
 
 /**
@@ -42,7 +47,7 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 		category: (row.category ?? 'routine') as EventCategory,
 		icon: row.icon,
 		interval: row.interval,
-		interval_type: row.interval_type,
+		interval_type: (row.interval_type ?? 'days') as IntervalType,
 		last_at: row.last_at,
 		due_at: row.due_at,
 		sort_order: row.sort_order ?? 0
@@ -50,13 +55,13 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 }
 
 /**
- * Last done and next due per activity, split for the Status screen: timer
- * cards for the types with an expected interval, a plain "last done" list
- * for the rest.
+ * Last done and next due per activity, split for the Status screen:
+ * daily cards on top, timer cards for the types with an expected interval,
+ * a plain "last done" list for the rest.
  */
 export async function careStatus(
 	db: Db
-): Promise<{ timed: StatusRow[]; untimed: StatusRow[] } | null> {
+): Promise<{ daily: StatusRow[]; timed: StatusRow[]; untimed: StatusRow[] } | null> {
 	const { data, error } = await db.from('dog_care_status').select('*').order('sort_order');
 
 	// Null for a failed read, as everywhere else: a dog with nothing tracked and
@@ -69,8 +74,9 @@ export async function careStatus(
 	const rows = (data ?? []).map(toStatusRow).filter((row): row is StatusRow => row !== null);
 
 	return {
-		timed: rows.filter((row) => row.interval !== null),
-		untimed: rows.filter((row) => row.interval === null)
+		daily: rows.filter((row) => isScheduled(row) && isDaily(row)),
+		timed: rows.filter((row) => isScheduled(row) && !isDaily(row)),
+		untimed: rows.filter((row) => !isScheduled(row))
 	};
 }
 
@@ -90,10 +96,7 @@ export async function saveIntervals(db: Db, form: FormData): Promise<string | nu
 		if (value === type.interval) {
 			continue;
 		}
-		const { error } = await db
-			.from('event_types')
-			.update({ interval: value })
-			.eq('id', type.id);
+		const { error } = await db.from('event_types').update({ interval: value }).eq('id', type.id);
 		if (error) {
 			console.error('interval update failed:', error.code, error.message);
 			return locale.errors.saveFailed;

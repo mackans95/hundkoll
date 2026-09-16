@@ -4,6 +4,7 @@
 
 import * as locale from '$lib/locale';
 import * as time from '$lib/time';
+import type { StatusRow } from '$lib/types/domain';
 
 const numberFormat = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 });
 
@@ -169,4 +170,22 @@ export function swedishDuration(ms: number): string {
 	}
 
 	return '';
+}
+
+/**
+ * Formats based on the interval of the row, average is the complex one where extra checks takes place.
+ */
+export function intervalText(row: StatusRow) {
+	switch (row.interval_type) {
+		case 'days':
+			return row.interval === null ? null : locale.status.everyNthDay(row.interval);
+		case 'hours':
+			return row.interval === null ? null : locale.status.everyNthHour(row.interval);
+		case 'average':
+			return row.due_at && row.last_at
+				? locale.status.averageInterval(
+						minutesText((new Date(row.due_at).getTime() - new Date(row.last_at).getTime()) / 60_000)
+					)
+				: null;
+	}
 }

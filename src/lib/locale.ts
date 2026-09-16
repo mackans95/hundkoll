@@ -105,6 +105,12 @@ export const status = {
 	loadFailed: 'Kunde inte läsa statusen. Försök igen om en stund.',
 	noIntervals: 'Inga aktiviteter har något intervall. Sätt intervall under Inställningar.',
 	lastLoggedHeading: 'Senast loggat',
+	dailyHeading: 'Dagligen',
+	intervalHeading: 'Återkommande',
+	everyNthHour: (hours: number) => `var ${hours}:e timme` as const,
+	averageInterval: (duration: string) => `snitt ${duration}` as const,
+	awaitingNewDay: 'väntar på ny day',
+	noAverageYet: 'inget snitt ännu',
 	neverLogged: 'Aldrig loggat',
 	/** In the compact list, where the card's fuller wording would not fit. */
 	never: 'aldrig',
