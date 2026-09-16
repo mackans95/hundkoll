@@ -17,6 +17,8 @@ type NotNull<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]
 
 export type EventCategory = 'routine' | 'care' | 'health' | 'other';
 
+export type IntervalType = 'days' | 'hours' | 'average'
+
 /** A tracked activity: the catalogue row that drives every screen. */
 export type EventType = Omit<Tables<'event_types'>, 'category'> & { category: EventCategory };
 

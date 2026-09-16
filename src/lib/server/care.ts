@@ -16,7 +16,7 @@ import type { Db } from './db';
 export async function listEventTypes(db: Db): Promise<EventType[] | null> {
 	const { data, error } = await db
 		.from('event_types')
-		.select('id, label, category, icon, interval_days, sort_order')
+		.select('id, label, category, icon, interval, interval_type, sort_order')
 		.order('sort_order');
 
 	if (error) {
@@ -41,7 +41,8 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 		label: row.label ?? row.type_id,
 		category: (row.category ?? 'routine') as EventCategory,
 		icon: row.icon,
-		interval_days: row.interval_days,
+		interval: row.interval,
+		interval_type: row.interval_type,
 		last_at: row.last_at,
 		due_at: row.due_at,
 		sort_order: row.sort_order ?? 0
@@ -68,8 +69,8 @@ export async function careStatus(
 	const rows = (data ?? []).map(toStatusRow).filter((row): row is StatusRow => row !== null);
 
 	return {
-		timed: rows.filter((row) => row.interval_days !== null),
-		untimed: rows.filter((row) => row.interval_days === null)
+		timed: rows.filter((row) => row.interval !== null),
+		untimed: rows.filter((row) => row.interval === null)
 	};
 }
 
@@ -78,7 +79,7 @@ export async function careStatus(
  * untouched. Returns a Swedish error message, or null when all of them stuck.
  */
 export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
-	const { data: types } = await db.from('event_types').select('id, interval_days');
+	const { data: types } = await db.from('event_types').select('id, interval');
 
 	for (const type of types ?? []) {
 		const raw = String(form.get(`interval_${type.id}`) ?? '').trim();
@@ -86,12 +87,12 @@ export async function saveIntervals(db: Db, form: FormData): Promise<string | nu
 		if (value !== null && (!Number.isFinite(value) || value < 1)) {
 			return locale.errors.intervalRange;
 		}
-		if (value === type.interval_days) {
+		if (value === type.interval) {
 			continue;
 		}
 		const { error } = await db
 			.from('event_types')
-			.update({ interval_days: value })
+			.update({ interval: value })
 			.eq('id', type.id);
 		if (error) {
 			console.error('interval update failed:', error.code, error.message);

@@ -38,7 +38,7 @@
 	const detail = $derived.by(() => {
 		const last = row.last_at ? format.swedishRelative(new Date(row.last_at), now) : null;
 		const interval =
-			row.interval_days === null ? null : locale.status.everyNthDay(row.interval_days);
+			row.interval === null ? null : locale.status.everyNthDay(row.interval);
 
 		if (last && interval) {
 			return locale.status.lastAndInterval(last, interval);

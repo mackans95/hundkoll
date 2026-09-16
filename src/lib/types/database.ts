@@ -76,7 +76,8 @@ export type Database = {
 					category: string;
 					icon: string | null;
 					id: string;
-					interval_days: number | null;
+					interval: number | null;
+					interval_type: string;
 					label: string;
 					sort_order: number;
 				};
@@ -84,7 +85,8 @@ export type Database = {
 					category: string;
 					icon?: string | null;
 					id: string;
-					interval_days?: number | null;
+					interval?: number | null;
+					interval_type?: string;
 					label: string;
 					sort_order?: number;
 				};
@@ -92,7 +94,8 @@ export type Database = {
 					category?: string;
 					icon?: string | null;
 					id?: string;
-					interval_days?: number | null;
+					interval?: number | null;
+					interval_type?: string;
 					label?: string;
 					sort_order?: number;
 				};
@@ -223,7 +226,8 @@ export type Database = {
 					dog_id: string | null;
 					due_at: string | null;
 					icon: string | null;
-					interval_days: number | null;
+					interval: number | null;
+					interval_type: string | null;
 					label: string | null;
 					last_at: string | null;
 					sort_order: number | null;

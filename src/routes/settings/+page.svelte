@@ -50,7 +50,7 @@
 						<input
 							type="number"
 							name="interval_{type.id}"
-							value={type.interval_days ?? ''}
+							value={type.interval ?? ''}
 							min="1"
 							inputmode="numeric"
 							class="w-20 rounded-lg border-edge-strong text-right"
