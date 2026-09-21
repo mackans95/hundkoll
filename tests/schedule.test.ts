@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { intervalText } from '$lib/format';
-import { awaitingNewDay, isDaily, isScheduled } from '$lib/status/schedule';
+import * as locale from '$lib/locale';
+import { awaitingNewDay, isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
 import type { StatusRow } from '$lib/types/domain';
 
 const row = (part: Partial<StatusRow>): StatusRow => ({
@@ -117,5 +118,76 @@ describe('intervalFormat', () => {
 		expect(
 			intervalText(row({ interval_type: 'average', last_at: '2026-08-27T08:00:00Z' }))
 		).toBeNull();
+	});
+});
+
+describe('planIntervalChanges', () => {
+	const stored = [
+		{ id: 'walk', interval: 4, interval_type: 'average' as const },
+		{ id: 'nail_trim', interval: 42, interval_type: 'days' as const }
+	];
+	const submit = (fields: Record<string, string>) => {
+		const form = new FormData();
+		for (const [name, value] of Object.entries(fields)) form.append(name, value);
+		return form;
+	};
+	// What the form posts when nothing has been touched.
+	const untouched = { mode_walk: 'average', interval_walk: '4', interval_nail_trim: '42' };
+
+	it('writes nothing when nothing changed', () => {
+		expect(planIntervalChanges(stored, submit(untouched))).toEqual({ changes: [] });
+	});
+
+	it('patches only the mode when only the mode moved', () => {
+		const plan = planIntervalChanges(stored, submit({ ...untouched, mode_walk: 'hours' }));
+		expect(plan).toEqual({ changes: [{ id: 'walk', patch: { interval_type: 'hours' } }] });
+	});
+
+	it('patches only the number when only the number moved', () => {
+		const plan = planIntervalChanges(stored, submit({ ...untouched, interval_nail_trim: '50' }));
+		expect(plan).toEqual({ changes: [{ id: 'nail_trim', patch: { interval: 50 } }] });
+	});
+
+	it('patches both when both moved', () => {
+		const plan = planIntervalChanges(
+			stored,
+			submit({ ...untouched, mode_walk: 'hours', interval_walk: '3' })
+		);
+		expect(plan).toEqual({
+			changes: [{ id: 'walk', patch: { interval: 3, interval_type: 'hours' } }]
+		});
+	});
+
+	// Clearing the number on a days type is how a schedule is switched off.
+	it('clears a fixed interval when the field is emptied', () => {
+		const plan = planIntervalChanges(stored, submit({ ...untouched, interval_nail_trim: '' }));
+		expect(plan).toEqual({ changes: [{ id: 'nail_trim', patch: { interval: null } }] });
+	});
+
+	// The rule the form enforces, enforced again where the form can be bypassed.
+	it('refuses hours with no number', () => {
+		const plan = planIntervalChanges(
+			stored,
+			submit({ ...untouched, mode_walk: 'hours', interval_walk: '' })
+		);
+		expect(plan).toEqual({ error: locale.errors.modeHoursNoNumber });
+	});
+
+	it('refuses a number below one, as before', () => {
+		const plan = planIntervalChanges(stored, submit({ ...untouched, interval_nail_trim: '0' }));
+		expect(plan).toEqual({ error: locale.errors.intervalRange });
+	});
+
+	// A crafted request cannot turn a nail trim hourly: only daily rows read
+	// their mode from the form at all.
+	it('ignores a mode field on a type that is not daily', () => {
+		const plan = planIntervalChanges(stored, submit({ ...untouched, mode_nail_trim: 'hours' }));
+		expect(plan).toEqual({ changes: [] });
+	});
+
+	// A daily row with no mode field — an older form, say — keeps its stored mode.
+	it('keeps the stored mode when the form did not send one', () => {
+		const { mode_walk: _, ...withoutMode } = untouched;
+		expect(planIntervalChanges(stored, submit(withoutMode))).toEqual({ changes: [] });
 	});
 });

@@ -1,7 +1,7 @@
 import * as locale from '$lib/locale';
 import type { EventCategory, EventType, StatusRow, ViewRow, IntervalType } from '$lib/types/domain';
 import type { Db } from './db';
-import { isDaily, isScheduled } from '$lib/status/schedule';
+import { isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
 
 /**
  * Lists the activity catalogue in display order — the rows that drive the log
@@ -85,18 +85,22 @@ export async function careStatus(
  * untouched. Returns a Swedish error message, or null when all of them stuck.
  */
 export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
-	const { data: types } = await db.from('event_types').select('id, interval');
+	const { data: types } = await db.from('event_types').select('id, interval, interval_type');
 
-	for (const type of types ?? []) {
-		const raw = String(form.get(`interval_${type.id}`) ?? '').trim();
-		const value = raw === '' ? null : parseInt(raw, 10);
-		if (value !== null && (!Number.isFinite(value) || value < 1)) {
-			return locale.errors.intervalRange;
-		}
-		if (value === type.interval) {
-			continue;
-		}
-		const { error } = await db.from('event_types').update({ interval: value }).eq('id', type.id);
+	const plan = planIntervalChanges(
+		(types ?? []).map((row) => ({
+			...row,
+			interval_type: row.interval_type as IntervalType
+		})),
+		form
+	);
+
+	if ('error' in plan) {
+		return plan.error;
+	}
+
+	for (const { id, patch } of plan.changes) {
+		const { error } = await db.from('event_types').update(patch).eq('id', id);
 		if (error) {
 			console.error('interval update failed:', error.code, error.message);
 			return locale.errors.saveFailed;
