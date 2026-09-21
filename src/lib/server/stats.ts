@@ -81,6 +81,7 @@ type SelectedTypeWindow = Pick<
 	| 'per_week'
 	| 'per_month'
 	| 'avg_gap_min'
+	| 'away_days'
 >;
 type SelectedMetric = Pick<
 	ViewRow<'stats_detail_windows'>,
@@ -93,7 +94,7 @@ const TYPE_BUCKET_COLUMNS = 'type_id, bucket, n, avg_gap_min';
 const DETAIL_BUCKET_COLUMNS =
 	'type_id, bucket, field, answered, happened, total, avg_number, share_answered';
 const TYPE_WINDOW_COLUMNS =
-	'dog_id, type_id, window_days, events, days_counted, per_day, per_week, per_month, avg_gap_min';
+	'dog_id, type_id, window_days, events, days_counted, per_day, per_week, per_month, avg_gap_min, away_days';
 // A generated card selects these for its own type; the view windows itself,
 // so there is no date filter to keep in step with the charts.
 const METRIC_COLUMNS = 'field, events, answered, avg_number, share_true, share_not_true';
@@ -143,7 +144,8 @@ function toTypeWindow(row: SelectedTypeWindow): TypeWindowRow | null {
 		per_day: row.per_day ?? 0,
 		per_week: row.per_week ?? 0,
 		per_month: row.per_month ?? 0,
-		avg_gap_min: row.avg_gap_min
+		avg_gap_min: row.avg_gap_min,
+		away_days: row.away_days ?? 0
 	};
 }
 

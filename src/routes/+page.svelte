@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Card from '$lib/components/Card.svelte';
 	import ActiveWalkCard from '$lib/components/log/ActiveWalkCard.svelte';
+	import AwayCard from '$lib/components/log/AwayCard.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
 	import EventSheet from '$lib/components/log/EventSheet.svelte';
 	import LogDialog from '$lib/components/log/LogDialog.svelte';
@@ -8,6 +9,7 @@
 	import { replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { isAbsence } from '$lib/events/absence';
 	import { LIVE_TYPE_IDS } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import { activeWalk, loadActiveWalk, startWalk } from '$lib/offline/activeWalk.svelte';
@@ -56,8 +58,16 @@
 		opened = { type, eventId: crypto.randomUUID(), nowLocal: time.stockholmNowForInput(), origin };
 	}
 
-	/** One tap starts the walk; a second tap points back at the card. */
+	/**
+	 * One tap starts the walk; a second tap points back at the card. The
+	 * absence tile only ever points back — an absence is started through the
+	 * dialog, and its card is on the page only while one is open.
+	 */
 	function startLive(type: EventType) {
+		if (isAbsence(type.category)) {
+			document.getElementById('away')?.scrollIntoView({ behavior: 'smooth' });
+			return;
+		}
 		if (activeWalk.current) {
 			document.getElementById('active-walk')?.scrollIntoView({ behavior: 'smooth' });
 			return;
@@ -71,6 +81,11 @@
 		activeWalk.current
 			? (data.types.find((type) => type.id === activeWalk.current?.typeId) ?? null)
 			: null
+	);
+
+	// The tiles whose activity already has a card on the page.
+	const busyTypeIds = $derived(
+		[liveType?.id, data.away?.type_id].filter((id): id is string => Boolean(id))
 	);
 
 	function close() {
@@ -130,7 +145,9 @@
 		<p class="mt-1 text-sm text-ink-muted">{locale.log.subtitle}</p>
 	</header>
 
-	{#if form?.message && !data.detailType}
+	<!-- Not while the dialog or the away card is up: each shows the message
+	     itself, next to the form it came from. -->
+	{#if form?.message && !data.detailType && !data.away}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
 
@@ -138,6 +155,16 @@
 		<p class="rounded-lg bg-warn-surface p-3 text-sm text-warn-ink">
 			{locale.log.waitingBanner(waiting)}
 		</p>
+	{/if}
+
+	{#if data.away}
+		<div id="away">
+			<AwayCard
+				event={data.away}
+				now={data.now}
+				message={form?.message ?? null}
+			/>
+		</div>
 	{/if}
 
 	{#if liveType}
@@ -154,7 +181,7 @@
 			types={data.types}
 			onOpen={open}
 			onStartLive={startLive}
-			liveTypeId={liveType?.id ?? null}
+			{busyTypeIds}
 			failed={data.typesFailed}
 		/>
 	</Card>

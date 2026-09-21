@@ -1,4 +1,5 @@
 import * as locale from '$lib/locale';
+import { parseEnd } from '$lib/events/absence';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import { fieldsFor } from '$lib/events/fields';
 import { countDetailDays } from '$lib/stats/detailDays';
@@ -6,6 +7,7 @@ import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type {
 	DetailDayCount,
+	EventCategory,
 	EventDetails,
 	EventInsert,
 	EventRow,
@@ -15,7 +17,24 @@ import type {
 import type { Db } from './db';
 
 /** The columns every list and the edit sheet read, with the catalogue row. */
-const EVENT_COLUMNS = 'id, type_id, occurred_at, note, details, type:event_types(label, icon)';
+const EVENT_COLUMNS =
+	'id, type_id, occurred_at, ended_at, note, details, type:event_types(label, icon, category)';
+
+/** The row shape the select above comes back as, before narrowing. */
+type SelectedEvent = Omit<EventRow, 'details' | 'type'> & {
+	details: Json;
+	type: { label: string; icon: string | null; category: string } | null;
+};
+
+/** Narrows one selected row: `details` is jsonb, and the category is a checked text column. */
+function toEventRow(row: SelectedEvent): EventRow {
+	return {
+		...row,
+		// The keys it holds are the ones DETAIL_FIELDS wrote.
+		details: (row.details ?? {}) as EventDetails,
+		type: row.type ? { ...row.type, category: row.type.category as EventCategory } : null
+	};
+}
 
 /**
  * Reads the most recently logged events, newest first, with each one's
@@ -41,8 +60,34 @@ export async function recentEvents(db: Db, limit = 10): Promise<EventRow[] | nul
 		return null;
 	}
 
-	// `details` is jsonb; the keys it holds are the ones DETAIL_FIELDS wrote.
-	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
+	return (data ?? []).map(toEventRow);
+}
+
+/**
+ * The absence going on right now, if any: the newest row of an absence type
+ * with no end. Wrapped, so "none open" and "could not read" stay different —
+ * the second must not be cached as the first.
+ */
+export async function currentAbsence(db: Db): Promise<{ event: EventRow | null } | null> {
+	const { data, error } = await db
+		.from('events')
+		// !inner so the category filter below applies to the join rather than
+		// nulling it out.
+		.select(
+			'id, type_id, occurred_at, ended_at, note, details, type:event_types!inner(label, icon, category)'
+		)
+		.eq('type.category', 'absence')
+		.is('ended_at', null)
+		.order('occurred_at', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	if (error) {
+		console.error('current absence read failed:', error.code, error.message);
+		return null;
+	}
+
+	return { event: data ? toEventRow(data) : null };
 }
 
 /**
@@ -67,7 +112,7 @@ export async function monthEvents(db: Db, from: string, to: string): Promise<Eve
 		return null;
 	}
 
-	return (data ?? []).map((row) => ({ ...row, details: (row.details ?? {}) as EventDetails }));
+	return (data ?? []).map(toEventRow);
 }
 
 /**
@@ -77,7 +122,7 @@ export async function monthEvents(db: Db, from: string, to: string): Promise<Eve
 export async function getEvent(db: Db, id: string): Promise<EventRow | null> {
 	const { data } = await db.from('events').select(EVENT_COLUMNS).eq('id', id).maybeSingle();
 
-	return data ? { ...data, details: (data.details ?? {}) as EventDetails } : null;
+	return data ? toEventRow(data) : null;
 }
 
 /**
@@ -159,13 +204,26 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 		row.id = eventId;
 	}
 
+	// Defaults to now, the same default the column has when nothing is sent.
+	let occurred = new Date();
 	const occurredRaw = String(form.get('occurred_at') ?? '').trim();
 	if (occurredRaw) {
-		const occurred = time.stockholmInputToUtc(occurredRaw);
-		if (!occurred) {
+		const parsedOccurred = time.stockholmInputToUtc(occurredRaw);
+		if (!parsedOccurred) {
 			return { ok: false, message: locale.errors.invalidTime };
 		}
+		occurred = parsedOccurred;
 		row.occurred_at = occurred.toISOString();
+	}
+
+	// Only an absence's form carries an end; accepted whenever it is sent,
+	// since the database holds the "after the start" rule for every row.
+	const end = parseEnd(form, occurred);
+	if (!end.ok) {
+		return { ok: false, message: end.message };
+	}
+	if (end.ended) {
+		row.ended_at = end.ended.toISOString();
 	}
 
 	if (form.has('detailed')) {
@@ -201,8 +259,16 @@ export async function insertEvent(db: Db, row: EventInsert): Promise<string | nu
 	return null;
 }
 
-/** The three columns an edit may touch; the rest are immutable by grant. */
-export type EventPatch = { occurred_at: string; details: Json; note: string | null };
+/**
+ * The columns an edit may touch; the rest are immutable by grant. `ended_at`
+ * is only present when the form sent the field, which only an absence's does.
+ */
+export type EventPatch = {
+	occurred_at: string;
+	details: Json;
+	note: string | null;
+	ended_at?: string | null;
+};
 
 export type ParsedEdit = { ok: true; patch: EventPatch } | { ok: false; message: string };
 
@@ -248,15 +314,29 @@ export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
 		Object.entries(event.details).filter(([key]) => !revealed.has(key))
 	);
 
-	return {
-		ok: true,
-		patch: {
-			occurred_at: occurred.toISOString(),
-			// Every value DETAIL_FIELDS produces is a number or a boolean.
-			details: { ...kept, ...parsed.details } as Json,
-			note: note || null
-		}
+	const patch: EventPatch = {
+		occurred_at: occurred.toISOString(),
+		// Every value DETAIL_FIELDS produces is a number or a boolean.
+		details: { ...kept, ...parsed.details } as Json,
+		note: note || null
 	};
+
+	// An absence's form always posts the end, empty meaning "still away" —
+	// which is how an accidental Hemma igen is undone. Same minute rule as the
+	// start: an untouched field keeps the stored instant.
+	if (form.has('ended_at')) {
+		const end = parseEnd(form, occurred);
+		if (!end.ok) {
+			return { ok: false, message: end.message };
+		}
+		const storedEnd = event.ended_at ? new Date(event.ended_at) : null;
+		patch.ended_at =
+			end.ended && storedEnd && time.sameMinute(end.ended, storedEnd)
+				? storedEnd.toISOString()
+				: (end.ended?.toISOString() ?? null);
+	}
+
+	return { ok: true, patch };
 }
 
 /**
@@ -322,4 +402,26 @@ export async function applyEventEdit(db: Db, form: FormData): Promise<EditOutcom
 export async function applyEventDelete(db: Db, form: FormData): Promise<EditOutcome> {
 	const message = await deleteEvent(db, String(form.get('event_id') ?? ''));
 	return message ? { ok: false, status: 500, message } : { ok: true };
+}
+
+/**
+ * Hemma igen: closes an open absence at this moment. Filtered on the end
+ * still being null, so two phones pressing it do not move the return — the
+ * second press is told the period is already closed.
+ */
+export async function applyEventReturn(db: Db, form: FormData): Promise<EditOutcome> {
+	const { error, count } = await db
+		.from('events')
+		.update({ ended_at: new Date().toISOString() }, { count: 'exact' })
+		.eq('id', String(form.get('event_id') ?? ''))
+		.is('ended_at', null)
+		.select('id');
+
+	if (error) {
+		console.error('absence close failed:', error.code, error.message);
+		return { ok: false, status: 500, message: locale.errors.saveFailed };
+	}
+	return count === 0
+		? { ok: false, status: 404, message: locale.errors.alreadyHome }
+		: { ok: true };
 }

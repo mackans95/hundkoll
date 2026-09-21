@@ -7,7 +7,7 @@
 		types,
 		onOpen,
 		onStartLive,
-		liveTypeId = null,
+		busyTypeIds = [],
 		failed = false
 	}: {
 		types: EventType[];
@@ -16,10 +16,13 @@
 		 * that was tapped, so the dialog can grow out of it.
 		 */
 		onOpen: (type: EventType, origin: DOMRect) => void;
-		/** Starts (or refocuses) a live log, for the types that have one. */
+		/**
+		 * Starts a live log for the types that have one, or refocuses the card
+		 * of a type that is already running — a walk, or an open absence.
+		 */
 		onStartLive: (type: EventType) => void;
-		/** The type currently running live, so its tile can say so. */
-		liveTypeId?: string | null;
+		/** The types with a card running elsewhere on the page, so their tiles say so. */
+		busyTypeIds?: readonly string[];
 		/**
 		 * Whether the catalogue read failed, as opposed to coming back empty.
 		 * Without this the grid was `{#each types}` over nothing, so the log
@@ -32,12 +35,15 @@
 	// Category identity is carried by the tile colours alone — one grid, no
 	// sub-headings, so every activity is one thumb-reach away. Slate for
 	// 'other' on purpose: a violet would collapse toward sky under red-green
-	// color-blindness, where a muted neutral stays apart from all three.
+	// color-blindness, where a muted neutral stays apart from all three. Rose
+	// for 'absence' is a first pick on the same reasoning — darker and duller
+	// than amber to those eyes — and is to be judged on the phone.
 	const CATEGORY_COLORS: Record<EventCategory, string> = {
 		routine: 'border-emerald-800 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700',
 		care: 'border-sky-800 bg-sky-600 hover:bg-sky-700 active:bg-sky-700',
 		health: 'border-amber-800 bg-amber-600 hover:bg-amber-700 active:bg-amber-700',
-		other: 'border-slate-800 bg-slate-600 hover:bg-slate-700 active:bg-slate-700'
+		other: 'border-slate-800 bg-slate-600 hover:bg-slate-700 active:bg-slate-700',
+		absence: 'border-rose-800 bg-rose-600 hover:bg-rose-700 active:bg-rose-700'
 	};
 
 	/**
@@ -45,11 +51,12 @@
 	 * already loaded, so following the href would buy a round trip for the
 	 * same dialog.
 	 */
-	function tap(event: MouseEvent & { currentTarget: HTMLElement }, type: EventType) {
+	function tap(event: MouseEvent & { currentTarget: HTMLElement }, type: EventType, busy: boolean) {
 		event.preventDefault();
-		// Live types start logging on the tap itself; the ?detail= href below
-		// keeps the pre-hydration path on the backdating dialog.
-		if (LIVE_TYPE_IDS.has(type.id)) {
+		// Live types start logging on the tap itself, and a type already running
+		// points back at its card rather than starting a second one; the
+		// ?detail= href below keeps the pre-hydration path on the dialog.
+		if (busy || LIVE_TYPE_IDS.has(type.id)) {
 			onStartLive(type);
 			return;
 		}
@@ -70,12 +77,12 @@
      3+3+1 full-width, 8 become 3+3+2 halves. Tap targets only ever grow. -->
 <div class="flex flex-wrap gap-2">
 	{#each types as type (type.id)}
-		{@const live = liveTypeId === type.id}
+		{@const live = busyTypeIds.includes(type.id)}
 		<!-- The href is what makes a tap work before hydration and with no
 		     JavaScript at all: ?detail= renders the same dialog on the server. -->
 		<a
 			href="?detail={type.id}"
-			onclick={(event) => tap(event, type)}
+			onclick={(event) => tap(event, type, live)}
 			class="flex min-w-[30%] flex-1 basis-[30%] flex-col items-center gap-1 rounded-2xl border px-1 py-4 text-white transition active:scale-95 {CATEGORY_COLORS[
 				type.category
 			]} {live ? 'ring-2 ring-white/80 ring-inset' : ''}"

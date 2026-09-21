@@ -94,9 +94,10 @@ describe('summariseDays', () => {
 			id: occurredAt,
 			type_id: 'walk',
 			occurred_at: occurredAt,
+			ended_at: null,
 			details: {},
 			note: null,
-			type: icon === null ? null : { label: 'Promenad', icon }
+			type: icon === null ? null : { label: 'Promenad', icon, category: 'routine' }
 		};
 	}
 

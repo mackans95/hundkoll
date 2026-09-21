@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
+	import { absenceText, isAbsence } from '$lib/events/absence';
 	import { fieldsFor } from '$lib/events/fields';
 	import { detailSummary } from '$lib/events/summary';
 	import * as format from '$lib/format';
@@ -48,8 +49,17 @@
 
 	const label = $derived(event.type?.label ?? event.type_id);
 	const fields = $derived(fieldsFor(event.type_id));
-	const summary = $derived(detailSummary(event.type_id, event.details));
+	const spans = $derived(isAbsence(event.type?.category));
+	// An absence's span comes first: it is the whole of what the row says.
+	const summary = $derived(
+		[spans ? absenceText(event) : '', detailSummary(event.type_id, event.details)]
+			.filter(Boolean)
+			.join(locale.activities.summary.separator)
+	);
 	const occurredLocal = $derived(time.stockholmForInput(new Date(event.occurred_at)));
+	const endedLocal = $derived(
+		event.ended_at ? time.stockholmForInput(new Date(event.ended_at)) : ''
+	);
 	const nowLocal = time.stockholmNowForInput();
 
 	/** Closes without leaving the page, but stays a real link without JS. */
@@ -101,6 +111,22 @@
 					class="rounded-lg border-edge-strong"
 				/>
 			</label>
+
+			{#if spans}
+				<!-- Always posted for an absence, empty included: clearing it
+				     reopens the period, which is how a mistaken Hemma igen is undone. -->
+				<label class="flex flex-col gap-1">
+					<span class="text-sm font-medium text-ink-label">{locale.log.dialog.endTime}</span>
+					<input
+						type="datetime-local"
+						name="ended_at"
+						value={endedLocal}
+						max={nowLocal}
+						class="rounded-lg border-edge-strong"
+					/>
+					<span class="text-xs text-ink-muted">{locale.log.dialog.endHelp}</span>
+				</label>
+			{/if}
 
 			<DetailFields
 				{fields}

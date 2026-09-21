@@ -5,6 +5,9 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// The absence type's own label, so the banner and badges follow a rename.
+	const awayLabel = $derived(data.away ? (data.away.type?.label ?? data.away.type_id) : null);
 </script>
 
 <svelte:head><title>{locale.app.pageTitle(locale.status.title)}</title></svelte:head>
@@ -18,14 +21,24 @@
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.status.loadFailed}</p>
 	{/if}
 
+	{#if data.away && awayLabel}
+		<p class="rounded-lg bg-surface-hover p-4 text-ink-soft">
+			<span aria-hidden="true">{data.away.type?.icon}</span>
+			{locale.status.awayBanner(awayLabel, format.eventTime(new Date(data.away.occurred_at)))}
+		</p>
+	{/if}
+
 	<section class="flex flex-col gap-2">
 		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
 			{locale.status.dailyHeading}
 		</h2>
+		<!-- Only these pause: a nail trim due in twelve days does not care who
+		     is holding the lead. -->
 		{#each data.daily as row (row.type_id)}
 			<StatusCard
 				{row}
 				now={data.now}
+				pausedBy={awayLabel}
 			/>
 		{/each}
 	</section>

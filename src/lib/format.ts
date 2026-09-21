@@ -3,6 +3,7 @@
 // 20–60x what formatting with it does.
 
 import * as locale from '$lib/locale';
+import { countedFrom } from '$lib/status/schedule';
 import * as time from '$lib/time';
 import type { StatusRow } from '$lib/types/domain';
 
@@ -181,11 +182,15 @@ export function intervalText(row: StatusRow) {
 			return row.interval === null ? null : locale.status.everyNthDay(row.interval);
 		case 'hours':
 			return row.interval === null ? null : locale.status.everyNthHour(row.interval);
-		case 'average':
-			return row.due_at && row.last_at
+		case 'average': {
+			// The average is not stored; it is the gap the view added to whatever
+			// due_at counts from — which is the return after an absence, not last_at.
+			const from = countedFrom(row);
+			return row.due_at && from
 				? locale.status.averageInterval(
-						minutesText((new Date(row.due_at).getTime() - new Date(row.last_at).getTime()) / 60_000)
+						minutesText((new Date(row.due_at).getTime() - new Date(from).getTime()) / 60_000)
 					)
 				: null;
+		}
 	}
 }

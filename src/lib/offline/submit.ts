@@ -4,6 +4,7 @@
 // duplicate the event; see queue.svelte.ts.
 
 import type { SubmitFunction } from '@sveltejs/kit';
+import { parseEnd } from '$lib/events/absence';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
 import type { EventType } from '$lib/types/domain';
@@ -39,6 +40,12 @@ export async function queueLog(
 	const parsed = parseDetails(data, type.id);
 	if (!parsed.ok) {
 		return { ok: false, message: detailsMessage(parsed) };
+	}
+	// The same check the server makes on an absence's end, for the same reason
+	// the details are parsed here: a row the server would refuse is not queued.
+	const end = parseEnd(data, occurred);
+	if (!end.ok) {
+		return { ok: false, message: end.message };
 	}
 	const note = (fields.note ?? '').trim();
 
