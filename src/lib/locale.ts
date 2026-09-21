@@ -105,6 +105,14 @@ export const status = {
 	loadFailed: 'Kunde inte läsa statusen. Försök igen om en stund.',
 	noIntervals: 'Inga aktiviteter har något intervall. Sätt intervall under Inställningar.',
 	lastLoggedHeading: 'Senast loggat',
+	dailyHeading: 'Dagligen',
+	intervalHeading: 'Återkommande',
+	everyNthHour: (hours: number) => `var ${hours}:e timme` as const,
+	averageInterval: (duration: string) => `snitt ${duration}` as const,
+	/** A daily type once the Stockholm day has turned. Names no day on purpose:
+	 * it shows at 01:20 and at 07:00 alike. */
+	awaitingNewDay: 'väntar på ny dag',
+	noAverageYet: 'inget snitt ännu',
 	neverLogged: 'Aldrig loggat',
 	/** In the compact list, where the card's fuller wording would not fit. */
 	never: 'aldrig',
@@ -119,7 +127,11 @@ export const settings = {
 	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra intervall.',
 	saved: 'Sparat!',
 	intervalsHeading: 'Intervall',
-	intervalsHelp: 'Antal dagar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
+	intervalsHelp:
+		'Antal dagar eller timmar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
+	hours: 'timmar',
+	modeHours: 'Fast intervall',
+	modeAverage: 'Följ snittet',
 	days: 'dagar',
 	save: 'Spara',
 	logout: 'Logga ut',
@@ -154,7 +166,8 @@ export const errors = {
 	/** A reveal was ticked with none of its causes picked. */
 	chooseOne: (field: string) => `Välj minst ett alternativ under ${field.toLowerCase()}.` as const,
 	logFailed: 'Kunde inte logga händelsen.',
-	intervalRange: 'Intervall måste vara ett antal dagar (minst 1).',
+	intervalRange: 'Intervall måste vara ett antal dagar eller timmar (minst 1).',
+	modeHoursNoNumber: 'Fast intervall måste ha antal timmar satt.',
 	saveFailed: 'Kunde inte spara.',
 	deleteFailed: 'Kunde inte ta bort.',
 	/** Edited or deleted on the other phone while this sheet was open. */

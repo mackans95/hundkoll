@@ -15,10 +15,15 @@ type Views<T extends keyof Database['public']['Views']> = ViewRow<T>;
 /** Narrow the named columns of a view row to non-null. */
 type NotNull<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 
+export type IntervalType = 'days' | 'hours' | 'average';
+
 export type EventCategory = 'routine' | 'care' | 'health' | 'other';
 
 /** A tracked activity: the catalogue row that drives every screen. */
-export type EventType = Omit<Tables<'event_types'>, 'category'> & { category: EventCategory };
+export type EventType = Omit<Tables<'event_types'>, 'category' | 'interval_type'> & {
+	category: EventCategory;
+	interval_type: IntervalType;
+};
 
 /** `details` is jsonb; each type's keys are described by DETAIL_FIELDS. */
 export type EventDetails = Record<string, unknown>;
@@ -35,8 +40,8 @@ export type EventInsert = Database['public']['Tables']['events']['Insert'];
 /** One row of the Status screen: last done and next due for an activity. */
 export type StatusRow = Omit<
 	NotNull<Views<'dog_care_status'>, 'dog_id' | 'type_id' | 'label' | 'sort_order'>,
-	'category'
-> & { category: EventCategory };
+	'category' | 'interval_type'
+> & { category: EventCategory; interval_type: IntervalType };
 
 /**
  * The generic view rows, narrowed. The views are per type and per detail field

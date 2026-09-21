@@ -1,6 +1,7 @@
 import * as locale from '$lib/locale';
-import type { EventCategory, EventType, StatusRow, ViewRow } from '$lib/types/domain';
+import type { EventCategory, EventType, StatusRow, ViewRow, IntervalType } from '$lib/types/domain';
 import type { Db } from './db';
+import { isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
 
 /**
  * Lists the activity catalogue in display order — the rows that drive the log
@@ -16,7 +17,7 @@ import type { Db } from './db';
 export async function listEventTypes(db: Db): Promise<EventType[] | null> {
 	const { data, error } = await db
 		.from('event_types')
-		.select('id, label, category, icon, interval_days, sort_order')
+		.select('id, label, category, icon, interval, interval_type, sort_order')
 		.order('sort_order');
 
 	if (error) {
@@ -24,7 +25,11 @@ export async function listEventTypes(db: Db): Promise<EventType[] | null> {
 		return null;
 	}
 
-	return (data ?? []).map((row) => ({ ...row, category: row.category as EventCategory }));
+	return (data ?? []).map((row) => ({
+		...row,
+		category: row.category as EventCategory,
+		interval_type: row.interval_type as IntervalType
+	}));
 }
 
 /**
@@ -41,7 +46,8 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 		label: row.label ?? row.type_id,
 		category: (row.category ?? 'routine') as EventCategory,
 		icon: row.icon,
-		interval_days: row.interval_days,
+		interval: row.interval,
+		interval_type: (row.interval_type ?? 'days') as IntervalType,
 		last_at: row.last_at,
 		due_at: row.due_at,
 		sort_order: row.sort_order ?? 0
@@ -49,13 +55,13 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 }
 
 /**
- * Last done and next due per activity, split for the Status screen: timer
- * cards for the types with an expected interval, a plain "last done" list
- * for the rest.
+ * Last done and next due per activity, split for the Status screen:
+ * daily cards on top, timer cards for the types with an expected interval,
+ * a plain "last done" list for the rest.
  */
 export async function careStatus(
 	db: Db
-): Promise<{ timed: StatusRow[]; untimed: StatusRow[] } | null> {
+): Promise<{ daily: StatusRow[]; timed: StatusRow[]; untimed: StatusRow[] } | null> {
 	const { data, error } = await db.from('dog_care_status').select('*').order('sort_order');
 
 	// Null for a failed read, as everywhere else: a dog with nothing tracked and
@@ -68,8 +74,9 @@ export async function careStatus(
 	const rows = (data ?? []).map(toStatusRow).filter((row): row is StatusRow => row !== null);
 
 	return {
-		timed: rows.filter((row) => row.interval_days !== null),
-		untimed: rows.filter((row) => row.interval_days === null)
+		daily: rows.filter((row) => isScheduled(row) && isDaily(row)),
+		timed: rows.filter((row) => isScheduled(row) && !isDaily(row)),
+		untimed: rows.filter((row) => !isScheduled(row))
 	};
 }
 
@@ -78,21 +85,22 @@ export async function careStatus(
  * untouched. Returns a Swedish error message, or null when all of them stuck.
  */
 export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
-	const { data: types } = await db.from('event_types').select('id, interval_days');
+	const { data: types } = await db.from('event_types').select('id, interval, interval_type');
 
-	for (const type of types ?? []) {
-		const raw = String(form.get(`interval_${type.id}`) ?? '').trim();
-		const value = raw === '' ? null : parseInt(raw, 10);
-		if (value !== null && (!Number.isFinite(value) || value < 1)) {
-			return locale.errors.intervalRange;
-		}
-		if (value === type.interval_days) {
-			continue;
-		}
-		const { error } = await db
-			.from('event_types')
-			.update({ interval_days: value })
-			.eq('id', type.id);
+	const plan = planIntervalChanges(
+		(types ?? []).map((row) => ({
+			...row,
+			interval_type: row.interval_type as IntervalType
+		})),
+		form
+	);
+
+	if ('error' in plan) {
+		return plan.error;
+	}
+
+	for (const { id, patch } of plan.changes) {
+		const { error } = await db.from('event_types').update(patch).eq('id', id);
 		if (error) {
 			console.error('interval update failed:', error.code, error.message);
 			return locale.errors.saveFailed;

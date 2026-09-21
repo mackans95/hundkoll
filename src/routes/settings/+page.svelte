@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import * as locale from '$lib/locale';
+	import { isDaily } from '$lib/status/schedule';
 	import { setTheme, theme, type ThemeChoice } from '$lib/theme.svelte';
 	import type { ActionData, PageData } from './$types';
+	import IntervalSection from '$lib/components/settings/IntervalSection.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -11,6 +13,9 @@
 		{ value: 'light', label: locale.settings.theme.light },
 		{ value: 'dark', label: locale.settings.theme.dark }
 	];
+
+	const daily = $derived(data.types.filter(isDaily));
+	const recurring = $derived(data.types.filter((type) => !isDaily(type)));
 </script>
 
 <svelte:head><title>{locale.app.pageTitle(locale.settings.title)}</title></svelte:head>
@@ -41,24 +46,14 @@
 			use:enhance
 			class="flex flex-col gap-2"
 		>
-			{#each data.types as type (type.id)}
-				<label
-					class="flex items-center justify-between gap-3 rounded-2xl border border-edge bg-surface-raised px-4 py-3"
-				>
-					<span class="font-medium">{type.icon} {type.label}</span>
-					<span class="flex items-center gap-2">
-						<input
-							type="number"
-							name="interval_{type.id}"
-							value={type.interval_days ?? ''}
-							min="1"
-							inputmode="numeric"
-							class="w-20 rounded-lg border-edge-strong text-right"
-						/>
-						<span class="text-sm text-ink-muted">{locale.settings.days}</span>
-					</span>
-				</label>
-			{/each}
+			<IntervalSection
+				kind="daily"
+				types={daily}
+			/>
+			<IntervalSection
+				kind="recurring"
+				types={recurring}
+			/>
 			<button
 				type="submit"
 				class="mt-2 btn btn-primary">{locale.settings.save}</button

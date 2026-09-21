@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
+	import { awaitingNewDay, isDaily } from '$lib/status/schedule';
 	import type { StatusRow } from '$lib/types/domain';
 
 	let { row, now }: { row: StatusRow; now: Date } = $props();
@@ -12,11 +13,26 @@
 	 * last week before it is due, green while there is still time.
 	 */
 	const badge = $derived.by((): Badge => {
-		const AMBER_WINDOW_MS = 7 * 86_400_000;
+		if (awaitingNewDay(row, now)) {
+			return {
+				text: locale.status.awaitingNewDay,
+				classes: 'bg-surface-hover text-ink-soft'
+			};
+		}
 
-		if (!row.due_at) {
+		const AMBER_WINDOW_MS = isDaily(row) ? 30 * 60_000 : 7 * 86_400_000;
+
+		if (!row.last_at) {
 			return { text: locale.status.neverLogged, classes: 'bg-surface-hover text-ink-soft' };
 		}
+
+		if (!row.due_at) {
+			return {
+				text: locale.status.noAverageYet,
+				classes: 'bg-surface-hover text-ink-soft'
+			};
+		}
+
 		const due = new Date(row.due_at);
 		const remaining = due.getTime() - now.getTime();
 		if (remaining < 0) {
@@ -37,8 +53,7 @@
 	/** The line under the label, from whichever of last-done and interval is known. */
 	const detail = $derived.by(() => {
 		const last = row.last_at ? format.swedishRelative(new Date(row.last_at), now) : null;
-		const interval =
-			row.interval_days === null ? null : locale.status.everyNthDay(row.interval_days);
+		const interval = format.intervalText(row);
 
 		if (last && interval) {
 			return locale.status.lastAndInterval(last, interval);

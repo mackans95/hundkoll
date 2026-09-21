@@ -34,7 +34,10 @@ Flags (anything missing is prompted for):
   --id <walk>                 English snake_case id
   --icon <🐾>                 emoji for the tile
   --category <other>          routine | care | health | other (default other)
-  --interval <days>           expected days between, empty/none for no schedule
+  --interval <n>              expected days or hours between, empty/none for no schedule
+  --interval-unit <unit>      days | hours | average (default days). hours or average
+                              makes the type daily: top of Status, a mode selector in
+                              Settings; average follows the dog's own 30-day mean
   --sort-order <n>            grid position (default: after everything)
   --field "name=claw_len;label=Klolängd;input=number;step=0.1;unit=mm;required"
                               repeatable; input is number | checkbox | count | reveal
@@ -98,6 +101,7 @@ const { values: flags } = parseArgs({
 		icon: { type: 'string' },
 		category: { type: 'string' },
 		interval: { type: 'string' },
+		'interval-unit': { type: 'string', default: 'days' },
 		'sort-order': { type: 'string' },
 		field: { type: 'string', multiple: true },
 		stats: { type: 'string' },
@@ -134,7 +138,16 @@ const label = await ask(flags.label, 'Swedish name (the log-button label)');
 const id = await ask(flags.id, 'English id (snake_case)');
 const icon = await ask(flags.icon, 'Icon (emoji)');
 const category = await ask(flags.category, 'Category (routine/care/health/other)', 'other');
-const intervalRaw = await ask(flags.interval, 'Interval in days (empty for none)');
+const intervalUnit = await ask(
+	flags['interval-unit'],
+	'Interval unit (days/hours/average)',
+	'days'
+);
+
+if (intervalUnit !== 'average' && intervalUnit !== 'hours' && intervalUnit !== 'days') {
+	console.error(`  unknown metric '${intervalUnit}' — average, hours or days.`);
+}
+const intervalRaw = await ask(flags.interval, 'Interval in days/hours (empty for none)');
 
 /**
  * One field, prompted for. Returns null on an empty name, which ends the loop.
@@ -278,7 +291,8 @@ const spec: EventSpec = {
 	label,
 	icon,
 	category: category as EventSpec['category'],
-	intervalDays: intervalRaw && intervalRaw !== 'none' ? Number(intervalRaw) : null,
+	interval: intervalRaw && intervalRaw !== 'none' ? Number(intervalRaw) : null,
+	intervalType: intervalUnit as 'days' | 'hours' | 'average',
 	sortOrder,
 	fields,
 	stats

@@ -7,6 +7,7 @@ export const load: PageServerLoad = async ({ setHeaders, locals: { supabase } })
 	readsFailed(setHeaders, status);
 
 	return {
+		daily: status?.daily ?? [],
 		timed: status?.timed ?? [],
 		untimed: status?.untimed ?? [],
 		// A dog with nothing tracked and an unreachable database look identical

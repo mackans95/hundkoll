@@ -55,7 +55,8 @@ export type EventSpec = {
 	label: string;
 	icon: string;
 	category: 'routine' | 'care' | 'health' | 'other';
-	intervalDays: number | null;
+	interval: number | null;
+	intervalType: 'days' | 'hours' | 'average';
 	sortOrder: number;
 	fields: FieldSpec[];
 	stats: StatsSpec;
@@ -117,11 +118,11 @@ export function validateSpec(spec: EventSpec, existingIds: string[]): string[] {
 	if (!spec.icon.trim()) {
 		errors.push('icon must not be empty.');
 	}
-	if (
-		spec.intervalDays !== null &&
-		(!Number.isInteger(spec.intervalDays) || spec.intervalDays < 1)
-	) {
-		errors.push('interval must be a whole number of days (at least 1), or none.');
+	if (spec.interval !== null && (!Number.isInteger(spec.interval) || spec.interval < 1)) {
+		errors.push('interval must be a whole number of days or hours (at least 1), or none.');
+	}
+	if (spec.intervalType === 'hours' && spec.interval === null) {
+		errors.push('interval cannot be null when unit is hours.');
 	}
 	if (!Number.isInteger(spec.sortOrder)) {
 		errors.push('sort order must be a whole number.');
@@ -324,10 +325,10 @@ export function renderTemplate(template: string, tokens: Record<string, string>)
 
 /** The one insert the type needs; everything else is optional on top. */
 function migrationSql(spec: EventSpec): string {
-	const interval = spec.intervalDays === null ? 'null' : String(spec.intervalDays);
+	const interval = spec.interval === null ? 'null' : String(spec.interval);
 	return (
-		`insert into event_types (id, label, category, interval_days, icon, sort_order)\n` +
-		`values ('${spec.id}', '${sqlString(spec.label)}', '${spec.category}', ${interval}, ` +
+		`insert into event_types (id, label, category, interval, interval_type, icon, sort_order)\n` +
+		`values ('${spec.id}', '${sqlString(spec.label)}', '${spec.category}', ${interval}, '${spec.intervalType}', ` +
 		`'${sqlString(spec.icon)}', ${spec.sortOrder});\n`
 	);
 }
@@ -463,6 +464,12 @@ export function generate(
 		path: `supabase/migrations/${stamp}_add_${spec.id}_event_type.sql`,
 		content: migrationSql(spec)
 	});
+
+	if (spec.intervalType !== 'days') {
+		notes.push(
+			'This type is daily: it appears under Dagligen on Status and gets a mode selector in Settings.'
+		);
+	}
 
 	if (spec.fields.length > 0) {
 		edits.push({
