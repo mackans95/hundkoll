@@ -71,7 +71,8 @@ const fixture: EventSpec = {
 	label: 'Klokoll',
 	icon: '✂️',
 	category: 'other',
-	intervalDays: 21,
+	interval: 21,
+	intervalType: 'days',
 	sortOrder: 100,
 	fields: [
 		{ name: 'claw_len', label: 'Klolängd', input: 'number', step: '0.1', unit: 'mm' },
@@ -107,6 +108,17 @@ describe('validateSpec', () => {
 		expect(
 			validateSpec({ ...fixture, fields: [{ name: 'pee_count', label: 'x', input: 'count' }] }, [])
 		).not.toEqual([]);
+	});
+
+	// The same rule Settings enforces: hours with no number is not a schedule.
+	// Average needs no number, and days with none is "no schedule", as before.
+	it('requires a number when the unit is hours, and only then', () => {
+		const hoursNoNumber = validateSpec({ ...fixture, interval: null, intervalType: 'hours' }, []);
+		expect(hoursNoNumber).not.toEqual([]);
+		expect(hoursNoNumber.some((error) => error.includes('hours'))).toBe(true);
+
+		expect(validateSpec({ ...fixture, interval: null, intervalType: 'average' }, [])).toEqual([]);
+		expect(validateSpec({ ...fixture, interval: null, intervalType: 'days' }, [])).toEqual([]);
 	});
 
 	it('requires a unit on number fields, since the summary appends it', () => {
@@ -295,9 +307,25 @@ describe('generate', () => {
 			'supabase/migrations/20260820120000_add_nail_check_event_type.sql'
 		);
 		expect(migration?.content).toBe(
-			'insert into event_types (id, label, category, interval_days, icon, sort_order)\n' +
-				"values ('nail_check', 'Klokoll', 'other', 21, '✂️', 100);\n"
+			'insert into event_types (id, label, category, interval, interval_type, icon, sort_order)\n' +
+				"values ('nail_check', 'Klokoll', 'other', 21, 'days', '✂️', 100);\n"
 		);
+	});
+
+	// A daily type is catalogue data, set by migration — so the generator has to
+	// be able to say it, or the next hourly type is a hand-edit.
+	it('writes the unit, so a generated type can be daily', () => {
+		const hourly = generate(
+			{ ...fixture, interval: 8, intervalType: 'hours' },
+			templates,
+			'20260820120000',
+			LOCALE_SOURCE
+		);
+		const migration = hourly.creates.find((create) => create.path.endsWith('.sql'));
+		expect(migration?.content).toContain("'other', 8, 'hours', '✂️', 100);");
+		// And says so on the way out: it lands under Dagligen and gets a mode
+		// selector in Settings, which is not obvious from a one-line insert.
+		expect(hourly.notes.some((note) => /Dagligen|daily/i.test(note))).toBe(true);
 	});
 
 	it('declares each field with a summarize matching its input type', () => {

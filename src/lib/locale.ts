@@ -109,7 +109,9 @@ export const status = {
 	intervalHeading: 'Återkommande',
 	everyNthHour: (hours: number) => `var ${hours}:e timme` as const,
 	averageInterval: (duration: string) => `snitt ${duration}` as const,
-	awaitingNewDay: 'väntar på ny day',
+	/** A daily type once the Stockholm day has turned. Names no day on purpose:
+	 * it shows at 01:20 and at 07:00 alike. */
+	awaitingNewDay: 'väntar på ny dag',
 	noAverageYet: 'inget snitt ännu',
 	neverLogged: 'Aldrig loggat',
 	/** In the compact list, where the card's fuller wording would not fit. */

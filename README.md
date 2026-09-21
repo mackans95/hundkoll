@@ -10,12 +10,12 @@ The question the app exists to answer is _"when was X last done, and is it overd
 
 Four screens, as a bottom tab bar:
 
-| Screen            | What it does                                                                                                                |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. |
-| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red.                         |
-| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                   |
-| **Inställningar** | The interval for each activity, editable. Blank means "no schedule". Also logout.                                           |
+| Screen            | What it does                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note.                                                          |
+| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average. |
+| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                                                                            |
+| **Inställningar** | The interval for each activity, editable. Daily ones choose between a fixed number of hours and following the average. Blank means "no schedule". Also logout.                       |
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
 than a fifth tab — the tab bar is for daily screens, and history is an occasional lookup.
@@ -56,15 +56,16 @@ anywhere in this project.
 
 Other commands:
 
-| Command             | Purpose                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `npm run check`     | `svelte-check` + the script projects — run before committing                        |
-| `npm test`          | vitest over the pure modules in `tests/`                                            |
-| `npm run format`    | Prettier                                                                            |
-| `npm run build`     | production build                                                                    |
-| `npm run new-event` | generate a new tracked activity — see [Adding an event type](#adding-an-event-type) |
-| `npm run db-push`   | apply pending migrations to **production** — only after a merge                     |
-| `npm run gen-types` | regenerate `src/lib/types/database.ts` from the linked (production) schema          |
+| Command                            | Purpose                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `npm run check`                    | `svelte-check` + the script projects — run before committing                        |
+| `npm test`                         | vitest over the pure modules in `tests/`                                            |
+| `npm run format`                   | Prettier                                                                            |
+| `npm run autofix -- <file.svelte>` | svelte-autofixer on a component — run on every one you changed                      |
+| `npm run build`                    | production build                                                                    |
+| `npm run new-event`                | generate a new tracked activity — see [Adding an event type](#adding-an-event-type) |
+| `npm run db-push`                  | apply pending migrations to **production** — only after a merge                     |
+| `npm run gen-types`                | regenerate `src/lib/types/database.ts` from the linked (production) schema          |
 
 And for the local database, see [Working against a local database](#working-against-a-local-database):
 
@@ -128,10 +129,20 @@ Two things the local stack does deliberately, both so that it does not lie:
 > fails with `42501 permission denied` — locally, which is the point.
 
 When a migration is what you are testing, `npm run gen-types` is the one command that
-still points at production: use `--local` while the migration is unmerged, or the
-generated types will not know about it. One catch — `--local` output omits the
-`__InternalSupabase` block that pins `PostgrestVersion`, so put it back by hand and keep
-the diff purely additive.
+still points at production, and the generated types will not know about your migration.
+Read the local database instead — the CLI directly, not the npm script, because
+`npm run gen-types --local` hands `--local` to npm rather than to the command and runs the
+production one anyway:
+
+```sh
+npx supabase gen types typescript --local > src/lib/types/database.ts
+```
+
+Two catches. `--local` output omits the `__InternalSupabase` block that pins
+`PostgrestVersion` — put it back by hand from `git show HEAD:src/lib/types/database.ts`,
+so the diff stays purely additive. And the output is not in the repo's formatting, so
+`npm run format` before `npm run check`. If `check` comes back green immediately after a
+schema change, suspect the types came from the wrong database.
 
 Also worth knowing when writing a migration by hand: **stamp its filename in UTC**, the
 way `npm run new-event` does. A stamp taken from the clock on the wall is an hour or two
@@ -277,7 +288,7 @@ grain (a chart's columns) and window grain (a headline number).
 
 | View                   | Answers                                                                                                     |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `dog_care_status`      | last done and next due per activity — powers the Status screen                                              |
+| `dog_care_status`      | last done and next due per activity, in days, hours or from the 30-day average — powers the Status screen   |
 | `stats_type_buckets`   | per type per Stockholm day / ISO week / month: how many, and the mean gap                                   |
 | `stats_detail_buckets` | the same buckets per detail field: answered, happened, the sum and the mean                                 |
 | `stats_type_windows`   | per type per trailing window (30/84/180 days): the count, the days tracked, and the per-day/week/month rate |
@@ -313,6 +324,44 @@ The second half has exactly three members, and each is there for that reason:
 count), and `shareTile`'s missing-row rule (a never-logged accident is 100 % fine).
 Anything else computing outside SQL is drift, not a fourth member.
 
+### Intervals
+
+An activity's schedule is **one number and a unit**, both on its `event_types` row:
+`interval` and `interval_type`. The unit is one of three:
+
+| `interval_type` | The number means                                                                                                                                                                 | Where it shows on Status |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `days`          | every N days — a nail trim, a bath                                                                                                                                               | Återkommande             |
+| `hours`         | every N hours — a walk, a meal                                                                                                                                                   | Dagligen                 |
+| `average`       | the number is ignored; the schedule is the dog's own mean gap between events of that type over the last 30 days, the same figure the Statistik card shows as "mellan promenader" | Dagligen                 |
+
+**A type is daily when its unit is not `days`.** That one fact decides the section on Status,
+the mode selector in Settings, and the end-of-day rule below. Which types are daily is
+catalogue data — walks and meals, set by `20260916113222_daily_types.sql` — not something
+Settings can change: Settings moves a daily type between `hours` and `average` and sets its
+number, and that is all the column grant allows.
+
+`average` stores nothing but the word. The view resolves it at read time by joining the
+30-day window row for that dog and type, so it follows the dog as her rhythm changes and
+there is nothing to recalculate. A dog with no average yet — too few events — has no
+schedule, and the card says "inget snitt ännu" rather than guessing. The number column
+keeps whatever hours were last typed, so switching back from `average` remembers them.
+
+`dog_care_status` computes `due_at` for all three units in one `case`, which is why it was
+dropped and recreated rather than `create or replace`d — its column names had to change.
+
+Two rules the Status card applies to daily types, in `$lib/status/schedule.ts`:
+
+- **The day ends.** The average deliberately excludes the overnight gap (see the rules
+  above), so a 23:00 walk with a 2.3-hour mean is "due" at 01:20 and would be red until
+  morning. Instead, once the Stockholm day has turned since the last event, the card says
+  "väntar på ny dag" — neutral — until the next event of that type is logged. Two states
+  only, on purpose: nobody checks Status before the first walk of the morning, so 01:20 and
+  07:00 read the same. The clock for this is the `now` the page passes down, not the
+  database's, so server render and hydration agree.
+- **"Soon" is thirty minutes**, not a week. The amber window was chosen for intervals
+  measured in weeks; on a four-hour interval it would be amber from the moment of logging.
+
 ### Migrations
 
 Schema lives in `supabase/migrations/` and is applied with `npm run db-push`.
@@ -338,13 +387,16 @@ merge-then-`db-push` path. Doing it by hand is three steps, of which two are opt
    and the offline queue all render from the `event_types` row.
 
    ```sql
-   insert into event_types (id, label, category, interval_days, icon, sort_order)
-   values ('nail_check', 'Klokoll', 'other', 21, '✂️', 100);
+   insert into event_types (id, label, category, interval, interval_type, icon, sort_order)
+   values ('nail_check', 'Klokoll', 'other', 21, 'days', '✂️', 100);
    ```
 
    `category` decides the tile color (`other` is the default for everything new);
-   `interval_days` is null for types without a schedule; the highest `sort_order`
-   lands last in the grid.
+   `interval` is null for types without a schedule; the highest `sort_order` lands last
+   in the grid. `interval_type` says what the number means — `days` for almost everything,
+   `hours` or `average` for a **daily** type, which is what puts it under Dagligen on
+   Status and gives it a mode selector in Settings. See [Intervals](#intervals) — and note
+   that daily-ness is decided here, in a migration, not in the app.
 
 2. **Detail fields** — only if the type collects data: one entry in
    `src/lib/events/fields.ts`, labels in `locale.ts`. A field declares its input
@@ -487,8 +539,10 @@ than trusting the cookie, and guards every route except `/login`.
 RLS decides which rows; **grants decide which verbs**, and both walls are needed because
 the publishable key is public. A row is visible and writable only if the user is a member
 of the owning household. `event_types` is readable by anyone and writable only in
-`interval_days`, via a column grant, so the Settings screen can adjust schedules without
-being able to rewrite the catalogue.
+`interval` and `interval_type`, via a column grant, so the Settings screen can adjust
+schedules — a number, and for daily types whether it means hours or "follow the average"
+— without being able to rewrite the catalogue. Which types are daily is not among the
+writable columns on purpose: that is catalogue data, set by migration.
 
 The verbs are stated in `20260827140000_explicit_grants.sql`, and the list is short:
 `authenticated` may read the five tables and five views, insert and delete an event, and

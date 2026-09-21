@@ -4,10 +4,11 @@
 > specifically walks and feedings … either a time in hours I set myself, OR that the
 > interval would take from the average we are already showing in the stats page."
 
-> **Status: in progress.** Written as guidelines rather than instructions, on purpose:
-> Marcus is building this one, with Claude as coach. Files and lines are for him to find;
-> this records the goal, the constraints that are already in the codebase, and the
-> questions worth answering before the first line of code.
+> **Status: ✅ Built** — PR #46, written by Marcus with Claude as coach. Two migrations,
+> no new dependencies. This plan was written as guidelines rather than instructions, on
+> purpose: the goal, the constraints already in the codebase, and the questions worth
+> answering before the first line of code. The answers under each question are his, as
+> he reached them; the "Verified" section is what he saw on screen.
 
 ## The goal
 
@@ -83,11 +84,33 @@ enough — and the code will mostly follow.
    has no meaningful mean.
    - Missing average: covered above - not set up.
    - End of day is **Rule B**: when today's Stockholm day is later than the Stockholm day of `last_at`, the card shows a "waiting for the new day" state instead of due/overdue. Neutral color. Wording must not name a day, since it shows at 01:20 and at 07:00 alike. It ends when the next event of that type is logged. Two states only - no separate morning state.
-   - **Still open**: what the amber "soon" window is for a type measured in hours. Current window is seven days.
+   - The amber "soon" window is **thirty minutes** for daily types, seven days for the rest.
+     On a four-hour interval the old week-long window would have been amber from the
+     moment of logging.
+   - Rule B lives in TypeScript, not the view: the page already passes `now` down so
+     server render and hydration agree, a second clock in the view would be a second
+     source of truth, and a pure function gets a vitest with a 23:00 walk and a 01:20
+     clock — the summer case where both instants share a UTC date and not a Stockholm one.
 5. **What do the two headings say, in Swedish?** Check how the existing Status and
    Settings strings are phrased so the new ones sound like they belong.
+   - **Dagligen** on top, **Återkommande** below; the existing "Senast loggat" list stays
+     third. Settings reuses the same two words for its two groups, so the screens share one
+     vocabulary. The mode selector reads **Fast intervall** / **Följ snittet**; the badge
+     states are **väntar på ny dag** and **inget snitt ännu**.
 6. **What does the Settings row look like for a daily type?** Two inputs, a choice and an
    input, something else? Sketch it before building it.
+   - A native `<select>` for the mode, then the same number input, labelled "timmar". The
+     number stays visible and filled in under Följ snittet — it is the remembered fixed
+     value, so switching back is one click.
+   - Daily rows are grouped first and are **two lines by design** — name above, mode and
+     hours below — because a two-line row interleaved with one-line rows read as a layout
+     glitch, and the same difference reads as intentional once the kinds are grouped.
+     Extracted into `IntervalSection.svelte`, which takes the group as a prop and derives
+     heading, unit and widths once rather than asking six times in the markup.
+   - Only daily rows post a `mode_` field, and only daily rows _read_ one — a crafted
+     request cannot turn a nail trim hourly. Hours with no number is refused in the form
+     and again in `planIntervalChanges`, which is pure so the rules are tested without a
+     database.
 
 ## A suggested order of work
 
@@ -116,3 +139,35 @@ Not a script — a sequence where each step is testable before the next.
 - Settings round-trips both modes, and saving with nothing changed writes nothing.
 - `npm run check`, `npm test`, `npm run lint`, svelte-autofixer on changed components, and
   a browser pass over Status and Settings. Migration tested locally; `db-push` after merge.
+
+## Verified
+
+- **The view, before it existed.** The whole migration was run inside a transaction that was
+  rolled back, against the production snapshot: walk at 4 hours → 08:00 + 4 h = 12:00; meal
+  on average → 06:18 + 302 min = 11:20; average with no average (bath), days with no number
+  (accident, weight) and never logged (nail trim) all null. `interval` works unquoted as a
+  column name. Then applied for real and the same query run against the actual view.
+- **The grants.** The recreated view had picked up INSERT, UPDATE, DELETE and TRUNCATE for
+  `authenticated` from the database's defaults — a `revoke all` on the view before the
+  `grant select` left it with SELECT alone, and `anon` with nothing. Column update grants
+  on exactly `interval` and `interval_type`, `authenticated` only.
+- **On screen, with the production snapshot.** Dagligen with Promenad and Matning on top,
+  badges computed from the 30-day average; detail lines "för 4 timmar sedan · snitt 2,3
+  tim". Promenad set to Fast intervall 3 → "var 3:e timme" and the badge moved; back to
+  Följ snittet → "snitt 2,3 tim" with the 3 still in the box; saving untouched wrote
+  nothing; Fast intervall with the number emptied returned the Swedish error and saved
+  nothing.
+- **The generator** writes the seventh value and says so in a note when the type is daily;
+  `--interval-unit` is validated rather than cast.
+- 209 tests, `npm run check` clean, `npm run lint` clean, svelte-autofixer clean on
+  `StatusCard`, `IntervalSection`, `status/+page` and `settings/+page`.
+
+## Not built
+
+- **"Sparat!" after a save that changed nothing.** The action redirects to `?saved`
+  unconditionally. Honest fix: `saveIntervals` reports whether it wrote, and the action
+  drops the flag when it did not. Small; left for a quiet moment.
+- **A daily type in `days`-only Settings.** Settings cannot make a type daily or undo it;
+  that is a migration, by design. If a third daily type ever appears, it is one `update`.
+- **Rounding the average `due_at`.** The average branch yields fractional seconds. Nothing
+  shows seconds, so it does not matter; `date_trunc('minute', …)` if it ever does.
