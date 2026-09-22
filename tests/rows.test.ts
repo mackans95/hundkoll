@@ -171,6 +171,7 @@ describe('statSummary', () => {
 		per_week: 0,
 		per_month: 0,
 		avg_gap_min: null,
+		away_days: 0,
 		...part
 	});
 
@@ -195,7 +196,7 @@ describe('statSummary', () => {
 	it('reads each rate from the window that measured it', () => {
 		const summary = statSummary(
 			[
-				win('walk', 30, { per_day: 4.2, avg_gap_min: 205, days_counted: 27 }),
+				win('walk', 30, { per_day: 4.2, avg_gap_min: 205, days_counted: 27, away_days: 0.5 }),
 				win('meal', 30, { avg_gap_min: 470 }),
 				win('accident', 30, { per_day: 0.3 }),
 				win('accident', 84, { per_week: 1.9 }),
@@ -219,7 +220,9 @@ describe('statSummary', () => {
 			accidents_per_day: 0.3,
 			accidents_per_week: 1.9,
 			accidents_per_month: 7.4,
-			days_counted: 27
+			days_counted: 27,
+			// Read off the same walk row as days_counted: one dog, one window.
+			away_days: 0.5
 		});
 	});
 
@@ -240,7 +243,8 @@ describe('statSummary', () => {
 			accidents_per_day: 0,
 			accidents_per_week: 0,
 			accidents_per_month: 0,
-			days_counted: 3
+			days_counted: 3,
+			away_days: 0
 		});
 	});
 });

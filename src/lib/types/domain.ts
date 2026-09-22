@@ -17,7 +17,11 @@ type NotNull<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]
 
 export type IntervalType = 'days' | 'hours' | 'average';
 
-export type EventCategory = 'routine' | 'care' | 'health' | 'other';
+/**
+ * `absence` is the one category with behaviour of its own: its event has an
+ * end, the views subtract the span, and Status pauses while it is open.
+ */
+export type EventCategory = 'routine' | 'care' | 'health' | 'other' | 'absence';
 
 /** A tracked activity: the catalogue row that drives every screen. */
 export type EventType = Omit<Tables<'event_types'>, 'category' | 'interval_type'> & {
@@ -28,10 +32,16 @@ export type EventType = Omit<Tables<'event_types'>, 'category' | 'interval_type'
 /** `details` is jsonb; each type's keys are described by DETAIL_FIELDS. */
 export type EventDetails = Record<string, unknown>;
 
-/** A logged event as the recent-events list needs it. */
-export type EventRow = Pick<Tables<'events'>, 'id' | 'type_id' | 'occurred_at' | 'note'> & {
+/**
+ * A logged event as the recent-events list needs it. `ended_at` is null for
+ * everything but an absence, and for an absence still going on.
+ */
+export type EventRow = Pick<
+	Tables<'events'>,
+	'id' | 'type_id' | 'occurred_at' | 'ended_at' | 'note'
+> & {
 	details: EventDetails;
-	type: Pick<EventType, 'label' | 'icon'> | null;
+	type: Pick<EventType, 'label' | 'icon' | 'category'> | null;
 };
 
 /** Insert shape for a new event; `id` travels from the client. */
@@ -74,6 +84,8 @@ export type TypeWindowRow = {
 	per_week: number;
 	per_month: number;
 	avg_gap_min: number | null;
+	/** Days spent away inside the window, fractional; the rates divide by days_counted minus this. */
+	away_days: number;
 };
 
 /**
@@ -92,6 +104,7 @@ export type StatSummary = {
 	accidents_per_week: number;
 	accidents_per_month: number;
 	days_counted: number;
+	away_days: number;
 };
 
 /** Per-day counts; the walk and meal charts read different fields. */

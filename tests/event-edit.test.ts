@@ -18,9 +18,10 @@ const walk: EventRow = {
 	id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 	type_id: 'walk',
 	occurred_at: '2026-08-20T10:00:00.000Z',
+	ended_at: null,
 	details: { duration_min: 35, pee: 2, poop: 1 },
 	note: 'regn',
-	type: { label: 'Promenad', icon: '🐾' }
+	type: { label: 'Promenad', icon: '🐾', category: 'routine' }
 };
 
 describe('parseEventEdit', () => {
@@ -95,6 +96,55 @@ describe('parseEventEdit', () => {
 		const parsed = parseEventEdit(form({ occurred_at: '2026-08-20T12:05' }), seconds);
 
 		expect(parsed.ok && parsed.patch.occurred_at).toBe('2026-08-20T10:05:00.000Z');
+	});
+
+	// The end is a column only an absence's form posts, so it is only in the
+	// patch when it was posted — never for a walk.
+	describe('the end of an absence', () => {
+		const away: EventRow = {
+			...walk,
+			type_id: 'away',
+			occurred_at: '2026-09-21T06:15:00.000Z',
+			ended_at: '2026-09-21T14:30:37.000Z',
+			details: {},
+			note: null,
+			type: { label: 'Hundvakt', icon: '🧳', category: 'absence' }
+		};
+
+		it('leaves the column out of a walk’s patch entirely', () => {
+			const parsed = parseEventEdit(form({ occurred_at: '2026-08-20T14:30' }), walk);
+			expect(parsed.ok && 'ended_at' in parsed.patch).toBe(false);
+		});
+
+		it('moves the end, read as Stockholm wall-clock', () => {
+			const parsed = parseEventEdit(
+				form({ occurred_at: '2026-09-21T08:15', ended_at: '2026-09-21T17:00' }),
+				away
+			);
+			expect(parsed.ok && parsed.patch.ended_at).toBe('2026-09-21T15:00:00.000Z');
+		});
+
+		it('keeps the stored seconds when the end’s minute was not touched', () => {
+			const parsed = parseEventEdit(
+				form({ occurred_at: '2026-09-21T08:15', ended_at: '2026-09-21T16:30' }),
+				away
+			);
+			expect(parsed.ok && parsed.patch.ended_at).toBe('2026-09-21T14:30:37.000Z');
+		});
+
+		it('reopens the period when the end is emptied', () => {
+			const parsed = parseEventEdit(form({ occurred_at: '2026-09-21T08:15', ended_at: '' }), away);
+			expect(parsed.ok && parsed.patch.ended_at).toBeNull();
+		});
+
+		it('refuses an end before the moved start', () => {
+			expect(
+				parseEventEdit(
+					form({ occurred_at: '2026-09-21T17:30', ended_at: '2026-09-21T16:30' }),
+					away
+				)
+			).toEqual({ ok: false, message: locale.errors.endBeforeStart });
+		});
 	});
 
 	it('ignores a type_id in the form: an edit cannot change the activity', () => {

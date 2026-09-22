@@ -1,6 +1,7 @@
 import * as locale from '$lib/locale';
 import type { EventCategory, EventType, StatusRow, ViewRow, IntervalType } from '$lib/types/domain';
 import type { Db } from './db';
+import { isAbsence } from '$lib/events/absence';
 import { isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
 
 /**
@@ -50,6 +51,7 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 		interval_type: (row.interval_type ?? 'days') as IntervalType,
 		last_at: row.last_at,
 		due_at: row.due_at,
+		due_from: row.due_from,
 		sort_order: row.sort_order ?? 0
 	};
 }
@@ -71,7 +73,11 @@ export async function careStatus(
 		return null;
 	}
 
-	const rows = (data ?? []).map(toStatusRow).filter((row): row is StatusRow => row !== null);
+	const rows = (data ?? [])
+		.map(toStatusRow)
+		// The absence type has no status of its own on this screen: while it is
+		// open it is the banner, and the daily cards pause.
+		.filter((row): row is StatusRow => row !== null && !isAbsence(row.category));
 
 	return {
 		daily: rows.filter((row) => isScheduled(row) && isDaily(row)),

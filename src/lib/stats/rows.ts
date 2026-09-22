@@ -152,6 +152,7 @@ export function statSummary(
 		accidents_per_day: at('accident', 30)?.per_day ?? 0,
 		accidents_per_week: at('accident', 84)?.per_week ?? 0,
 		accidents_per_month: at('accident', 180)?.per_month ?? 0,
-		days_counted: walk.days_counted
+		days_counted: walk.days_counted,
+		away_days: walk.away_days
 	};
 }

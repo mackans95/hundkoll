@@ -56,6 +56,11 @@ export const log = {
 		/** Over the editable minutes input when a walk ran suspiciously long. */
 		checkDuration: 'Kontrollera längden (minuter) innan du sparar.'
 	},
+	/** The card shown while the dog is with someone else. */
+	away: {
+		since: (time: string) => `Sedan ${time}` as const,
+		returnHome: 'Hemma igen'
+	},
 	/** The sheet that opens when a stored event is tapped. */
 	event: {
 		ariaLabel: (activity: string) => `Ändra ${activity.toLowerCase()}` as const,
@@ -73,6 +78,9 @@ export const log = {
 	dialog: {
 		ariaLabel: (activity: string) => `Logga ${activity.toLowerCase()}` as const,
 		time: 'Tidpunkt',
+		/** The second time field an absence has; optional, since she may still be away. */
+		endTime: 'Hemma igen',
+		endHelp: 'Lämna tomt om hon fortfarande är borta.',
 		note: 'Anteckning',
 		cancel: 'Avbryt',
 		save: 'Spara',
@@ -113,6 +121,10 @@ export const status = {
 	 * it shows at 01:20 and at 07:00 alike. */
 	awaitingNewDay: 'väntar på ny dag',
 	noAverageYet: 'inget snitt ännu',
+	/** Both take the absence type's own label, so renaming it in the catalogue is enough. */
+	awayBanner: (activity: string, since: string) =>
+		`Hos ${activity.toLowerCase()} sedan ${since}` as const,
+	awayBadge: (activity: string) => `hos ${activity.toLowerCase()}` as const,
 	neverLogged: 'Aldrig loggat',
 	/** In the compact list, where the card's fuller wording would not fit. */
 	never: 'aldrig',
@@ -166,6 +178,9 @@ export const errors = {
 	/** A reveal was ticked with none of its causes picked. */
 	chooseOne: (field: string) => `Välj minst ett alternativ under ${field.toLowerCase()}.` as const,
 	logFailed: 'Kunde inte logga händelsen.',
+	endBeforeStart: 'Hemkomsten måste vara efter starten.',
+	/** Hemma igen pressed on an absence the other phone already closed or removed. */
+	alreadyHome: 'Perioden är redan avslutad.',
 	intervalRange: 'Intervall måste vara ett antal dagar eller timmar (minst 1).',
 	modeHoursNoNumber: 'Fast intervall måste ha antal timmar satt.',
 	saveFailed: 'Kunde inte spara.',
@@ -229,6 +244,10 @@ export const activities = {
 		poop: 'bajs',
 		finished: 'åt upp',
 		notFinished: 'åt inte upp',
+		/** An absence with no end yet. */
+		ongoing: 'pågår',
+		/** A finished absence: how long, and when she was back. */
+		until: (duration: string, time: string) => `${duration} · hemma ${time}` as const,
 		separator: ' · ',
 		repeated: (word: string, count: number) => `${word} ×${count}` as const
 	}
@@ -254,7 +273,11 @@ export const stats = {
 		tooltipLabel: 'Biltur'
 	},
 	title: nav.stats,
-	subtitle: (days: number) => `Snitt över de senaste ${days} dagarna.` as const,
+	/** `away` is the days spent with someone else, already written as a number; null when none. */
+	subtitle: (days: number, away: string | null) =>
+		away === null
+			? (`Snitt över de senaste ${days} dagarna.` as const)
+			: (`Snitt över de senaste ${days} dagarna, varav ${away} dagar borta.` as const),
 	// `as const satisfies`: keeps the literal types, and still fails if a
 	// Period has no label.
 	periods: { day: 'Dag', week: 'Vecka', month: 'Månad' } as const satisfies Record<Period, string>,

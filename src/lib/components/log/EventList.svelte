@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { absenceText, isAbsence } from '$lib/events/absence';
 	import { detailSummary } from '$lib/events/summary';
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
@@ -31,9 +32,18 @@
 		showQueued ? offlineQueue.items.filter((item) => !stored.has(item.id)) : []
 	);
 
-	/** The detail line, whether the row came from the queue or the database. */
-	function summarise(typeId: string, details: Record<string, unknown>, note: string | null) {
-		return [detailSummary(typeId, details), note]
+	/**
+	 * The detail line, whether the row came from the queue or the database. A
+	 * stored absence leads with its span; a queued one has not been stored with
+	 * an end yet, so it reads like any other queued row.
+	 */
+	function summarise(
+		typeId: string,
+		details: Record<string, unknown>,
+		note: string | null,
+		span: string | null = null
+	) {
+		return [span, detailSummary(typeId, details), note]
 			.filter(Boolean)
 			.join(locale.activities.summary.separator);
 	}
@@ -85,7 +95,12 @@
 		{/each}
 
 		{#each events as event (event.id)}
-			{@const extra = summarise(event.type_id, event.details, event.note)}
+			{@const extra = summarise(
+				event.type_id,
+				event.details,
+				event.note,
+				isAbsence(event.type?.category) ? absenceText(event) : null
+			)}
 			<li>
 				<!-- A link, so ?event= opens the sheet server-side before
 				     hydration and the row can be sent to the other phone.

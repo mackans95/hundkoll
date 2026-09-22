@@ -10,12 +10,12 @@ The question the app exists to answer is _"when was X last done, and is it overd
 
 Four screens, as a bottom tab bar:
 
-| Screen            | What it does                                                                                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note.                                                          |
-| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average. |
-| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                                                                            |
-| **Inställningar** | The interval for each activity, editable. Daily ones choose between a fixed number of hours and following the average. Blank means "no schedule". Also logout.                       |
+| Screen            | What it does                                                                                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. While the dog is with someone else, a card on top says so, with one button for coming home. |
+| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average; paused while she is away.          |
+| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                                                                                                               |
+| **Inställningar** | The interval for each activity, editable. Daily ones choose between a fixed number of hours and following the average. Blank means "no schedule". Also logout.                                                          |
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
 than a fifth tab — the tab bar is for daily screens, and history is an occasional lookup.
@@ -244,7 +244,10 @@ they came from.
 The insight the schema is built on: **everything logged is the same thing — an event with a
 timestamp.** Walks, meals and nail trims differ only in whether they have an expected
 recurrence and which detail fields they carry. So there is one `events` table with a `jsonb`
-details column, plus an `event_types` catalogue holding the intervals.
+details column, plus an `event_types` catalogue holding the intervals. One event has an end
+as well as a start — an absence, the dog with someone else — and that end is a column,
+`ended_at`, null for everything else and for an absence still going on; see
+[Away mode](#away-mode).
 
 Adding a new tracked activity is therefore a row insert, not a migration.
 
@@ -266,14 +269,18 @@ Current catalogue:
 | `deworming` | Avmaskning    | health   | —        |
 | `vet`       | Veterinär     | health   | —        |
 | `weight`    | Vägning       | health   | —        |
+| `car_ride`  | Biltur        | other    | —        |
+| `away`      | Hundvakt      | absence  | —        |
 
 `details` examples: walk `{"duration_min": 35, "pee": 3, "poop": 1}`, meal
 `{"finished": true}`, weight `{"kg": 12.4}`. Pee and poop are counts; older rows hold
 booleans and are still read correctly.
 
-Categories exist only as tile colors on the log grid: emerald for `routine`, sky for
-`care`, amber for `health`, and slate for `other` — the catch-all every new type lands
-in unless it obviously belongs to one of the first three.
+Categories are tile colors on the log grid: emerald for `routine`, sky for `care`, amber
+for `health`, slate for `other` — the catch-all every new type lands in unless it obviously
+belongs to one of the first three — and rose for `absence`. Two of them also mean
+something to the SQL: `routine` decides when tracking started, and `absence` is the one
+category with behaviour, described under [Away mode](#away-mode).
 
 The generated `src/lib/types/database.ts` is committed, and the Supabase client is
 typed against it — so a query that names a column the schema does not have fails to
@@ -305,8 +312,10 @@ Three rules these views follow, all learned the hard way:
 
 - **Days are Stockholm days.** A 00:30 walk belongs to the day it felt like, not to UTC.
 - **Averages divide by what was actually measured.** Rates divide by days tracked (capped
-  at the window), not by the window length, and "time between" pools only gaps _within_ a
-  day — otherwise the overnight 22:00 → 07:30 stretch dominates every number.
+  at the window), not by the window length, minus the time the dog was away — eight hours
+  with a sitter make that day two thirds of a day. "Time between" pools only gaps _within_
+  a day — otherwise the overnight 22:00 → 07:30 stretch dominates every number — and skips
+  any gap that overlaps an absence, since the sitter's walks were never logged.
 - **"It happened" is one rule in one place.** `detail_happened(jsonb)`: `true` for a
   checkbox or a reveal, above zero for a count. Both detail views call it, and
   `contribution()` in `$lib/stats/detailDays.ts` counts a tooltip by the same rule — so a
@@ -361,6 +370,36 @@ Two rules the Status card applies to daily types, in `$lib/status/schedule.ts`:
   database's, so server render and hydration agree.
 - **"Soon" is thirty minutes**, not a week. The amber window was chosen for intervals
   measured in weeks; on a four-hour interval it would be amber from the moment of logging.
+
+Both rules read `due_from` rather than `last_at`: the instant the view counted `due_at`
+from, which after an absence is the return rather than the last event — see below.
+
+### Away mode
+
+Sometimes someone else has the dog, and nothing that happens in between gets logged. The
+app has one type for that — `away`, Hundvakt, the only row in category `absence` — and the
+category is the fact everything keys on, the way "not `days`" is for daily types:
+
+- **The event has an end.** `events.ended_at`, a column, null while she is still away and
+  for every other type; the database holds the rule that it follows the start. The dialog
+  and the edit sheet show a second time field for this category, left empty to mean "still
+  away". Hemma igen on the log page fills it in with now, as an update straight to the
+  server — coming home means being where there is signal.
+- **The views subtract the span.** `stats_type_windows.away_days` is the time inside the
+  window spent away, in days, and every rate divides by `days_counted` minus it. The gap
+  rule above skips gaps across an absence, which is what keeps "follow the average" from
+  learning that walks are nine hours apart after a weekend.
+- **Status pauses, then counts from the return.** While an absence is open the daily cards
+  say "hos hundvakt" instead of due or overdue; the recurring ones do not care who is
+  holding the lead. `dog_care_status.due_from` is the last event, unless the type is daily
+  and that event predates the latest finished absence — then it is the return, so coming
+  home at 16:00 reads "dags om 2 tim" rather than nine hours overdue. An event logged
+  _during_ the absence (a meal the sitter texted about) still counts from itself.
+- **Logging is never blocked.** Meals fed by the sitter can be logged at the time or after.
+
+Two absences overlapping count once (`range_agg` unions them), and an open one is measured
+up to now. The category is deliberately not offered by `npm run new-event`: its stats card
+would be meaningless for one, and a second absence type is a single insert.
 
 ### Migrations
 
@@ -546,7 +585,8 @@ writable columns on purpose: that is catalogue data, set by migration.
 
 The verbs are stated in `20260827140000_explicit_grants.sql`, and the list is short:
 `authenticated` may read the five tables and five views, insert and delete an event, and
-update three of its columns. Nothing else — `anon` reads `event_types` and nothing more.
+update four of its columns (`ended_at` joined the other three in
+`20260921101744_away_mode.sql`). Nothing else — `anon` reads `event_types` and nothing more.
 Until that migration those grants were inherited rather than asked for, and `anon` in
 production held INSERT, UPDATE, DELETE and TRUNCATE on every table, with RLS as the only
 thing standing in front of them.
@@ -562,6 +602,7 @@ still guards inserts where the author must be the creator. Then:
 ```sql
 revoke update on events from authenticated, anon;
 grant update (occurred_at, details, note) on events to authenticated;
+grant update (ended_at) on events to authenticated;  -- 20260921101744_away_mode.sql
 ```
 
 An edit can change _what happened_, never which row it is, whose dog it is, which activity

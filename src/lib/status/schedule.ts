@@ -17,6 +17,15 @@ export function isDaily(row: Pick<StatusRow, 'interval' | 'interval_type'>): boo
 }
 
 /**
+ * The instant the schedule counts from. Usually the last event; for a daily
+ * type whose last event predates an absence, the return from it — the view
+ * decides which, this only reads it back. Null when nothing was ever logged.
+ */
+export function countedFrom(row: Pick<StatusRow, 'last_at' | 'due_from'>): string | null {
+	return row.due_from ?? row.last_at;
+}
+
+/**
  * The stockholm day has turned since last event, so a daily type is waiting for the new day rather than overdue.
  */
 export function awaitingNewDay(row: StatusRow, now: Date): boolean {
@@ -24,11 +33,12 @@ export function awaitingNewDay(row: StatusRow, now: Date): boolean {
 		return false;
 	}
 
-	if (!row.last_at) {
+	const from = countedFrom(row);
+	if (!from) {
 		return false;
 	}
 
-	return time.stockholmDay(now) > time.stockholmDay(new Date(row.last_at));
+	return time.stockholmDay(now) > time.stockholmDay(new Date(from));
 }
 
 /** The two columns Settings may write - the same two the grant allows. */

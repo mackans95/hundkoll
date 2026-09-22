@@ -5,7 +5,13 @@
 import { describe, expect, it } from 'vitest';
 import { intervalText } from '$lib/format';
 import * as locale from '$lib/locale';
-import { awaitingNewDay, isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
+import {
+	awaitingNewDay,
+	countedFrom,
+	isDaily,
+	isScheduled,
+	planIntervalChanges
+} from '$lib/status/schedule';
 import type { StatusRow } from '$lib/types/domain';
 
 const row = (part: Partial<StatusRow>): StatusRow => ({
@@ -18,6 +24,7 @@ const row = (part: Partial<StatusRow>): StatusRow => ({
 	interval_type: 'days',
 	last_at: null,
 	due_at: null,
+	due_from: null,
 	sort_order: 0,
 	...part
 });
@@ -94,6 +101,27 @@ describe('awaitingNewDay', () => {
 	it('is false when nothing has been logged yet', () => {
 		expect(awaitingNewDay(daily(null), new Date('2026-08-20T10:00:00Z'))).toBe(false);
 	});
+
+	// Back from a weekend away on Sunday afternoon: the last walk is Friday's,
+	// but the schedule counts from the return, so the card is not "waiting".
+	it('counts from due_from when the view moved it to a return', () => {
+		const back = row({
+			interval_type: 'average',
+			last_at: '2026-08-14T16:00:00Z',
+			due_from: '2026-08-16T14:00:00Z'
+		});
+		expect(awaitingNewDay(back, new Date('2026-08-16T18:00:00Z'))).toBe(false);
+		// And the day after the return, it waits like any other day.
+		expect(awaitingNewDay(back, new Date('2026-08-17T05:00:00Z'))).toBe(true);
+	});
+});
+
+describe('countedFrom', () => {
+	it('prefers due_from and falls back to last_at', () => {
+		expect(countedFrom({ last_at: 'a', due_from: 'b' })).toBe('b');
+		expect(countedFrom({ last_at: 'a', due_from: null })).toBe('a');
+		expect(countedFrom({ last_at: null, due_from: null })).toBeNull();
+	});
 });
 
 describe('intervalFormat', () => {
@@ -108,6 +136,18 @@ describe('intervalFormat', () => {
 			interval_type: 'average',
 			last_at: '2026-08-27T08:00:00Z',
 			due_at: '2026-08-27T10:20:00Z'
+		});
+		expect(intervalText(walk)).toBe('snitt 2,3 tim');
+	});
+
+	// After a return the view counts due_at from due_from, not last_at; measured
+	// against last_at the "average" would include the whole absence.
+	it('measures the average from due_from when the view moved it', () => {
+		const walk = row({
+			interval_type: 'average',
+			last_at: '2026-08-27T08:00:00Z',
+			due_from: '2026-08-27T16:00:00Z',
+			due_at: '2026-08-27T18:20:00Z'
 		});
 		expect(intervalText(walk)).toBe('snitt 2,3 tim');
 	});

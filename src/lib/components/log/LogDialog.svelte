@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
+	import { isAbsence } from '$lib/events/absence';
 	import { fieldsFor } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import { createLogSubmit } from '$lib/offline/submit';
@@ -17,7 +18,7 @@
 		origin,
 		onClose
 	}: {
-		type: Pick<EventType, 'id' | 'label' | 'icon'>;
+		type: Pick<EventType, 'id' | 'label' | 'icon' | 'category'>;
 		nowLocal: string;
 		eventId: string;
 		message: string | null;
@@ -28,6 +29,8 @@
 	} = $props();
 
 	const fields = $derived(fieldsFor(type.id));
+	// An absence has an end as well as a start; nothing else does.
+	const spans = $derived(isAbsence(type.category));
 
 	// What the device itself refused, as opposed to `message`, which is what the
 	// server said. Both read the same on screen; only one of them can happen,
@@ -97,6 +100,21 @@
 				class="rounded-lg border-edge-strong"
 			/>
 		</label>
+
+		{#if spans}
+			<!-- Optional: empty means she is still away, and the card on the log
+			     page closes it with Hemma igen when she is back. -->
+			<label class="flex flex-col gap-1">
+				<span class="text-sm font-medium text-ink-label">{locale.log.dialog.endTime}</span>
+				<input
+					type="datetime-local"
+					name="ended_at"
+					max={nowLocal}
+					class="rounded-lg border-edge-strong"
+				/>
+				<span class="text-xs text-ink-muted">{locale.log.dialog.endHelp}</span>
+			</label>
+		{/if}
 
 		<DetailFields {fields} />
 

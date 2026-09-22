@@ -8,13 +8,14 @@
 	import WalkCard from '$lib/components/stats/WalkCard.svelte';
 	import WeightCard from '$lib/components/stats/WeightCard.svelte';
 	import * as locale from '$lib/locale';
-	import { daysTracked } from '$lib/stats/summary';
+	import { daysAwayText, daysTracked } from '$lib/stats/summary';
 	import type { Period } from '$lib/types/domain';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const tracked = $derived(daysTracked(data.summary));
+	const away = $derived(daysAwayText(data.summary));
 
 	const tabs: Tab<Period>[] = [
 		{ value: 'day', label: locale.stats.periods.day },
@@ -34,7 +35,7 @@
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">{locale.stats.title}</h1>
-		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30)}</p>
+		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30, away)}</p>
 	</header>
 
 	{#if data.failed}

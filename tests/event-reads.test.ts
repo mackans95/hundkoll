@@ -21,9 +21,10 @@ const row = {
 	id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 	type_id: 'walk',
 	occurred_at: '2026-08-26T10:00:00.000Z',
+	ended_at: null,
 	note: null,
 	details: null,
-	type: { label: 'Promenad', icon: '🚶' }
+	type: { label: 'Promenad', icon: '🚶', category: 'routine' }
 };
 
 const failure = { data: null, error: { code: 'PGRST301', message: 'JWT expired' } };

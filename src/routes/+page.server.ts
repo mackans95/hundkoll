@@ -6,6 +6,8 @@ import { currentDog } from '$lib/server/dog';
 import {
 	applyEventDelete,
 	applyEventEdit,
+	applyEventReturn,
+	currentAbsence,
 	getEvent,
 	insertEvent,
 	parseEventForm,
@@ -20,10 +22,11 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 	// renders the log dialog — so both open without JavaScript.
 	const eventParam = url.searchParams.get('event');
 
-	const [dog, types, events, editEvent] = await Promise.all([
+	const [dog, types, events, away, editEvent] = await Promise.all([
 		currentDog(supabase),
 		listEventTypes(supabase),
 		recentEvents(supabase),
+		currentAbsence(supabase),
 		eventParam ? getEvent(supabase, eventParam) : null
 	]);
 
@@ -31,14 +34,20 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 	// opens (and closes, via a plain link to "/") without JavaScript.
 	const detailParam = url.searchParams.get('detail');
 
-	// Both reads, not just the events one. A failed catalogue read is the more
-	// visible of the two — it takes the log buttons with it.
-	readsFailed(setHeaders, types, events);
+	// Every read, not just the events one. A failed catalogue read is the most
+	// visible — it takes the log buttons with it — and a failed absence read
+	// would cache a page that says she is home when she is not.
+	readsFailed(setHeaders, types, events, away);
 
 	return {
 		dog,
 		types: types ?? [],
 		events: events ?? [],
+		/** The open absence, if any; the card and the busy tile come from it. */
+		away: away?.event ?? null,
+		// The moment the page renders from, so the card's elapsed time agrees
+		// between server render and hydration.
+		now: new Date(),
 		// Told apart from "nothing logged yet", which is what this used to
 		// look like whenever the read failed.
 		eventsFailed: events === null,
@@ -92,6 +101,17 @@ export const actions: Actions = {
 
 	delete: async ({ request, locals: { supabase } }) => {
 		const outcome = await applyEventDelete(supabase, await request.formData());
+		if (!outcome.ok) {
+			return fail(outcome.status, { message: outcome.message });
+		}
+
+		redirect(303, resolve('/'));
+	},
+
+	// Hemma igen: closes the open absence at this moment. An update like the
+	// two above, so it goes straight to the server rather than through the queue.
+	return: async ({ request, locals: { supabase } }) => {
+		const outcome = await applyEventReturn(supabase, await request.formData());
 		if (!outcome.ok) {
 			return fail(outcome.status, { message: outcome.message });
 		}

@@ -4,7 +4,16 @@
 	import { awaitingNewDay, isDaily } from '$lib/status/schedule';
 	import type { StatusRow } from '$lib/types/domain';
 
-	let { row, now }: { row: StatusRow; now: Date } = $props();
+	let {
+		row,
+		now,
+		pausedBy = null
+	}: {
+		row: StatusRow;
+		now: Date;
+		/** The label of the absence type while one is open: the card pauses under it. */
+		pausedBy?: string | null;
+	} = $props();
 
 	type Badge = { text: string; classes: string };
 
@@ -13,6 +22,15 @@
 	 * last week before it is due, green while there is still time.
 	 */
 	const badge = $derived.by((): Badge => {
+		// Someone else has her, so nothing is overdue — and nothing is due
+		// either, since her walks are not being logged.
+		if (pausedBy) {
+			return {
+				text: locale.status.awayBadge(pausedBy),
+				classes: 'bg-surface-hover text-ink-soft'
+			};
+		}
+
 		if (awaitingNewDay(row, now)) {
 			return {
 				text: locale.status.awaitingNewDay,

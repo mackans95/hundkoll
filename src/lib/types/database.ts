@@ -107,6 +107,7 @@ export type Database = {
 					created_by: string | null;
 					details: Json;
 					dog_id: string;
+					ended_at: string | null;
 					id: string;
 					note: string | null;
 					occurred_at: string;
@@ -117,6 +118,7 @@ export type Database = {
 					created_by?: string | null;
 					details?: Json;
 					dog_id: string;
+					ended_at?: string | null;
 					id?: string;
 					note?: string | null;
 					occurred_at?: string;
@@ -127,6 +129,7 @@ export type Database = {
 					created_by?: string | null;
 					details?: Json;
 					dog_id?: string;
+					ended_at?: string | null;
 					id?: string;
 					note?: string | null;
 					occurred_at?: string;
@@ -225,6 +228,7 @@ export type Database = {
 					category: string | null;
 					dog_id: string | null;
 					due_at: string | null;
+					due_from: string | null;
 					icon: string | null;
 					interval: number | null;
 					interval_type: string | null;
@@ -409,6 +413,7 @@ export type Database = {
 			stats_type_windows: {
 				Row: {
 					avg_gap_min: number | null;
+					away_days: number | null;
 					days_counted: number | null;
 					dog_id: string | null;
 					events: number | null;

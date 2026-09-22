@@ -31,6 +31,16 @@ export function daysTracked(summary: StatSummary | null): number {
 }
 
 /**
+ * The days spent away inside the window, written for the subtitle — or null
+ * when there were none worth a decimal, so the sentence stays short.
+ * (0.333) → "0,3", (0.02) → null
+ */
+export function daysAwayText(summary: StatSummary | null): string | null {
+	const away = summary?.away_days ?? 0;
+	return away >= 0.05 ? format.swedishNumber(away) : null;
+}
+
+/**
  * Decides whether a per-week or per-month figure is worth showing at all.
  * Below a full period there is only a partial one to extrapolate from, and a
  * pace invented that way reads as fact.
