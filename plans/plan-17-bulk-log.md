@@ -64,12 +64,12 @@ use; see below). One row, unfolded and folded:
   Längd (minuter) [ 10 ]   Kiss  − 1 +   Bajs  − 0 +
   ▸ Anteckning
 
-▸ 🚶 Promenad · 11:20 · 10 min · kiss           Ta bort
+▸ Promenad · 11:20                              Ta bort
 ```
 
 - A header on every row: a fold toggle, and **Ta bort** when there is more than one row.
   Folding hides the fields without removing them, so a folded row still posts, and it
-  snapshots a summary line: type, time and the details in the events list's own words,
+  snapshots a summary line: type and time only, so it fits one line on a phone, and
   "ingen tid" when the time is blank. The summary cannot go stale, since nothing can be
   edited while it shows.
 - A `<select>` over the loggable types in catalogue order, defaulting to Promenad; a new
@@ -194,9 +194,9 @@ Asked with a recommendation each, answered 2026-09-23. Every recommendation was 
 Four notes from Marcus after trying the first version, all taken:
 
 - **One starting row**, not three, still Promenad.
-- **Rows fold.** A header toggle hides the fields and shows a summary line built by
-  `foldedText` from the same `parseDetails` and `detailSummary` the events list uses, so the
-  wording cannot drift from what the list will show after saving.
+- **Rows fold.** A header toggle hides the fields and shows a summary line. The first
+  version carried the details in the events list's words; the second round below cut it
+  to type and time.
 - **"+ Ny rad"** instead of "+ En rad till".
 - **Ta bort in the header**, as a worded button in the danger colour rather than a ×, so it
   is visible and unambiguous whether the row is folded or not. Its label for screen readers
