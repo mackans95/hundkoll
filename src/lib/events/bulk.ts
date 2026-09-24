@@ -4,8 +4,6 @@
 
 import * as locale from '$lib/locale';
 import type { EventType } from '$lib/types/domain';
-import { parseDetails } from './details';
-import { detailSummary } from './summary';
 
 /** The field name for one row: (0, "pee") → "r0_pee". */
 export function rowName(index: number, field: string): string {
@@ -45,24 +43,13 @@ export function rowFields(form: FormData, index: number): FormData {
 }
 
 /**
- * The line a folded row shows: what it is, when, and what its details say, in
- * the same words the events list uses. A row with no time says so, since the
- * server will skip it.
- * (walk, { time: "11:20", duration_min: "10", pee: "1" }) → "🚶 Promenad · 11:20 · 10 min · kiss"
+ * The line a folded row shows: what it is and when, nothing more, so it fits
+ * one line on a phone. A row with no time says so, since the server will skip it.
+ * (walk, { time: "11:20", duration_min: "10" }) → "Promenad · 11:20"
  */
-export function foldedText(
-	type: Pick<EventType, 'id' | 'label' | 'icon'>,
-	fields: FormData
-): string {
+export function foldedText(type: Pick<EventType, 'label'>, fields: FormData): string {
 	const time = String(fields.get('time') ?? '').trim();
-	const parsed = parseDetails(fields, type.id);
-	return [
-		[type.icon, type.label].filter(Boolean).join(' '),
-		time || locale.history.bulk.noTime,
-		parsed.ok ? detailSummary(type.id, parsed.details) : ''
-	]
-		.filter(Boolean)
-		.join(locale.activities.summary.separator);
+	return `${type.label}${locale.activities.summary.separator}${time || locale.history.bulk.noTime}`;
 }
 
 /**

@@ -209,6 +209,18 @@ their fields; Ta bort on the folded third row left two; Spara alla with both row
 stored exactly the walk and the meal with their details, and the URL kept the day. Console
 clean, probe rows deleted. 245 tests with six new ones for `rowFields` and `foldedText`.
 
+A second round, also taken:
+
+- **Centred on phones.** `ModalSheet` gained a `centered` prop; Logga flera uses it, and
+  the log dialogs keep the bottom edge for thumb reach. Measured at 400 × 1100: the sheet
+  sits 254 px from the top and 254 px from the bottom, the meal dialog still ends at 1100.
+- **The folded line is only type and time**, "Promenad · 11:20". The sideways scroll had a
+  second cause as well: a `<fieldset>` is min-content wide by default, so a long summary
+  widened the row instead of truncating. `min-w-0` on the fieldset fixes that for any
+  length; measured, the form's scroll width equals its width.
+- **Ta bort is filled red** with white text, the raw Tailwind red the way the log tiles use
+  raw colours, so it reads the same in both themes.
+
 ## Not in scope
 
 - Bulk editing or deleting stored rows.

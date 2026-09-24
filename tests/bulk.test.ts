@@ -89,29 +89,18 @@ describe('rowFields', () => {
 });
 
 describe('foldedText', () => {
-	const walk = { id: 'walk', label: 'Promenad', icon: '🚶' };
+	const walk = { label: 'Promenad' };
 
-	it('reads type, time and details in the events list’s own words', () => {
-		expect(foldedText(walk, form({ time: '11:20', duration_min: '10', pee: '1', poop: '0' }))).toBe(
-			'🚶 Promenad · 11:20 · 10 min · kiss'
-		);
-	});
-
-	it('leaves the details off when there are none to say', () => {
-		expect(foldedText({ id: 'bath', label: 'Bad', icon: '🛁' }, form({ time: '18:00' }))).toBe(
-			'🛁 Bad · 18:00'
+	// Details left off on purpose: the line has to fit one row on a phone.
+	it('reads only the type and the time', () => {
+		expect(foldedText(walk, form({ time: '11:20', duration_min: '10', pee: '1' }))).toBe(
+			'Promenad · 11:20'
 		);
 	});
 
 	// A folded row with no time will be skipped on save; the header should say so.
 	it('says when the time is missing', () => {
-		expect(foldedText(walk, form({ time: '' }))).toBe('🚶 Promenad · ingen tid');
-	});
-
-	it('still folds a row whose details would not parse, without them', () => {
-		expect(foldedText(walk, form({ time: '07:30', duration_min: 'tjugo' }))).toBe(
-			'🚶 Promenad · 07:30'
-		);
+		expect(foldedText(walk, form({ time: '' }))).toBe('Promenad · ingen tid');
 	});
 });
 

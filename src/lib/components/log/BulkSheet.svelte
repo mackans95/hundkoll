@@ -105,6 +105,7 @@
 <ModalSheet
 	ariaLabel={locale.history.bulk.ariaLabel(format.dayHeading(day))}
 	{onClose}
+	centered
 >
 	<h2 class="mb-4 text-xl font-bold">{locale.history.bulk.heading(format.dayHeading(day))}</h2>
 
@@ -128,7 +129,9 @@
 		/>
 
 		{#each rows as row, index (row.id)}
-			<fieldset class="flex flex-col gap-2 rounded-xl border border-edge p-3">
+			<!-- min-w-0: a fieldset is min-content wide by default, so a long
+			     folded summary widened the row instead of truncating. -->
+			<fieldset class="flex min-w-0 flex-col gap-2 rounded-xl border border-edge p-3">
 				<input
 					type="hidden"
 					name={rowName(index, 'event_id')}
@@ -157,7 +160,7 @@
 							type="button"
 							aria-label={locale.history.bulk.removeRow(index + 1)}
 							onclick={() => removeRow(row.id)}
-							class="min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-danger-ink transition-colors hover:bg-danger-surface"
+							class="min-h-11 shrink-0 rounded-lg bg-red-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700"
 						>
 							{locale.history.bulk.remove}
 						</button>
