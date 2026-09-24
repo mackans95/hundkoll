@@ -114,8 +114,14 @@ export const history = {
 		heading: (day: string) => `Logga flera · ${day}` as const,
 		activity: 'Aktivitet',
 		time: 'Klockan',
-		addRow: '+ En rad till',
+		addRow: '+ Ny rad',
+		/** Visible on the button; the aria-label below says which row. */
+		remove: 'Ta bort',
 		removeRow: (row: number) => `Ta bort rad ${row}` as const,
+		/** The header of an unfolded row, before anything identifies it. */
+		rowHeading: (row: number) => `Rad ${row}` as const,
+		/** In a folded row's summary when the time is blank: the server will skip it. */
+		noTime: 'ingen tid',
 		save: 'Spara alla'
 	}
 } as const;

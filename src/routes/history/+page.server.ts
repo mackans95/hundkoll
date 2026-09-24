@@ -40,8 +40,8 @@ function withoutSheets(url: URL): string {
 	return next.pathname + next.search;
 }
 
-/** How many rows the Logga flera sheet opens with — lines on a paper note. */
-const STARTING_ROWS = 3;
+/** How many rows the Logga flera sheet opens with; Ny rad adds the rest. */
+const STARTING_ROWS = 1;
 
 export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase } }) => {
 	const today = time.stockholmDay(new Date());

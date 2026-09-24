@@ -55,24 +55,32 @@ JavaScript. Closing it drops `?add` and keeps the month and day, as the event sh
 
 ### The sheet
 
-Heading "Logga flera · fre 14 aug." and a list of rows, three to start. One row is:
+Heading "Logga flera · fre 14 aug." and a list of rows, **one to start** (revised after
+use; see below). One row, unfolded and folded:
 
 ```
-[ Promenad ▾ ]  [ 07:30 ]                              ×
-  Längd (minuter) [    ]   Kiss  − 1 +   Bajs  − 0 +
+▾ Rad 1                                          Ta bort
+  [ Promenad ▾ ]  [ 11:20 ]
+  Längd (minuter) [ 10 ]   Kiss  − 1 +   Bajs  − 0 +
   ▸ Anteckning
+
+▸ 🚶 Promenad · 11:20 · 10 min · kiss           Ta bort
 ```
 
-- A `<select>` over the loggable types in catalogue order, defaulting to Promenad.
-  Changing it swaps the detail fields under the row, the same fields the dialog shows,
-  rendered by `DetailFields` with a per-row prefix.
-- A `<input type="time">`. **A row with no time is not a row** — the three starting slots
-  are like the lines on the paper, and an unused one is simply skipped. Nothing else about
-  an empty row is looked at.
+- A header on every row: a fold toggle, and **Ta bort** when there is more than one row.
+  Folding hides the fields without removing them, so a folded row still posts, and it
+  snapshots a summary line: type, time and the details in the events list's own words,
+  "ingen tid" when the time is blank. The summary cannot go stale, since nothing can be
+  edited while it shows.
+- A `<select>` over the loggable types in catalogue order, defaulting to Promenad; a new
+  row starts as the type of the row above. Changing it swaps the detail fields under the
+  row, the same fields the dialog shows, rendered by `DetailFields` with a per-row prefix.
+- A `<input type="time">`. **A row with no time is not a row** — a Ny rad added and never
+  filled in is simply skipped. Nothing else about an empty row is looked at.
 - A folded note, as in the dialog.
-- **+ En rad till** appends a row; × removes one. Rows are keyed by an id generated when
-  the row is added, which also travels as the row's `event_id` so a double submit collides
-  on the primary key instead of logging the day twice.
+- **+ Ny rad** appends a row. Rows are keyed by an id generated when the row is added,
+  which also travels as the row's `event_id` so a double submit collides on the primary key
+  instead of logging the day twice.
 - One button: **Spara alla**.
 
 ### The server side
@@ -152,7 +160,7 @@ Asked with a recommendation each, answered 2026-09-23. Every recommendation was 
    page for today? _Recommend Historik only_: today is one tap in the calendar, and the log
    page's grid is for the moment itself.
 4. **Starting rows.** Three empty slots, an unused one skipped — or one, growing as you go?
-   _Recommend three._
+   _Recommend three._ — Taken, then **revised after trying it: one row**, still Promenad.
 5. **Straight to the server, all-or-nothing**, rather than through the offline queue?
    _Recommend yes_: couch work, and a half-landed paper is worse than a refused one.
 6. **A time after now on today's date** refused? _Recommend yes._
@@ -180,6 +188,26 @@ Asked with a recommendation each, answered 2026-09-23. Every recommendation was 
 - 239 tests, `npm run check` clean over 501 files, `npm run lint` clean, svelte-autofixer
   clean on `BulkSheet`, `DetailFields`, `NoteField` and `EventSheet` (the relative `href`
   notes are the same by-design ones the other sheets carry).
+
+## Revised after use
+
+Four notes from Marcus after trying the first version, all taken:
+
+- **One starting row**, not three, still Promenad.
+- **Rows fold.** A header toggle hides the fields and shows a summary line built by
+  `foldedText` from the same `parseDetails` and `detailSummary` the events list uses, so the
+  wording cannot drift from what the list will show after saving.
+- **"+ Ny rad"** instead of "+ En rad till".
+- **Ta bort in the header**, as a worded button in the danger colour rather than a ×, so it
+  is visible and unambiguous whether the row is folded or not. Its label for screen readers
+  names the row.
+
+Verified the same way: one row on open; row 1 filled as a walk and folded read "🚶
+Promenad · 11:20 · 10 min · kiss"; a meal row folded read "🍽️ Matning · 12:00 · åt upp"; a
+blank third row folded read "ingen tid"; unfolding row 1 showed 11:20 and 10 still in
+their fields; Ta bort on the folded third row left two; Spara alla with both rows folded
+stored exactly the walk and the meal with their details, and the URL kept the day. Console
+clean, probe rows deleted. 245 tests with six new ones for `rowFields` and `foldedText`.
 
 ## Not in scope
 

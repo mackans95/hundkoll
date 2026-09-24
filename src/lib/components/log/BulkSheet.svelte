@@ -3,7 +3,7 @@
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { untrack } from 'svelte';
 	import ModalSheet from '$lib/components/ModalSheet.svelte';
-	import { rowName } from '$lib/events/bulk';
+	import { foldedText, rowFields, rowName } from '$lib/events/bulk';
 	import { fieldsFor } from '$lib/events/fields';
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
@@ -32,21 +32,50 @@
 		onClose: () => void;
 	} = $props();
 
-	type Row = { id: string; typeId: string };
+	/** `summary` is the folded line, taken when the row is folded. */
+	type Row = { id: string; typeId: string; folded: boolean; summary: string };
+
+	const firstType = $derived(types[0]?.id ?? 'walk');
 
 	// Rows are keyed by id and named by position, so removing one renumbers the
 	// rest and the server sees r0…rN with no gaps to wonder about. The ids are
 	// read once on purpose: they seed the rows, and the rows are the state.
 	let rows = $state<Row[]>(
-		untrack(() => rowIds).map((id) => ({ id, typeId: types[0]?.id ?? 'walk' }))
+		untrack(() => rowIds).map((id) => ({
+			id,
+			typeId: untrack(() => firstType),
+			folded: false,
+			summary: ''
+		}))
 	);
 
 	function addRow() {
-		rows.push({ id: crypto.randomUUID(), typeId: rows.at(-1)?.typeId ?? types[0]?.id ?? 'walk' });
+		rows.push({
+			id: crypto.randomUUID(),
+			typeId: rows.at(-1)?.typeId ?? firstType,
+			folded: false,
+			summary: ''
+		});
 	}
 
 	function removeRow(id: string) {
 		rows = rows.filter((row) => row.id !== id);
+	}
+
+	/**
+	 * Folds or unfolds a row. Folding only hides the fields — they stay in the
+	 * form and still post — and snapshots the summary, which cannot go stale
+	 * because nothing can be edited while it shows.
+	 */
+	function toggle(row: Row, index: number, form: HTMLFormElement | null) {
+		if (!row.folded) {
+			const type = types.find((candidate) => candidate.id === row.typeId);
+			row.summary =
+				type && form
+					? foldedText(type, rowFields(new FormData(form), index))
+					: locale.history.bulk.rowHeading(index + 1);
+		}
+		row.folded = !row.folded;
 	}
 
 	/**
@@ -71,8 +100,8 @@
 </script>
 
 <!-- Opened from the selected day's card, or server-rendered from ?add before
-     hydration. Three rows to start, like lines on the paper; a row with no
-     time is skipped by the server, so an unused slot costs nothing. -->
+     hydration. One row to start and Ny rad for each line after; a row with no
+     time is skipped by the server, so one added by mistake costs nothing. -->
 <ModalSheet
 	ariaLabel={locale.history.bulk.ariaLabel(format.dayHeading(day))}
 	{onClose}
@@ -105,48 +134,71 @@
 					name={rowName(index, 'event_id')}
 					value={row.id}
 				/>
-				<div class="flex items-end gap-2">
-					<label class="flex min-w-0 flex-1 flex-col gap-1">
-						<span class="text-sm font-medium text-ink-label">{locale.history.bulk.activity}</span>
-						<select
-							name={rowName(index, 'type_id')}
-							bind:value={row.typeId}
-							class="w-full rounded-lg border-edge-strong"
+
+				<!-- The header is the whole row when folded, and Ta bort lives in it
+				     either way, so removing never needs unfolding first. -->
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						aria-expanded={!row.folded}
+						onclick={(event) => toggle(row, index, event.currentTarget.form)}
+						class="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
+					>
+						<span
+							class="shrink-0 text-ink-muted"
+							aria-hidden="true">{row.folded ? '▸' : '▾'}</span
 						>
-							{#each types as type (type.id)}
-								<option value={type.id}>{type.icon} {type.label}</option>
-							{/each}
-						</select>
-					</label>
-					<label class="flex flex-col gap-1">
-						<span class="text-sm font-medium text-ink-label">{locale.history.bulk.time}</span>
-						<input
-							type="time"
-							name={rowName(index, 'time')}
-							class="w-28 rounded-lg border-edge-strong"
-						/>
-					</label>
+						<span class={['truncate', row.folded ? 'font-medium' : 'text-sm text-ink-muted']}>
+							{row.folded ? row.summary : locale.history.bulk.rowHeading(index + 1)}
+						</span>
+					</button>
 					{#if rows.length > 1}
 						<button
 							type="button"
 							aria-label={locale.history.bulk.removeRow(index + 1)}
 							onclick={() => removeRow(row.id)}
-							class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg text-ink-muted transition-colors hover:bg-surface-hover"
+							class="min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-danger-ink transition-colors hover:bg-danger-surface"
 						>
-							×
+							{locale.history.bulk.remove}
 						</button>
 					{/if}
 				</div>
 
-				<!-- Keyed on the type, so switching it rebuilds the fields rather
-				     than leaving a walk's steppers under a meal. -->
-				{#key row.typeId}
-					<DetailFields
-						fields={fieldsFor(row.typeId)}
-						prefix={rowName(index, '')}
-					/>
-				{/key}
-				<NoteField name={rowName(index, 'note')} />
+				<!-- Hidden, not removed: a folded row's fields still post. -->
+				<div class={['flex flex-col gap-2', row.folded && 'hidden']}>
+					<div class="flex items-end gap-2">
+						<label class="flex min-w-0 flex-1 flex-col gap-1">
+							<span class="text-sm font-medium text-ink-label">{locale.history.bulk.activity}</span>
+							<select
+								name={rowName(index, 'type_id')}
+								bind:value={row.typeId}
+								class="w-full rounded-lg border-edge-strong"
+							>
+								{#each types as type (type.id)}
+									<option value={type.id}>{type.icon} {type.label}</option>
+								{/each}
+							</select>
+						</label>
+						<label class="flex flex-col gap-1">
+							<span class="text-sm font-medium text-ink-label">{locale.history.bulk.time}</span>
+							<input
+								type="time"
+								name={rowName(index, 'time')}
+								class="w-28 rounded-lg border-edge-strong"
+							/>
+						</label>
+					</div>
+
+					<!-- Keyed on the type, so switching it rebuilds the fields rather
+					     than leaving a walk's steppers under a meal. -->
+					{#key row.typeId}
+						<DetailFields
+							fields={fieldsFor(row.typeId)}
+							prefix={rowName(index, '')}
+						/>
+					{/key}
+					<NoteField name={rowName(index, 'note')} />
+				</div>
 			</fieldset>
 		{/each}
 

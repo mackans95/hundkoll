@@ -3,7 +3,7 @@
 // a dialog post would, and that a bad row names itself.
 
 import { describe, expect, it } from 'vitest';
-import { rowName, splitRows } from '$lib/events/bulk';
+import { foldedText, rowFields, rowName, splitRows } from '$lib/events/bulk';
 import * as locale from '$lib/locale';
 import { parseBulkForm, parseEventForm } from '$lib/server/events';
 
@@ -71,6 +71,47 @@ describe('splitRows', () => {
 
 	it('names fields the way the sheet does', () => {
 		expect(rowName(2, 'pee')).toBe('r2_pee');
+	});
+});
+
+describe('rowFields', () => {
+	it('picks one row out of the form, prefix stripped', () => {
+		const fields = rowFields(
+			form({ r0_time: '07:00', r1_time: '11:20', r1_pee: '1', day: '2026-08-14' }),
+			1
+		);
+		expect(entries(fields)).toEqual({ time: '11:20', pee: '1' });
+	});
+
+	it('is empty for a row the form does not have', () => {
+		expect(entries(rowFields(form({ r0_time: '07:00' }), 4))).toEqual({});
+	});
+});
+
+describe('foldedText', () => {
+	const walk = { id: 'walk', label: 'Promenad', icon: '🚶' };
+
+	it('reads type, time and details in the events list’s own words', () => {
+		expect(foldedText(walk, form({ time: '11:20', duration_min: '10', pee: '1', poop: '0' }))).toBe(
+			'🚶 Promenad · 11:20 · 10 min · kiss'
+		);
+	});
+
+	it('leaves the details off when there are none to say', () => {
+		expect(foldedText({ id: 'bath', label: 'Bad', icon: '🛁' }, form({ time: '18:00' }))).toBe(
+			'🛁 Bad · 18:00'
+		);
+	});
+
+	// A folded row with no time will be skipped on save; the header should say so.
+	it('says when the time is missing', () => {
+		expect(foldedText(walk, form({ time: '' }))).toBe('🚶 Promenad · ingen tid');
+	});
+
+	it('still folds a row whose details would not parse, without them', () => {
+		expect(foldedText(walk, form({ time: '07:30', duration_min: 'tjugo' }))).toBe(
+			'🚶 Promenad · 07:30'
+		);
 	});
 });
 
