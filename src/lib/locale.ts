@@ -105,7 +105,19 @@ export const history = {
 		`${day}, ${count} ${count === 1 ? 'händelse' : 'händelser'}` as const,
 	emptyDay: 'Inget loggat den här dagen.',
 	loadFailed: 'Kunde inte läsa månaden. Försök igen om en stund.',
-	backToLog: '← Tillbaka'
+	backToLog: '← Tillbaka',
+	/** The link on the selected day's card that opens the sheet below. */
+	addMany: 'Logga flera',
+	/** The sheet that logs several events on one day at once. */
+	bulk: {
+		ariaLabel: (day: string) => `Logga flera händelser ${day}` as const,
+		heading: (day: string) => `Logga flera · ${day}` as const,
+		activity: 'Aktivitet',
+		time: 'Klockan',
+		addRow: '+ En rad till',
+		removeRow: (row: number) => `Ta bort rad ${row}` as const,
+		save: 'Spara alla'
+	}
 } as const;
 
 export const status = {
@@ -179,6 +191,10 @@ export const errors = {
 	chooseOne: (field: string) => `Välj minst ett alternativ under ${field.toLowerCase()}.` as const,
 	logFailed: 'Kunde inte logga händelsen.',
 	endBeforeStart: 'Hemkomsten måste vara efter starten.',
+	/** A Logga flera row that failed, named by its number so it can be found. */
+	bulkRow: (row: number, message: string) => `Rad ${row}: ${message}` as const,
+	noRows: 'Ingen rad har någon tid.',
+	futureTime: 'Tidpunkten har inte inträffat ännu.',
 	/** Hemma igen pressed on an absence the other phone already closed or removed. */
 	alreadyHome: 'Perioden är redan avslutad.',
 	intervalRange: 'Intervall måste vara ett antal dagar eller timmar (minst 1).',

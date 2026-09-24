@@ -17,13 +17,20 @@
 		event,
 		message,
 		origin,
-		onClose
+		onClose,
+		actionQuery = ''
 	}: {
 		event: EventRow;
 		message: string | null;
 		/** The row this was opened from, so it can grow out of it. */
 		origin: DOMRect | null;
 		onClose: () => void;
+		/**
+		 * Query to keep on the actions, `&month=…&day=…` on Historik: a form's
+		 * `?/update` replaces the query string, and the redirect back would
+		 * otherwise land on the current month with no day selected.
+		 */
+		actionQuery?: string;
 	} = $props();
 
 	// Editing is a mode of this sheet rather than a second one: the row is
@@ -90,7 +97,7 @@
 	{#if editing}
 		<form
 			method="POST"
-			action="?/update"
+			action="?/update{actionQuery}"
 			use:enhance={submit}
 			class="flex flex-col gap-3"
 		>
@@ -181,7 +188,7 @@
 
 		<form
 			method="POST"
-			action="?/delete"
+			action="?/delete{actionQuery}"
 			use:enhance={submit}
 			class="mt-2"
 		>

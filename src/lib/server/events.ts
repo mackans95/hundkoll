@@ -1,5 +1,6 @@
 import * as locale from '$lib/locale';
 import { parseEnd } from '$lib/events/absence';
+import { splitRows } from '$lib/events/bulk';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import { fieldsFor } from '$lib/events/fields';
 import { countDetailDays } from '$lib/stats/detailDays';
@@ -242,6 +243,54 @@ export function parseEventForm(form: FormData, dogId: string): ParsedEvent {
 	}
 
 	return { ok: true, row };
+}
+
+export type ParsedBulk = { ok: true; rows: EventInsert[] } | { ok: false; message: string };
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Turns the Logga flera form into rows, each through parseEventForm as if it
+ * had come from the dialog. The first row that fails stops the batch and is
+ * named in the message; a time that has not happened yet is refused here,
+ * since a clock field cannot carry the `max` the dialog's date field does.
+ */
+export function parseBulkForm(form: FormData, dogId: string, now: Date): ParsedBulk {
+	const day = String(form.get('day') ?? '');
+	if (!DAY_RE.test(day)) {
+		return { ok: false, message: locale.errors.invalidTime };
+	}
+
+	const split = splitRows(form, day);
+	if (split.length === 0) {
+		return { ok: false, message: locale.errors.noRows };
+	}
+
+	const rows: EventInsert[] = [];
+	for (const { number, form: rowForm } of split) {
+		const parsed = parseEventForm(rowForm, dogId);
+		if (!parsed.ok) {
+			return { ok: false, message: locale.errors.bulkRow(number, parsed.message) };
+		}
+		if (parsed.row.occurred_at && new Date(parsed.row.occurred_at) > now) {
+			return { ok: false, message: locale.errors.bulkRow(number, locale.errors.futureTime) };
+		}
+		rows.push(parsed.row);
+	}
+	return { ok: true, rows };
+}
+
+/**
+ * Stores a batch in one insert, so the rows land together or not at all. A
+ * key collision means this batch was posted twice, which is not a failure.
+ */
+export async function insertEvents(db: Db, rows: EventInsert[]): Promise<string | null> {
+	const { error } = await db.from('events').insert(rows);
+	if (error && error.code !== '23505') {
+		console.error('bulk insert failed:', error.code, error.message);
+		return locale.errors.logFailed;
+	}
+	return null;
 }
 
 /**
