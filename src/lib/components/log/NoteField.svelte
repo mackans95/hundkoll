@@ -3,11 +3,14 @@
 
 	let {
 		value = $bindable(''),
-		open = false
+		open = false,
+		name = 'note'
 	}: {
 		value?: string;
 		/** Starts unfolded when there is already a note to read. */
 		open?: boolean;
+		/** Prefixed in the Logga flera sheet, where several notes share a form. */
+		name?: string;
 	} = $props();
 </script>
 
@@ -18,7 +21,7 @@
 		{locale.log.dialog.note}
 	</summary>
 	<textarea
-		name="note"
+		{name}
 		rows="2"
 		bind:value
 		class="w-full rounded-lg border-edge-strong"></textarea>

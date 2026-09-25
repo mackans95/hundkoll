@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import Card from '$lib/components/Card.svelte';
 	import MonthCalendar from '$lib/components/history/MonthCalendar.svelte';
+	import BulkSheet from '$lib/components/log/BulkSheet.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
 	import EventSheet from '$lib/components/log/EventSheet.svelte';
 	import * as format from '$lib/format';
@@ -32,6 +33,28 @@
 		// Keeps the month and day on screen; only the sheet leaves the URL.
 		const next = new URL(page.url);
 		next.searchParams.delete('event');
+		replaceState(next, {});
+	}
+
+	// The Logga flera sheet, on the same pattern: opened by the link on the
+	// day's card, or by ?add before hydration.
+	let openedAdd = $state(false);
+	let urlAddClosed = $state(false);
+	const adding = $derived(openedAdd || (data.adding && !urlAddClosed));
+
+	function openAdd(clicked: MouseEvent) {
+		clicked.preventDefault();
+		openedAdd = true;
+	}
+
+	function closeAdd() {
+		if (openedAdd) {
+			openedAdd = false;
+			return;
+		}
+		urlAddClosed = true;
+		const next = new URL(page.url);
+		next.searchParams.delete('add');
 		replaceState(next, {});
 	}
 
@@ -83,6 +106,18 @@
 
 	{#if data.selected}
 		<Card title={format.dayHeading(data.selected)}>
+			<!-- Not offered on a day that has not happened: every row would be
+			     refused as a time in the future. -->
+			{#snippet action()}
+				{#if data.selected && data.selected <= data.today}
+					<a
+						href="{dayHref(data.selected)}&add"
+						onclick={openAdd}
+						class="text-sm text-ink-muted underline">{locale.history.addMany}</a
+					>
+				{/if}
+			{/snippet}
+
 			<!-- Stored rows only: a queued log has no server row to edit, and
 			     belongs on the log page where it was made. -->
 			<EventList
@@ -102,6 +137,20 @@
 			origin={sheet.origin}
 			message={form?.message ?? null}
 			onClose={closeEvent}
+			actionQuery="&month={data.month}{data.selected ? `&day=${data.selected}` : ''}"
+		/>
+	{/key}
+{/if}
+
+{#if adding && data.selected}
+	<!-- Keyed on the day, so rows typed for one day are not carried to another. -->
+	{#key data.selected}
+		<BulkSheet
+			day={data.selected}
+			types={data.bulkTypes}
+			rowIds={data.bulkIds}
+			message={form?.message ?? null}
+			onClose={closeAdd}
 		/>
 	{/key}
 {/if}

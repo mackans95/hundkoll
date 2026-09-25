@@ -5,11 +5,18 @@
 
 	let {
 		fields,
-		values = {}
+		values = {},
+		prefix = ''
 	}: {
 		fields: DetailField[];
 		/** What the fields start at — a stored event's details, when editing. */
 		values?: EventDetails;
+		/**
+		 * Put before every name and id, so several rows of fields can share one
+		 * form: the Logga flera sheet. The parser strips it again. Empty for the
+		 * dialog and the sheet, whose forms hold one event.
+		 */
+		prefix?: string;
 	} = $props();
 
 	// Revealed fields are rendered by the reveal that uncovers them, not by the
@@ -36,7 +43,7 @@
 {#snippet input(field: DetailField)}
 	{#if field.input === 'count'}
 		<CountStepper
-			name={field.name}
+			name={prefix + field.name}
 			label={field.label}
 			value={count(values[field.name])}
 		/>
@@ -44,7 +51,7 @@
 		<label class="flex min-h-11 items-center gap-2">
 			<input
 				type="checkbox"
-				name={field.name}
+				name={prefix + field.name}
 				checked={values[field.name] === true}
 				class="rounded border-edge-strong"
 			/>
@@ -55,7 +62,7 @@
 			<span class="text-sm font-medium text-ink-label">{field.label}</span>
 			<input
 				type="number"
-				name={field.name}
+				name={prefix + field.name}
 				inputmode="decimal"
 				step={field.step ?? '1'}
 				min="0"
@@ -79,14 +86,14 @@
 		     its own reveal open. -->
 		<div class="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-3">
 			<input
-				id={field.name}
+				id={prefix + field.name}
 				type="checkbox"
-				name={field.name}
+				name={prefix + field.name}
 				checked={values[field.name] === true}
 				class="peer rounded border-edge-strong"
 			/>
 			<label
-				for={field.name}
+				for={prefix + field.name}
 				class="text-sm font-medium text-ink-label">{field.label}</label
 			>
 			<div class="col-span-2 ml-6 hidden flex-col gap-3 peer-checked:flex">

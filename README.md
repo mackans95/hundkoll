@@ -19,7 +19,12 @@ Four screens, as a bottom tab bar:
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
 than a fifth tab — the tab bar is for daily screens, and history is an occasional lookup.
-Tapping any stored event, in either list, opens a sheet to correct or remove it.
+Tapping any stored event, in either list, opens a sheet to correct or remove it. A selected
+day also offers **Logga flera**: one sheet with a row per event — type, clock time, the
+type's own detail fields and a note — for copying a day off a paper note in one save. Rows
+are prefixed (`r0_pee`, `r1_time`, …) and split apart on the server, after which each one
+goes through the same parser as the single dialog, so there is no second set of rules; the
+batch lands in one insert, whole or not at all.
 
 Swedish in the UI, English in the code.
 

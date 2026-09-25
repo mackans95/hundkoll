@@ -7,9 +7,16 @@
 		ariaLabel,
 		origin = null,
 		onClose,
+		centered = false,
 		children
 	}: {
 		ariaLabel: string;
+		/**
+		 * Centre on phones too, instead of sitting on the bottom edge. The log
+		 * dialogs stay at the bottom for thumb reach; a long form like Logga
+		 * flera reads better in the middle.
+		 */
+		centered?: boolean;
 		/** The element this grew out of, so it can shrink back into it. */
 		origin?: DOMRect | null;
 		/** Closes the sheet. The page owns this, since it opened it. */
@@ -46,14 +53,20 @@
 	onpointerdown={(event) => (pressedOn = event.target)}
 	onclick={tapOutside}
 	transition:sheet|global
-	class="fixed inset-0 z-30 flex items-end justify-center bg-scrim sm:items-center"
+	class={[
+		'fixed inset-0 z-30 flex justify-center bg-scrim sm:items-center',
+		centered ? 'items-center px-4' : 'items-end'
+	]}
 >
 	<div
 		role="dialog"
 		aria-modal="true"
 		aria-label={ariaLabel}
 		transition:growFrom|global={{ origin: openedFrom }}
-		class="w-full max-w-sm rounded-t-2xl bg-surface-raised p-6 shadow-xl sm:rounded-2xl"
+		class={[
+			'w-full max-w-sm bg-surface-raised p-6 shadow-xl sm:rounded-2xl',
+			centered ? 'rounded-2xl' : 'rounded-t-2xl'
+		]}
 	>
 		{@render children()}
 	</div>
