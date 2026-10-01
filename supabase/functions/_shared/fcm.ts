@@ -90,7 +90,10 @@ export async function send(raw: string, token: string, push: Push): Promise<Send
 	}
 	const text = await response.text();
 	// A token for an uninstalled app, or a phone that cleared the app's data.
+	// The caller deletes the row, so say which and why: a quiet delete once
+	// cost a reminder with nothing left to explain it.
 	if (response.status === 404 || text.includes('UNREGISTERED')) {
+		console.warn('FCM token unregistered, dropping:', token.slice(0, 12), response.status, text);
 		return 'unregistered';
 	}
 	console.error('FCM send failed:', response.status, text);

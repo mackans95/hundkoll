@@ -746,6 +746,10 @@ pg_cron, every minute → public.remind_tick() → POST the `remind` Edge Functi
   amber windows from `$lib/status/schedule.ts`; parity tests keep them equal.
 - **The claim is the idempotency.** It goes in before the send, so overlapping runs cannot
   double-send, and logging moves `due_at`, which makes the next reminder a new key.
+  **Nothing is claimed while no phone in the household has the switch on**, so a reminder
+  still in its window reaches whoever turns it on.
+- **A phone FCM calls unregistered is deleted, and logged** (`FCM token unregistered,
+dropping:` in the function logs) with the token's start and FCM's answer.
 - **`?dry&now=<iso>`** answers what the function would send at that moment, claiming and
   sending nothing: the way to check a rule against real data without waiting for 09:00.
 - **The switch is per phone** (Inställningar, only inside the app): Android's permission,

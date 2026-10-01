@@ -261,6 +261,21 @@ Everything stays on free tiers, with no payment method anywhere (checked 2026-10
 Free Supabase projects pause after a week of inactivity, which daily use already prevents,
 same as today.
 
+## Revised after use
+
+Turning it on in production (2026-10-01) lost the first real reminder. The cron claimed
+"Kloklippning om en vecka" in the minute between the Vault entries and the switch, with no
+phone to send it to. Then, after a re-arm, the phone's row vanished on a send. The function
+deletes a row only when FCM calls the token unregistered, and it did that silently, so the
+cause could not be confirmed. Most likely it was a stale token from switching off during
+the local tests. After an off/on the token validated, and the third attempt was delivered.
+
+Two changes followed (PR "Reminders: no claim without a phone"):
+
+- **No claim while the household has no phone switched on**, so a reminder still in its
+  window reaches whoever switches on.
+- **Every dropped token is logged** with its first characters and FCM's answer.
+
 ## Not in scope
 
 - "Your partner logged a walk" notifications (easy to add on the same pipeline later).

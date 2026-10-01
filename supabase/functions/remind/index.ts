@@ -75,8 +75,17 @@ Deno.serve(async (req) => {
 		return Response.json({ error: 'FCM_SERVICE_ACCOUNT is not set' }, { status: 503 });
 	}
 	const sent: string[] = [];
+	const phones = new Map<string, string[]>();
 	for (const { dog_id, household_id, row, kind } of due) {
-		// The claim comes first: a run that overlaps this one finds the key taken.
+		if (!phones.has(household_id)) {
+			phones.set(household_id, await householdTokens(household_id));
+		}
+		const tokens = phones.get(household_id)!;
+		// Nobody has the switch on: leave it unclaimed, so whoever turns it on
+		// while the window is still open gets it.
+		if (tokens.length === 0) continue;
+
+		// The claim comes before the send: a run that overlaps this one finds the key taken.
 		const claim = await db
 			.from('reminders_sent')
 			.upsert(
@@ -86,20 +95,8 @@ Deno.serve(async (req) => {
 			.select();
 		if (claim.error || claim.data.length === 0) continue;
 
-		const members = await db
-			.from('household_members')
-			.select('user_id')
-			.eq('household_id', household_id);
-		const devices = await db
-			.from('push_devices')
-			.select('token')
-			.in(
-				'user_id',
-				(members.data ?? []).map((m) => m.user_id)
-			);
-
 		const message = reminderMessage(row, kind);
-		for (const { token } of devices.data ?? []) {
+		for (const token of tokens) {
 			const result = await send(account, token, { ...message, tag: row.type_id, url: '/status' });
 			if (result === 'unregistered') {
 				await db.from('push_devices').delete().eq('token', token);
@@ -116,3 +113,19 @@ Deno.serve(async (req) => {
 
 	return Response.json({ sent });
 });
+
+/** The FCM tokens of every phone in the household with reminders switched on. */
+async function householdTokens(householdId: string): Promise<string[]> {
+	const members = await db
+		.from('household_members')
+		.select('user_id')
+		.eq('household_id', householdId);
+	const devices = await db
+		.from('push_devices')
+		.select('token')
+		.in(
+			'user_id',
+			(members.data ?? []).map((m) => m.user_id)
+		);
+	return (devices.data ?? []).map((d) => d.token);
+}
