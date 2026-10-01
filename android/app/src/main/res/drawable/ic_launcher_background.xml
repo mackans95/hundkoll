@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The waffle from static/icon.svg. The 768 viewport puts that 512 icon in
+     the centre two thirds, which is what an adaptive icon's mask shows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="768"
+    android:viewportHeight="768">
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M0,0h768v768h-768z" />
+    <path
+        android:strokeColor="#B45309"
+        android:strokeWidth="28"
+        android:pathData="M299,0V768M469,0V768M0,299H768M0,469H768" />
+</vector>

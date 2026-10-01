@@ -21,9 +21,14 @@
 		"dev:local": "vite dev --mode localdb",
 		"db-push": "supabase db push",
 		"gen-types": "supabase gen types typescript --linked > src/lib/types/database.ts",
-		"new-event": "node scripts/new-event.ts"
+		"new-event": "node scripts/new-event.ts",
+		"android:build": "cap sync android && cd android && ./gradlew assembleRelease",
+		"android:install": "adb install -r android/app/build/outputs/apk/release/app-release.apk"
 	},
 	"devDependencies": {
+		"@capacitor/android": "^8.5.2",
+		"@capacitor/cli": "^8.5.2",
+		"@capacitor/core": "^8.5.2",
 		"@sveltejs/adapter-vercel": "^6.3.3",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
