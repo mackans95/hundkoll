@@ -170,6 +170,16 @@ export const settings = {
 		system: 'System',
 		light: 'Ljust',
 		dark: 'Mörkt'
+	},
+	push: {
+		heading: 'Aviseringar',
+		toggle: 'Påminnelser på den här telefonen',
+		help: 'Promenad och matning 30 minuter innan. Återkommande en vecka innan och samma dag, kl. 9.',
+		denied:
+			'Aviseringar är avstängda för Hundkoll i Android. Slå på dem under Inställningar → Appar → Hundkoll → Aviseringar, och försök igen.',
+		failed: 'Kunde inte slå på påminnelser. Försök igen.',
+		/** Android's name for the notification channel, shown in its settings. */
+		channel: 'Påminnelser'
 	}
 } as const;
 

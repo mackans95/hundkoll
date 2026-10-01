@@ -7,6 +7,7 @@ import type { SubmitFunction } from '@sveltejs/kit';
 import { parseEnd } from '$lib/events/absence';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import * as time from '$lib/time';
+import { clearReminder } from '$lib/native';
 import type { EventType } from '$lib/types/domain';
 import { enqueue, sendPending } from './queue.svelte';
 
@@ -61,6 +62,7 @@ export async function queueLog(
 	});
 
 	onQueued?.();
+	void clearReminder(type.id);
 	await sendPending();
 	return { ok: true };
 }

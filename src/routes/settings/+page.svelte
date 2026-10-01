@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import * as locale from '$lib/locale';
+	import { isNativeApp } from '$lib/native';
 	import { isDaily } from '$lib/status/schedule';
 	import { setTheme, theme, type ThemeChoice } from '$lib/theme.svelte';
 	import type { ActionData, PageData } from './$types';
 	import IntervalSection from '$lib/components/settings/IntervalSection.svelte';
+	import PushSection from '$lib/components/settings/PushSection.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -13,6 +16,13 @@
 		{ value: 'light', label: locale.settings.theme.light },
 		{ value: 'dark', label: locale.settings.theme.dark }
 	];
+
+	// Decided in the page, not the load: requests through the service worker
+	// carry Android's default user agent, without the app's suffix.
+	let nativeApp = $state(false);
+	onMount(() => {
+		nativeApp = isNativeApp();
+	});
 
 	const daily = $derived(data.types.filter(isDaily));
 	const recurring = $derived(data.types.filter((type) => !isDaily(type)));
@@ -60,6 +70,10 @@
 			>
 		</form>
 	</section>
+
+	{#if nativeApp}
+		<PushSection />
+	{/if}
 
 	<section class="flex flex-col gap-2">
 		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">

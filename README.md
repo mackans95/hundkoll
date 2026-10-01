@@ -36,8 +36,12 @@ Swedish in the UI, English in the code.
   same city as the database — see [Performance](#performance)
 - **Capacitor** for the Android app — a native shell around the deployed site, see
   [Android app](#android-app)
-- No runtime dependencies beyond `@supabase/supabase-js` and `@supabase/ssr`. The charts
-  are hand-rolled inline SVG; there is no charting library.
+- **Firebase Cloud Messaging** + a Supabase Edge Function for reminders, see
+  [Notifications](#notifications)
+- No runtime dependencies beyond `@supabase/supabase-js` and `@supabase/ssr`, plus
+  `@capacitor/core` and `@capacitor/push-notifications`, which only the Android app loads
+  (dynamically imported from `$lib/native.ts`, never in a browser). The charts are
+  hand-rolled inline SVG; there is no charting library.
 
 ## Running it locally
 
@@ -59,7 +63,8 @@ PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 The publishable key is safe in the browser **only** because RLS is enforced. It identifies
 the app, not the user, and is never an authorisation mechanism. The secret key is not used
-anywhere in this project.
+by the app or the scripts; the one service-role caller is the `remind` Edge Function, which
+Supabase hands its key at runtime.
 
 Other commands:
 
@@ -72,6 +77,7 @@ Other commands:
 | `npm run build`                    | production build                                                                    |
 | `npm run new-event`                | generate a new tracked activity — see [Adding an event type](#adding-an-event-type) |
 | `npm run db-push`                  | apply pending migrations to **production** — only after a merge                     |
+| `npm run functions-deploy`         | deploy the `remind` Edge Function to **production** — only after a merge            |
 | `npm run gen-types`                | regenerate `src/lib/types/database.ts` from the linked (production) schema          |
 
 And for the local database, see [Working against a local database](#working-against-a-local-database):
@@ -167,6 +173,7 @@ src/lib/
   history.ts   pure row → calendar-cell logic, the same shape as stats/
   offline/     the IndexedDB queue, the submit handler that feeds it, and
                catchUp: what a launch or a resume has to do to be current
+  native.ts    the Android app's push plugin, imported on demand
   components/  ui primitives at the top, then charts/ log/ stats/ status/
   time.ts      computation: timezone conversion and calendar arithmetic
   format.ts    presentation: the same values as Swedish text
@@ -715,6 +722,55 @@ Installs go over `adb` rather than by tapping an APK file: Google's developer ve
 (enforced globally from 2027) blocks tapped APKs from unregistered developers, and `adb` is
 exempt.
 
+## Notifications
+
+Reminders for Status, pushed to the phones that switched them on (plan 19):
+
+| Item                       | Notification                                                     |
+| -------------------------- | ---------------------------------------------------------------- |
+| Daily (Promenad, Matning)  | "om 30 min" when the card turns amber; none 22:00–07:00          |
+| Recurring with an interval | "om en vecka" at 09:00 a week before, "idag" at 09:00 on the day |
+
+Paused like the cards: nothing daily while Hundvakt is open or once the card says "väntar
+på ny dag". A newer reminder for a type replaces the older one in the tray, a tap opens
+Status, and logging a type on a phone clears that phone's reminder for it.
+
+```
+pg_cron, every minute → public.remind_tick() → POST the `remind` Edge Function
+  → reads dog_care_status + open absences → reminderDue() per row
+  → claims (dog, type, kind, due_at) in reminders_sent → FCM → every phone in push_devices
+```
+
+- **`supabase/functions/_shared/reminders.ts`** holds the rules, plain TypeScript tested by
+  `tests/reminders.test.ts`. It cannot import `$lib`, so it repeats `awaitingNewDay` and the
+  amber windows from `$lib/status/schedule.ts`; parity tests keep them equal.
+- **The claim is the idempotency.** It goes in before the send, so overlapping runs cannot
+  double-send, and logging moves `due_at`, which makes the next reminder a new key.
+- **`?dry&now=<iso>`** answers what the function would send at that moment, claiming and
+  sending nothing: the way to check a rule against real data without waiting for 09:00.
+- **The switch is per phone** (Inställningar, only inside the app): Android's permission,
+  then an FCM token, then `POST /push` stores it. Off deletes the row. Every launch with it on
+  refreshes the token, since FCM rotates them.
+- **The server cannot tell the app from a browser.** The `HundkollApp` user-agent suffix is
+  only on the page's own requests; the service worker fetches with Android's default user
+  agent. Anything app-only is decided in the page (`isNativeApp()`).
+- **Return the plugin wrapped, never bare, from an `async` function.** The Capacitor proxy
+  answers every property as a native method, `then` included, so resolving a promise with it
+  throws `"PushNotifications.then()" is not implemented`.
+
+Secrets, none in the repo (it is public): `android/app/google-services.json` (gitignored,
+re-downloadable from the Firebase console), and the function's `FCM_SERVICE_ACCOUNT` and
+`REMIND_SECRET` as Supabase secrets. The cron reads the function URL and `REMIND_SECRET` from
+Vault (`remind_url`, `remind_secret`); until both exist the tick does nothing.
+
+Locally, `supabase start` serves the function with `supabase/functions/.env` (gitignored,
+the same two variables). To let the local cron call it, add the two Vault entries with the
+URL `http://supabase_kong_hundkoll:8000/functions/v1/remind`. The full loop on a phone is an
+APK against a local preview (see [Android app](#android-app)) with the switch turned on.
+
+Free tiers throughout: FCM costs nothing, and a call a minute is ~43,200 of the 500,000
+monthly Edge Function invocations.
+
 ## Performance
 
 The Vercel function is pinned to `arn1` in `vite.config.ts`. Without it, requests entered
@@ -854,4 +910,19 @@ locally but fails on Vercel with `ENOENT` on a file you know exists, run
 Vercel deploys `master` automatically. Migrations do not deploy with it — run
 `npm run db-push` after merging anything that touches `supabase/migrations/`. The Android
 app picks the deploy up on its next launch; only changes to `capacitor.config.ts` or
-`android/` need `npm run android:build && npm run android:install`.
+`android/` need `npm run android:build && npm run android:install`. A change under
+`supabase/functions/` needs `npm run functions-deploy`.
+
+Setting reminders up in a new production project, once:
+
+```sh
+npx supabase secrets set --env-file supabase/functions/.env   # FCM_SERVICE_ACCOUNT, REMIND_SECRET
+npm run db-push && npm run functions-deploy
+```
+
+then in the SQL editor:
+
+```sql
+select vault.create_secret('https://<ref>.supabase.co/functions/v1/remind', 'remind_url');
+select vault.create_secret('<REMIND_SECRET>', 'remind_secret');
+```

@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
+	import { isNativeApp, listenForTaps, pushWanted, refreshPush } from '$lib/native';
 	import { catchUp } from '$lib/offline/catchUp';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
@@ -18,6 +19,10 @@
 	onMount(() => {
 		loadTheme();
 		catchUp();
+		if (isNativeApp()) {
+			void listenForTaps();
+			if (pushWanted()) void refreshPush();
+		}
 	});
 
 	// Where a tap is heading; null unless a navigation is in flight.

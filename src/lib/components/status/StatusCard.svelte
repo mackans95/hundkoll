@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
-	import { awaitingNewDay, isDaily } from '$lib/status/schedule';
+	import { amberWindowMs, awaitingNewDay } from '$lib/status/schedule';
 	import type { StatusRow } from '$lib/types/domain';
 
 	let {
@@ -38,8 +38,6 @@
 			};
 		}
 
-		const AMBER_WINDOW_MS = isDaily(row) ? 30 * 60_000 : 7 * 86_400_000;
-
 		if (!row.last_at) {
 			return { text: locale.status.neverLogged, classes: 'bg-surface-hover text-ink-soft' };
 		}
@@ -62,7 +60,7 @@
 		return {
 			text: locale.status.due(format.swedishRelative(due, now)),
 			classes:
-				remaining <= AMBER_WINDOW_MS
+				remaining <= amberWindowMs(row)
 					? 'bg-warn-badge text-warn-ink'
 					: 'bg-success-badge text-success-ink'
 		};
