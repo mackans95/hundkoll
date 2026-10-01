@@ -3,8 +3,10 @@
 // reload, kill and reboot, and needs no schema. The finished row goes through
 // the same queue as every dialog log and is indistinguishable from one.
 
+import { invalidateAll } from '$app/navigation';
+import { isNativeApp, lockScreenState, takeLockScreenOutbox } from '$lib/native';
 import type { EventType } from '$lib/types/domain';
-import { buildWalkFields, parseStoredWalk, type ActiveWalk } from './liveWalk';
+import { buildWalkFields, parseStoredWalk, reconcileWalk, type ActiveWalk } from './liveWalk';
 import { queueLog } from './submit';
 
 const KEY = 'hundkoll:active-walk:v1';
@@ -15,12 +17,58 @@ const KEY = 'hundkoll:active-walk:v1';
  */
 export const activeWalk = $state<{ current: ActiveWalk | null }>({ current: null });
 
+/**
+ * False until the page's walk has been lined up with the lock screen's, so the
+ * card cannot push its stale counts over taps made there (plan 20).
+ */
+export const lockScreen = $state({ synced: false });
+
 /** Reads the persisted walk, if one is still running from before. */
 export function loadActiveWalk(): void {
 	try {
 		activeWalk.current = parseStoredWalk(localStorage.getItem(KEY));
 	} catch {
 		// Storage denied: nothing can have survived to be loaded.
+	}
+	lockScreen.synced = false;
+	void syncWithLockScreen();
+}
+
+/**
+ * Takes in what happened on the lock screen: taps the card has not seen, a
+ * walk Spara stored, and walks Spara could not send, which go to the queue.
+ * Run on load and from catchUp, so a resume after the walk sees all of it.
+ */
+export async function syncWithLockScreen(): Promise<void> {
+	if (!isNativeApp()) {
+		lockScreen.synced = true;
+		return;
+	}
+	try {
+		const outcome = reconcileWalk(activeWalk.current, await lockScreenState());
+		if (outcome.kind === 'adopt') {
+			updateWalk({ pee: outcome.pee, poop: outcome.poop });
+		} else if (outcome.kind === 'saved') {
+			discardWalk();
+		}
+
+		// Only once someone is looking: taking the outbox clears its "sent when you
+		// open the app" notice, which a lock-screen tap must not do in the background.
+		const unsent = document.visibilityState === 'visible' ? await takeLockScreenOutbox() : [];
+		for (const item of unsent) {
+			await queueLog(
+				{ id: item.fields.type_id, label: item.label, icon: item.icon || null },
+				item.fields
+			);
+		}
+		// Stored by the lock screen, so the queue never sent it: the list needs a re-read.
+		if (outcome.kind === 'saved' && unsent.length === 0) {
+			await invalidateAll();
+		}
+	} catch (error) {
+		console.warn('lock-screen walk sync failed:', error);
+	} finally {
+		lockScreen.synced = true;
 	}
 }
 

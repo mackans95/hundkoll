@@ -3,6 +3,8 @@
 
 import { goto } from '$app/navigation';
 import * as locale from '$lib/locale';
+import { fixedWalkFields, type ActiveWalk, type LockScreenState } from '$lib/offline/liveWalk';
+import type { EventType } from '$lib/types/domain';
 
 /** Set by capacitor.config.ts's appendUserAgent. */
 export function isNativeApp(): boolean {
@@ -124,4 +126,99 @@ export async function clearReminder(typeId: string): Promise<void> {
 	if (stale.length > 0) {
 		await push.removeDeliveredNotifications({ notifications: stale });
 	}
+}
+
+// The lock-screen walk (plan 20): a local plugin in android/, see LiveWalkPlugin.java.
+
+type LockScreenItem = { fields: Record<string, string>; label: string; icon: string };
+
+interface LiveWalkPlugin {
+	show(walk: Record<string, unknown>): Promise<void>;
+	hide(): Promise<void>;
+	state(): Promise<LockScreenState>;
+	takeOutbox(): Promise<{ items: LockScreenItem[] }>;
+	addListener(event: 'walkChanged' | 'walkSaved', listener: () => void): Promise<unknown>;
+}
+
+const LOCK_SCREEN = 'hundkoll:lock-screen-walk';
+
+// Wrapped for the same reason as plugin(): a bare proxy breaks `await`.
+async function liveWalk() {
+	const { registerPlugin } = await import('@capacitor/core');
+	return { plugin: registerPlugin<LiveWalkPlugin>('LiveWalk') };
+}
+
+export function lockScreenWanted(): boolean {
+	return isNativeApp() && localStorage.getItem(LOCK_SCREEN) === 'on';
+}
+
+/** The switch: needs the same notification permission as reminders. */
+export async function enableLockScreen(): Promise<PushOutcome> {
+	const { push } = await plugin();
+	let permission = await push.checkPermissions();
+	if (permission.receive.startsWith('prompt')) {
+		permission = await push.requestPermissions();
+	}
+	if (permission.receive !== 'granted') {
+		return 'denied';
+	}
+	localStorage.setItem(LOCK_SCREEN, 'on');
+	return 'on';
+}
+
+export async function disableLockScreen(): Promise<void> {
+	localStorage.removeItem(LOCK_SCREEN);
+	await (await liveWalk()).plugin.hide();
+}
+
+/** Puts the walk on the lock screen, or takes it off; counts included, so native matches the card. */
+export async function mirrorWalk(
+	walk: ActiveWalk | null,
+	type: Pick<EventType, 'label' | 'icon'> | null
+): Promise<void> {
+	if (!lockScreenWanted()) {
+		return;
+	}
+	const { plugin } = await liveWalk();
+	if (!walk || !type) {
+		await plugin.hide();
+		return;
+	}
+	const activity = type.icon ? `${type.icon} ${type.label}` : type.label;
+	const words = locale.log.lockScreenWalk;
+	await plugin.show({
+		id: walk.id,
+		label: type.label,
+		icon: type.icon ?? '',
+		startedAt: new Date(walk.startedAt).getTime(),
+		pee: walk.pee,
+		poop: walk.poop,
+		origin: location.origin,
+		fields: fixedWalkFields(walk),
+		words: {
+			title: words.title(activity),
+			addPee: words.addPee,
+			addPoop: words.addPoop,
+			save: words.save,
+			channel: words.channel,
+			pendingTitle: words.pendingTitle(type.label),
+			pendingBody: words.pendingBody
+		}
+	});
+}
+
+export async function lockScreenState(): Promise<LockScreenState> {
+	return (await liveWalk()).plugin.state();
+}
+
+/** Walks Spara could not send; native forgets them as it hands them over. */
+export async function takeLockScreenOutbox(): Promise<LockScreenItem[]> {
+	return (await (await liveWalk()).plugin.takeOutbox()).items;
+}
+
+/** A tap on the lock screen while the page is up. */
+export async function onLockScreenChange(listener: () => void): Promise<void> {
+	const { plugin } = await liveWalk();
+	await plugin.addListener('walkChanged', listener);
+	await plugin.addListener('walkSaved', listener);
 }

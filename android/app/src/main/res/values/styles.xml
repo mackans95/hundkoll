@@ -24,4 +24,16 @@
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
+
+    <!-- A notification button the collapsed view can hold: 40dp fits its ~48dp. -->
+    <style name="LiveWalkButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:background">@drawable/live_walk_button</item>
+        <item name="android:textAppearance">@style/TextAppearance.Compat.Notification.Title</item>
+    </style>
 </resources>

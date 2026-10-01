@@ -5,7 +5,14 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import * as locale from '$lib/locale';
-	import { isNativeApp, listenForTaps, pushWanted, refreshPush } from '$lib/native';
+	import {
+		isNativeApp,
+		listenForTaps,
+		onLockScreenChange,
+		pushWanted,
+		refreshPush
+	} from '$lib/native';
+	import { syncWithLockScreen } from '$lib/offline/activeWalk.svelte';
 	import { catchUp } from '$lib/offline/catchUp';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
@@ -22,6 +29,7 @@
 		if (isNativeApp()) {
 			void listenForTaps();
 			if (pushWanted()) void refreshPush();
+			void onLockScreenChange(() => void syncWithLockScreen());
 		}
 	});
 
