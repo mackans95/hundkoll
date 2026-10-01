@@ -221,6 +221,94 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			push_devices: {
+				Row: {
+					created_at: string;
+					seen_at: string;
+					token: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					seen_at?: string;
+					token: string;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					seen_at?: string;
+					token?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			reminders_sent: {
+				Row: {
+					dog_id: string;
+					due_at: string;
+					kind: string;
+					sent_at: string;
+					type_id: string;
+				};
+				Insert: {
+					dog_id: string;
+					due_at: string;
+					kind: string;
+					sent_at?: string;
+					type_id: string;
+				};
+				Update: {
+					dog_id?: string;
+					due_at?: string;
+					kind?: string;
+					sent_at?: string;
+					type_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'reminders_sent_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'reminders_sent_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'reminders_sent_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'reminders_sent_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'reminders_sent_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'reminders_sent_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
+					}
+				];
+			};
 		};
 		Views: {
 			dog_care_status: {
@@ -429,6 +517,7 @@ export type Database = {
 		Functions: {
 			detail_happened: { Args: { value: Json }; Returns: boolean };
 			is_household_member: { Args: { hid: string }; Returns: boolean };
+			remind_tick: { Args: never; Returns: undefined };
 		};
 		Enums: {
 			[_ in never]: never;

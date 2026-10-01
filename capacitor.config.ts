@@ -24,8 +24,14 @@ const config: CapacitorConfig = {
 		url,
 		cleartext: url.startsWith('http:')
 	},
-	// Lets the page tell it is inside the app without importing anything.
+	// Lets the page's script tell it is inside the app. Only the script: the
+	// service worker fetches with Android's default user agent, so the server
+	// never sees this.
 	appendUserAgent: 'HundkollApp',
+	plugins: {
+		// Shown even with the app open: a reminder is worth the banner.
+		PushNotifications: { presentationOptions: ['alert', 'sound'] }
+	},
 	android: {
 		// CAP_WEBVIEW_DEBUG=1 builds an APK the Mac can inspect over adb
 		// (chrome://inspect). Off otherwise, release builds included.

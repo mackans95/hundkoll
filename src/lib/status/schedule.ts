@@ -17,6 +17,18 @@ export function isDaily(row: Pick<StatusRow, 'interval' | 'interval_type'>): boo
 }
 
 /**
+ * How long before due a card turns amber. A week suits intervals measured in
+ * weeks; on a four-hour one it would be amber from the moment of logging. The
+ * reminders fire at the same moment (supabase/functions/_shared/reminders.ts).
+ */
+export const DAILY_AMBER_MS = 30 * 60_000;
+export const RECURRING_AMBER_MS = 7 * 86_400_000;
+
+export function amberWindowMs(row: Pick<StatusRow, 'interval' | 'interval_type'>): number {
+	return isDaily(row) ? DAILY_AMBER_MS : RECURRING_AMBER_MS;
+}
+
+/**
  * The instant the schedule counts from. Usually the last event; for a daily
  * type whose last event predates an absence, the return from it — the view
  * decides which, this only reads it back. Null when nothing was ever logged.

@@ -35,3 +35,6 @@ vite.config.ts.timestamp-*
 # Loose screenshots dropped in the repo root for debugging
 /*.jpg
 /*.png
+
+# Firebase config for the Android app (plan 19): public repo, kept local
+android/app/google-services.json
