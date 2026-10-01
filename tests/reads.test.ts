@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readsFailed } from '$lib/server/reads';
 
-const NO_STORE = { 'cache-control': 'no-store' };
+const INCOMPLETE = { 'cache-control': 'no-store', 'x-hundkoll-incomplete': '1' };
 
 describe('readsFailed', () => {
 	it('says nothing when every read landed', () => {
@@ -25,7 +25,7 @@ describe('readsFailed', () => {
 	it('seals the page when a read failed', () => {
 		const setHeaders = vi.fn();
 		expect(readsFailed(setHeaders, [], null)).toBe(true);
-		expect(setHeaders).toHaveBeenCalledWith(NO_STORE);
+		expect(setHeaders).toHaveBeenCalledWith(INCOMPLETE);
 	});
 
 	// The failure this replaced: the guard asked about one read per page, so a

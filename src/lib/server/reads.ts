@@ -1,5 +1,7 @@
 // Whether a page's reads all landed, and what to do when they did not.
 
+import { INCOMPLETE_HEADER } from '$lib/offline/incomplete';
+
 /**
  * A page with a hole in it must not become the copy the service worker serves
  * on the next launch — the hole would look permanent, and only a manual reload
@@ -18,7 +20,7 @@ export function readsFailed(
 ): boolean {
 	const failed = reads.some((read) => read === null);
 	if (failed) {
-		setHeaders({ 'cache-control': 'no-store' });
+		setHeaders({ 'cache-control': 'no-store', [INCOMPLETE_HEADER]: '1' });
 	}
 	return failed;
 }

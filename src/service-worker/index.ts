@@ -3,6 +3,7 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 import * as locale from '$lib/locale';
+import { INCOMPLETE_HEADER } from '$lib/offline/incomplete';
 import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -93,10 +94,14 @@ async function respond(event: FetchEvent): Promise<Response> {
 		const response = await fetch(request);
 		// A redirected response belongs to a different URL — caching it under
 		// this one would, for an expired session, pin the login page in place
-		// of the app. `no-store` is the app's own signal that a read failed
-		// and the page has a hole in it: serving that copy on the next launch
-		// would make one bad moment look permanent.
-		if (response.status === 200 && !response.redirected && !noStore(response)) {
+		// of the app. A page with a failed read in it is marked by the server:
+		// serving that copy on the next launch would make one bad moment look
+		// permanent.
+		if (
+			response.status === 200 &&
+			!response.redirected &&
+			!response.headers.has(INCOMPLETE_HEADER)
+		) {
 			event.waitUntil(cache.put(request, response.clone()));
 		}
 		return response;
@@ -115,11 +120,6 @@ async function respond(event: FetchEvent): Promise<Response> {
 		}
 		return offlineResponse();
 	}
-}
-
-/** Whether the server asked for this response not to be kept. */
-function noStore(response: Response): boolean {
-	return (response.headers.get('cache-control') ?? '').includes('no-store');
 }
 
 /**
