@@ -34,6 +34,8 @@ Swedish in the UI, English in the code.
 - **Supabase** — Postgres, Auth, RLS (region `eu-north-1`)
 - **Vercel** via `adapter-vercel`, function pinned to `arn1` (Stockholm) so it runs in the
   same city as the database — see [Performance](#performance)
+- **Capacitor** for the Android app — a native shell around the deployed site, see
+  [Android app](#android-app)
 - No runtime dependencies beyond `@supabase/supabase-js` and `@supabase/ssr`. The charts
   are hand-rolled inline SVG; there is no charting library.
 
@@ -655,6 +657,62 @@ then kept serving it. The list helpers now return `null` for a failed read rathe
 empty array, the page says so, and the load sets `cache-control: no-store`, which the worker
 takes as "do not keep this one".
 
+## Android app
+
+The Android app is a [Capacitor](https://capacitorjs.com) shell: a real APK with its own
+icon, splash screen and process, whose WebView loads `https://hundkoll.vercel.app`. It is
+not a bundled copy of the site, so SSR, cookies, the service worker and the offline queue
+all work exactly as in the browser, and **a web deploy reaches the app on its next launch**.
+A new APK is only needed when `capacitor.config.ts` or `android/` changes. Why this and not
+a bundled SPA: [plan 18](plans/plan-18-android-app.md).
+
+- **`capacitor.config.ts`** — app id `se.hundkoll.app` (permanent: a new id is a new app,
+  logged out with an empty queue), the URL, and a `HundkollApp` user-agent suffix for
+  telling the app from the browser.
+- **`native-shell/`** — an empty `index.html` Capacitor insists on. Deliberately no
+  `server.errorPath`: offline, the worker tries the network before its cache, the WebView
+  reports that failed try as a page error, and Capacitor would jump to its error page
+  while the worker was serving the cached one.
+- **`android/`** — the generated Gradle project, committed. The icon is vector drawables
+  drawn from `static/icon.svg`; the splash is that icon on the app's surface colour.
+
+```sh
+npm run android:build      # cap sync + signed release APK
+npm run android:install    # adb install -r onto the connected phone, keeping its data
+```
+
+To try a web change in the app before it deploys, build an APK against a local preview.
+`adb reverse` makes the phone's `127.0.0.1` the Mac's, which is a secure origin, so the
+service worker runs. Stopping the preview is then a way to test offline that keeps `adb`
+connected:
+
+```sh
+npm run db-local && npx vite build --mode localdb
+npx vite preview --mode localdb --host 127.0.0.1 --port 4173
+adb reverse tcp:4173 tcp:4173 && adb reverse tcp:54321 tcp:54321
+CAP_SERVER_URL=http://127.0.0.1:4173 npm run android:build && npm run android:install
+```
+
+Add `CAP_WEBVIEW_DEBUG=1` to either build to inspect the app's WebView from the Mac
+(`chrome://inspect`, or CDP over `adb forward`); it is off otherwise. Rebuild without
+either variable afterwards. The test build keeps its own login, because it
+is a different origin, so production's login survives the round trip.
+
+One-time setup on the Mac: Android Studio (for the SDK and `adb`), **Java 21** (`brew install
+openjdk@21` — Android Studio's bundled Java 25 is too new for Capacitor 8's Gradle), and
+`ANDROID_HOME` / `JAVA_HOME` / `platform-tools` in the shell profile. The phone needs
+Developer options → Wireless debugging, paired once with `adb pair`.
+
+> **The release key is the app's identity.** `~/.android/hundkoll-release.jks`, with its
+> password in `~/.gradle/gradle.properties` (`HUNDKOLL_KEYSTORE`,
+> `HUNDKOLL_KEYSTORE_PASSWORD`, `HUNDKOLL_KEY_ALIAS`). Both stay out of the repo and are
+> backed up together. Lose them and no future APK installs over the current one: Android
+> demands an uninstall, which wipes the login and any unsent logs.
+
+Installs go over `adb` rather than by tapping an APK file: Google's developer verification
+(enforced globally from 2027) blocks tapped APKs from unregistered developers, and `adb` is
+exempt.
+
 ## Performance
 
 The Vercel function is pinned to `arn1` in `vite.config.ts`. Without it, requests entered
@@ -792,4 +850,6 @@ locally but fails on Vercel with `ENOENT` on a file you know exists, run
 ## Deployment
 
 Vercel deploys `master` automatically. Migrations do not deploy with it — run
-`npm run db-push` after merging anything that touches `supabase/migrations/`.
+`npm run db-push` after merging anything that touches `supabase/migrations/`. The Android
+app picks the deploy up on its next launch; only changes to `capacitor.config.ts` or
+`android/` need `npm run android:build && npm run android:install`.

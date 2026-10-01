@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The paw from static/icon.svg, on the same 768 viewport as the background.
+     Also the monochrome layer, so Android's themed icons get a paw. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="768"
+    android:viewportHeight="768">
+    <group
+        android:translateX="128"
+        android:translateY="128">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M180,308a76,63 0,1 0,152 0a76,63 0,1 0,-152 0z" />
+        <group
+            android:pivotX="175"
+            android:pivotY="224"
+            android:rotation="-20">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M143,224a32,41 0,1 0,64 0a32,41 0,1 0,-64 0z" />
+        </group>
+        <group
+            android:pivotX="224"
+            android:pivotY="189"
+            android:rotation="-8">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M193,189a31,39 0,1 0,62 0a31,39 0,1 0,-62 0z" />
+        </group>
+        <group
+            android:pivotX="288"
+            android:pivotY="189"
+            android:rotation="8">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M257,189a31,39 0,1 0,62 0a31,39 0,1 0,-62 0z" />
+        </group>
+        <group
+            android:pivotX="337"
+            android:pivotY="224"
+            android:rotation="20">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M305,224a32,41 0,1 0,64 0a32,41 0,1 0,-64 0z" />
+        </group>
+    </group>
+</vector>
