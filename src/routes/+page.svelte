@@ -12,7 +12,13 @@
 	import { isAbsence } from '$lib/events/absence';
 	import { LIVE_TYPE_IDS } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
-	import { activeWalk, loadActiveWalk, startWalk } from '$lib/offline/activeWalk.svelte';
+	import { mirrorWalk } from '$lib/native';
+	import {
+		activeWalk,
+		loadActiveWalk,
+		lockScreen,
+		startWalk
+	} from '$lib/offline/activeWalk.svelte';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
 	import type { EventRow, EventType } from '$lib/types/domain';
@@ -82,6 +88,18 @@
 			? (data.types.find((type) => type.id === activeWalk.current?.typeId) ?? null)
 			: null
 	);
+
+	// Every change to the walk reaches the lock screen (plan 20), once it has
+	// been lined up with what was tapped there. The note is the only thing
+	// typed, so a pause lets a sentence through as one update.
+	let mirrorTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		const walk = activeWalk.current;
+		const type = liveType;
+		if (!lockScreen.synced) return;
+		clearTimeout(mirrorTimer);
+		mirrorTimer = setTimeout(() => void mirrorWalk(walk, type), 300);
+	});
 
 	// The tiles whose activity already has a card on the page.
 	const busyTypeIds = $derived(

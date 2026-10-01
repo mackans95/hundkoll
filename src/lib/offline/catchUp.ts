@@ -13,6 +13,7 @@
 import { invalidateAll } from '$app/navigation';
 import { page } from '$app/state';
 import { RETRY_DELAYS_MS, hasLanded, isStale } from './freshness';
+import { syncWithLockScreen } from './activeWalk.svelte';
 import { loadQueue, sendPending } from './queue.svelte';
 
 /** When this context last saw the server answer, on the phone's own clock. */
@@ -60,6 +61,8 @@ async function run(): Promise<void> {
 		// signal kept their hourglass until the app was backgrounded and reopened.
 		queueLoaded ??= loadQueue();
 		await queueLoaded;
+		// Before sending: a walk saved on the lock screen without signal joins the queue here.
+		await syncWithLockScreen();
 
 		await sendPending();
 		// sendPending re-reads the page itself when something landed; noticing

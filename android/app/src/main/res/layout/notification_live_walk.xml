@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The walk's collapsed notification (plan 20): the buttons are the whole
+     point, so they are here rather than in the expand-only action row. The
+     system header above carries the app name and the running timer. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/live_walk_pee"
+        style="@style/LiveWalkButton" />
+
+    <TextView
+        android:id="@+id/live_walk_poop"
+        style="@style/LiveWalkButton" />
+
+    <TextView
+        android:id="@+id/live_walk_save"
+        style="@style/LiveWalkButton" />
+</LinearLayout>

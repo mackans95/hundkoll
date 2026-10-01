@@ -56,6 +56,17 @@ export const log = {
 		/** Over the editable minutes input when a walk ran suspiciously long. */
 		checkDuration: 'Kontrollera längden (minuter) innan du sparar.'
 	},
+	/** The running walk's notification on the lock screen (plan 20). */
+	lockScreenWalk: {
+		title: (activity: string) => `${activity} pågår` as const,
+		addPee: '+ Kiss',
+		addPoop: '+ Bajs',
+		save: 'Spara',
+		/** Android's name for the notification channel, shown in its settings. */
+		channel: 'Pågående promenad',
+		pendingTitle: (activity: string) => `${activity} sparad` as const,
+		pendingBody: 'Skickas när du öppnar appen'
+	},
 	/** The card shown while the dog is with someone else. */
 	away: {
 		since: (time: string) => `Sedan ${time}` as const,
@@ -179,7 +190,11 @@ export const settings = {
 			'Aviseringar är avstängda för Hundkoll i Android. Slå på dem under Inställningar → Appar → Hundkoll → Aviseringar, och försök igen.',
 		failed: 'Kunde inte slå på påminnelser. Försök igen.',
 		/** Android's name for the notification channel, shown in its settings. */
-		channel: 'Påminnelser'
+		channel: 'Påminnelser',
+		lockScreen: 'Promenad på låsskärmen',
+		lockScreenHelp:
+			'En pågående promenad visas med knappar för kiss, bajs och spara, utan att låsa upp.',
+		lockScreenFailed: 'Kunde inte slå på promenad på låsskärmen. Försök igen.'
 	}
 } as const;
 

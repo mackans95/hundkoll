@@ -772,6 +772,26 @@ the same two variables). To let the local cron call it, add the two Vault entrie
 URL `http://supabase_kong_hundkoll:8000/functions/v1/remind`. The full loop on a phone is an
 APK against a local preview (see [Android app](#android-app)) with the switch turned on.
 
+### The walk on the lock screen
+
+With **Promenad på låsskärmen** on (Inställningar, per phone), a running walk is an ongoing
+notification: **+ Kiss · n**, **+ Bajs · n** and **Spara**, usable without unlocking.
+Tapping it elsewhere opens the app. The native side is a local plugin in
+`android/app/src/main/java/se/hundkoll/app/` (`LiveWalk*.java`), registered in
+`MainActivity`.
+
+- **Native holds the counts while it is up** (SharedPreferences), so taps land with the app
+  killed. The page mirrors every change to it (an effect on Logga) and adopts its counts
+  on load and resume (`reconcileWalk` in `liveWalk.ts`, tested).
+- **Spara saves without the page**: it posts the same fields as Avsluta to `?/log` with the
+  WebView's cookies and writes any `Set-Cookie` back, so a session refresh during the save
+  cannot become a replay. Without signal, the fields go to a native outbox, and a "skickas
+  när du öppnar appen" notice stays until the app is opened and hands them to the queue.
+  The walk's row id makes every path store it once.
+- **A custom layout, not a Live Update**: Android shows a standard notification's buttons
+  only when expanded. A custom view shows them collapsed, at the price of Android 16's
+  promotion, which OnePlus did not grant anyway.
+
 Free tiers throughout: FCM costs nothing, and a call a minute is ~43,200 of the 500,000
 monthly Edge Function invocations.
 

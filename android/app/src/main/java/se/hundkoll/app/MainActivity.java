@@ -10,6 +10,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Local plugins are registered by hand, before the bridge starts.
+        registerPlugin(LiveWalkPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Without this Android finishes the activity on every back gesture.
