@@ -652,8 +652,10 @@ re-read resolves with what is already on screen instead of failing.
 **A page whose read failed must not become that cached copy.** A dropped connection used to
 render as "Inget loggat ännu" — indistinguishable from an empty database — and the worker
 then kept serving it. The list helpers now return `null` for a failed read rather than an
-empty array, the page says so, and the load sets `cache-control: no-store`, which the worker
-takes as "do not keep this one".
+empty array, the page says so, and the load sets `x-hundkoll-incomplete`, which the worker
+takes as "do not keep this one". Not `cache-control: no-store` alone: SvelteKit sends
+`private, no-store` on every `__data.json`, so a worker keyed on that caches no page data at
+all, and offline navigation dies on the first tap.
 
 ## Performance
 
