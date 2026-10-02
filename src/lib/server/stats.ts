@@ -27,8 +27,7 @@ import type {
 	WeightPoint
 } from '$lib/types/domain';
 import type { WalkDay } from '$lib/types/domain';
-import { fieldsFor } from '$lib/events/fields';
-import { countDetailDays } from '$lib/stats/detailDays';
+import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import { longestWhen, outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
 import { detailDayCounts, weightHistory } from './events';
 import type { Db } from './db';
@@ -36,7 +35,6 @@ import type { Db } from './db';
 export type Stats = {
 	// codegen:stats-shape — npm run new-event inserts card data fields here
 	aloneMetrics: DetailMetric[];
-	aloneDetailDays: DetailDayCount[];
 	/** Lugn / Orolig / Vet ej per day: the card is stacked by outcome (plan 22). */
 	aloneOutcomes: OutcomeDay[];
 	/** The longest alone time she stayed calm through, in the 30 days. */
@@ -216,8 +214,8 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 			.select(METRIC_COLUMNS)
 			.eq('type_id', 'alone')
 			.eq('window_days', 30),
-		// The type's own events: the outcome split, the tooltip's signs and the
-		// longest calm stretch all come from these, and no view can name the fields.
+		// The type's own events: the outcome split with its signs and lengths, and
+		// the longest calm stretch, all come from these; no view can name the fields.
 		db
 			.from('events')
 			.select('occurred_at, details')
@@ -332,8 +330,11 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
 		aloneMetrics: present((aloneMetricsRes.data ?? []).map(toDetailMetric)),
-		aloneDetailDays: countDetailDays(aloneEvents, fieldsFor('alone')),
-		aloneOutcomes: outcomeDays(aloneEvents, 'calm'),
+		aloneOutcomes: outcomeDays(aloneEvents, {
+			outcome: 'calm',
+			measure: 'duration_min',
+			revealed: fieldsRevealedBy(fieldsFor('alone'), 'calm')
+		}),
 		aloneLongestCalm: longestWhen(aloneEvents, 'duration_min', 'calm'),
 		carRideDetailDays,
 		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),

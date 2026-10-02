@@ -82,7 +82,6 @@
 		outcomes={data.aloneOutcomes}
 		today={data.today}
 		metrics={data.aloneMetrics}
-		detailDays={data.aloneDetailDays}
 		longestCalm={data.aloneLongestCalm}
 	/>
 	<CarRideCard

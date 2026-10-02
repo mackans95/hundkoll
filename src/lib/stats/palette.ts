@@ -15,7 +15,11 @@ export const ACCIDENT_COLORS = [
 	'var(--chart-accident-3)'
 ];
 
-/** Ensamtid by outcome (Lugn, Orolig, Vet ej), the meal pair's logic: calm carries the story. */
+/**
+ * Ensamtid by outcome: Lugn, Orolig, Vet ej. Orolig is blue rather than the
+ * meal chart's grey, which sat too close to Vet ej's for red-green
+ * colour-blind eyes; blue stays apart from both emerald and grey for them.
+ */
 export const ALONE_COLORS = [
 	'var(--chart-alone-1)',
 	'var(--chart-alone-2)',

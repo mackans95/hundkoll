@@ -22,11 +22,9 @@ describe('simpleCountBuckets', () => {
 
 		expect(buckets[29].segments).toEqual([4]);
 		expect(buckets[28].segments).toEqual([0]);
-		expect(buckets[29].tooltip.rows[0][0]).toEqual({
-			label: 'Klokoll',
-			value: '4',
-			color: 'var(--chart-x)'
-		});
+		expect(buckets[29].tooltip.rows[0]).toEqual([
+			{ label: 'Klokoll', value: '4', color: 'var(--chart-x)' }
+		]);
 	});
 
 	it('ignores rows outside the window rather than shifting the columns', () => {

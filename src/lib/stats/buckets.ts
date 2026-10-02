@@ -3,7 +3,7 @@
 // "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
-import { fieldsFor } from '$lib/events/fields';
+import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import { dayBreakdown } from './detailDays';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
@@ -16,7 +16,7 @@ import type {
 	SimpleDay,
 	WalkDay
 } from '$lib/types/domain';
-import type { OutcomeDay } from './outcomes';
+import type { Mean, OutcomeDay } from './outcomes';
 import { ALONE_COLORS, MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
@@ -94,43 +94,69 @@ export function simpleCountBuckets(
 	});
 }
 
+/** A length that may be a mean: "42 min" for one event, "~42 min" for several. */
+function meanMinutes(mean: Mean): string {
+	if (mean.n === 0) {
+		return locale.units.missing;
+	}
+	const text = format.minutesText(mean.sum / mean.n);
+	return mean.n > 1 ? locale.units.approximately(text) : text;
+}
+
 /**
  * Builds Ensamtid's columns for the last 30 days, stacked Lugn / Orolig / Vet
- * ej like the meal chart, with the signs she showed under each day's counts.
+ * ej like the meal chart. The tooltip reads like the walk one (the count and
+ * the day's length), then a row per outcome with its own length, and what was
+ * noticed under Orolig in an inset box beneath it, so one anxious session with
+ * two signs never reads as three events.
  */
-export function aloneBuckets(
-	days: OutcomeDay[],
-	today: string,
-	breakdown: DetailDayCount[]
-): ColumnBucket[] {
+export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
-	const fields = fieldsFor('alone');
 	const words = locale.stats.alone;
+	const revealed = fieldsRevealedBy(fieldsFor('alone'), 'calm');
 	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
 		const row = byDay.get(day);
-		const calm = row?.yes ?? 0;
-		const anxious = row?.no ?? 0;
-		const unknown = Math.max(0, (row?.n ?? 0) - calm - anxious);
-		const signs = dayBreakdown(breakdown, fields, day);
+		const groups = row
+			? [
+					{ group: row.yes, label: words.legendCalm, color: ALONE_COLORS[0] },
+					{ group: row.no, label: words.legendAnxious, color: ALONE_COLORS[1] },
+					{ group: row.unknown, label: words.legendUnknown, color: ALONE_COLORS[2] }
+				]
+			: [];
 		return {
 			label: format.dayLabel(day),
 			tick: i % DAY_TICK_EVERY === 0,
-			segments: [calm, anxious, unknown],
+			segments: [row?.yes.count ?? 0, row?.no.count ?? 0, row?.unknown.count ?? 0],
 			tooltip: {
 				heading: format.dayLabel(day),
-				rows:
-					(row?.n ?? 0) === 0
-						? [tooltipRow(cell(words.emptyTooltip, '0', ALONE_COLORS[0]))]
-						: [
-								tooltipRow(
-									calm > 0 ? cell(words.legendCalm, String(calm), ALONE_COLORS[0]) : null,
-									anxious > 0 ? cell(words.legendAnxious, String(anxious), ALONE_COLORS[1]) : null,
-									unknown > 0 ? cell(words.legendUnknown, String(unknown), ALONE_COLORS[2]) : null
-								),
-								...(signs.length > 0
-									? [tooltipRow(...signs.map((entry) => cell(entry.label, String(entry.n))))]
-									: [])
-							]
+				rows: !row
+					? [tooltipRow(cell(words.emptyTooltip, '0', ALONE_COLORS[0]))]
+					: [
+							tooltipRow(
+								countCell(locale.stats.symbols.alone, row.n),
+								cell(words.length, meanMinutes(row.measure))
+							),
+							...groups
+								.filter(({ group }) => group.count > 0)
+								.flatMap(({ group, label, color }) => {
+									const nested = [
+										...revealed
+											.filter((field) => (group.numbers[field.name]?.n ?? 0) > 0)
+											.map((field) =>
+												tooltipRow(cell(words.after, meanMinutes(group.numbers[field.name])))
+											),
+										tooltipRow(
+											...revealed
+												.filter((field) => (group.counts[field.name] ?? 0) > 0)
+												.map((field) => cell(field.label, String(group.counts[field.name])))
+										)
+									].filter((cells) => cells.length > 0);
+									return [
+										tooltipRow(cell(`${label} ${group.count}`, meanMinutes(group.measure), color)),
+										...(nested.length > 0 ? [{ nested }] : [])
+									];
+								})
+						]
 			}
 		};
 	});

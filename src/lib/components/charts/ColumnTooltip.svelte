@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ColumnBucket } from '$lib/types/charts';
+	import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
 	import { placeTooltip } from './geometry';
 
 	let {
@@ -26,6 +26,38 @@
 	);
 </script>
 
+{#snippet cells(row: TooltipCell[])}
+	{#each row as cell, ci}
+		{#if ci > 0}
+			<span class="mx-2 w-px shrink-0 self-stretch bg-tooltip-edge"></span>
+		{/if}
+		<span
+			class="flex flex-1 items-center gap-1.5 {row.length > 1
+				? 'justify-center'
+				: 'justify-between'}"
+		>
+			<!-- Dot and label as one, so a lone cell reads "● Orolig 1 … 24 min"
+			     rather than spreading the dot, label and value across the row. -->
+			{#if cell.color || cell.label}
+				<span class="flex items-center gap-1.5">
+					{#if cell.color}
+						<span
+							class="h-2 w-2 shrink-0 rounded-full"
+							style="background:{cell.color}"
+						></span>
+					{/if}
+					{#if cell.label}
+						<span class={cell.big ? 'text-lg leading-none' : 'text-tooltip-ink-muted'}>
+							{cell.label}
+						</span>
+					{/if}
+				</span>
+			{/if}
+			<span class="font-semibold">{cell.value}</span>
+		</span>
+	{/each}
+{/snippet}
+
 <!-- fixed, so no card can clip it; z-25 sits over the tab bar (z-20) and
      under a modal sheet (z-30), which cannot be open over a chart anyway. -->
 <div
@@ -42,31 +74,18 @@
 		     of their own, and the whole tooltip is rebuilt whenever the hovered
 		     column changes. -->
 		{#each bucket.tooltip.rows as row}
-			<div class="flex items-stretch rounded-md bg-tooltip-tint px-2 py-1">
-				{#each row as cell, ci}
-					{#if ci > 0}
-						<span class="mx-2 w-px shrink-0 self-stretch bg-tooltip-edge"></span>
-					{/if}
-					<span
-						class="flex flex-1 items-center gap-1.5 {row.length > 1
-							? 'justify-center'
-							: 'justify-between'}"
-					>
-						{#if cell.color}
-							<span
-								class="h-2 w-2 shrink-0 rounded-full"
-								style="background:{cell.color}"
-							></span>
-						{/if}
-						{#if cell.label}
-							<span class={cell.big ? 'text-lg leading-none' : 'text-tooltip-ink-muted'}>
-								{cell.label}
-							</span>
-						{/if}
-						<span class="font-semibold">{cell.value}</span>
-					</span>
-				{/each}
-			</div>
+			{#if Array.isArray(row)}
+				<div class="flex items-stretch rounded-md bg-tooltip-tint px-2 py-1">
+					{@render cells(row)}
+				</div>
+			{:else}
+				<!-- Inset under the row above: these belong to it. -->
+				<div class="ml-3 flex flex-col gap-0.5 rounded-md border border-tooltip-edge px-2 py-1">
+					{#each row.nested as nestedRow}
+						<div class="flex items-stretch">{@render cells(nestedRow)}</div>
+					{/each}
+				</div>
+			{/if}
 		{/each}
 	</div>
 </div>

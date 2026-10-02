@@ -165,6 +165,39 @@ generic is the work.
 3. **Is "Orolig efter" optional?** _Yes, optional._
 4. **The chart?** _Stacked by outcome_, like Matning's åt upp / åt inte upp.
 
+## Revised after a look at the card
+
+With fake data in the local database (2026-10-02), two changes.
+
+**The tooltip reads like the walk one, with Orolig's signs inside Orolig.** The generated
+breakdown put "Orolig 1 · Ylade 1 · Rastlös 1" side by side, which reads as three events.
+The agreed layout:
+
+```
+27/9
+🏠 3 │ Längd ~38 min
+● Lugn 1              50 min
+● Orolig 2           ~32 min
+  ┌ Orolig efter ~14 min ┐
+  └ Ylade 2 │ Rastlös 1  ┘
+● Vet ej 1            20 min
+```
+
+- The count and the day's length come first, as for walks.
+- Then a row per outcome that happened, with its own length.
+- What was noticed under Orolig goes in an inset box beneath it. That's a new tooltip row
+  type (`TooltipGroup`), drawn by `ColumnTooltip`.
+- "~" only for a mean of more than one session.
+- `outcomeDays` now keeps each outcome's count, mean length and revealed answers, so the
+  card no longer needs the generated per-field day counts.
+
+**Orolig is blue.** The meal chart's two greys, kept for Orolig and Vet ej, were too close
+for red-green colour-blind eyes. Blue stays apart from both the emerald and the grey.
+
+Also, a tooltip cell's dot and label now sit together, so a lone cell reads
+"● Orolig 1 … 24 min" instead of spreading across the row. That tidies every chart's
+single-cell rows.
+
 ## Not in scope
 
 - Status, intervals and reminders: it happens when it's needed.

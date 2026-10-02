@@ -320,6 +320,7 @@ export const activities = {
 
 /** Emoji used as labels in their own right, shared across the stats tooltips. */
 const symbols = {
+	alone: '🏠',
 	walk: '🚶',
 	pee: '🟡',
 	poop: '💩',
@@ -340,7 +341,10 @@ export const stats = {
 		legendCalm: 'Lugn',
 		legendAnxious: 'Orolig',
 		legendUnknown: 'Vet ej',
-		emptyTooltip: 'Ensamtid'
+		emptyTooltip: 'Ensamtid',
+		length: 'Längd',
+		/** Inside Orolig's box: when she grew anxious, on average. */
+		after: 'Orolig efter'
 	},
 	carRide: {
 		heading: '🚗 Biltur',

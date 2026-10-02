@@ -10,24 +10,22 @@
 	import { answeredShare, type OutcomeDay } from '$lib/stats/outcomes';
 	import { ALONE_COLORS } from '$lib/stats/palette';
 	import { avgTile, minutesTile, shareValueTile } from '$lib/stats/summary';
-	import type { DetailDayCount, DetailMetric } from '$lib/types/domain';
+	import type { DetailMetric } from '$lib/types/domain';
 
 	let {
 		outcomes,
 		today,
 		metrics,
-		detailDays,
 		longestCalm
 	}: {
 		outcomes: OutcomeDay[];
 		today: string;
 		metrics: DetailMetric[];
-		detailDays: DetailDayCount[];
 		longestCalm: number | null;
 	} = $props();
 
 	const words = locale.stats.alone;
-	const buckets = $derived(aloneBuckets(outcomes, today, detailDays));
+	const buckets = $derived(aloneBuckets(outcomes, today));
 
 	// Vet ej only earns a legend entry once one exists, as the meal card's unknown does.
 	const hasUnknown = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
