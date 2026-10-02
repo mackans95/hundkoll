@@ -7,8 +7,8 @@
 > the car rides event … No status tracking, this will be done whenever it's needed, not on a
 > schedule."
 
-> **Status: 📝 Planned** — branch `feature/alone-time`. The six outline questions are
-> answered (below); four smaller ones remain at the end.
+> **Status: 🚧 In progress** — branch `feature/alone-time`. All ten questions answered; the
+> words changed after the design was written, see question 1.
 
 ## The goal
 
@@ -138,19 +138,14 @@ generic is the work.
    tile on the grid, the card against snapshot data with a few logged alone times.
 5. PR. After merge, `npm run db-push`. No APK.
 
-## Questions
+## Questions, and the answers
 
-1. **Words.** _Lyckades / Misslyckades / Vet ej_ is the working set. Alternatives, if you
-   want them: _Gick bra / Gick dåligt / Vet ej_, or about her rather than the session, _Lugn
-   / Orolig / Vet ej_. The tiles would follow ("Lyckade", "Längsta lyckade").
-2. **Do signs have to be given when it failed?** A reveal today insists on at least one
-   cause, but you might know it failed without knowing how (a neighbour heard something).
-   _Recommendation: optional._
-3. **Is "Misslyckades efter" optional too?** Without a camera you often won't know.
-   _Recommendation: optional; the tile averages the ones that have it._
-4. **The chart's bars:** one colour like Biltur, or **stacked by outcome** (lyckade,
-   misslyckade, vet ej)? Stacked shows progress at a glance and uses `StackedColumns` as it
-   was meant to. _Recommendation: stacked._
+1. **Words?** _**Lugn / Orolig / Vet ej**_, about her rather than the session. The field
+   is `calm`, and the rest follows: "Orolig efter (min)", and the tiles "Lugn" and
+   "Längsta lugna".
+2. **Must a sign be given when she was anxious?** _Optional._
+3. **Is "Orolig efter" optional?** _Yes, optional._
+4. **The chart?** _Stacked by outcome_, like Matning's åt upp / åt inte upp.
 
 ## Not in scope
 

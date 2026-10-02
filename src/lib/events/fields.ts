@@ -41,6 +41,67 @@ function countText(value: unknown, word: string): string | null {
 
 export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 	// codegen:detail-fields — npm run new-event inserts new types here
+	alone: [
+		{
+			name: 'duration_min',
+			label: locale.activities.fields.durationMin,
+			input: 'number',
+			required: true,
+			summarize: (value) =>
+				typeof value === 'number' ? locale.units.minutes(String(value).replace('.', ',')) : null
+		},
+		{
+			name: 'anxious_after_min',
+			label: locale.activities.fields.anxiousAfterMin,
+			input: 'number',
+			summarize: (value) =>
+				typeof value === 'number' ? locale.units.minutes(String(value).replace('.', ',')) : null
+		},
+		{
+			name: 'howled',
+			label: locale.activities.fields.howled,
+			input: 'checkbox',
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.howled
+					: value === false
+						? locale.activities.summary.notHowled
+						: null
+		},
+		{
+			name: 'destroyed',
+			label: locale.activities.fields.destroyed,
+			input: 'checkbox',
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.destroyed
+					: value === false
+						? locale.activities.summary.notDestroyed
+						: null
+		},
+		{
+			name: 'accident_inside',
+			label: locale.activities.fields.accidentInside,
+			input: 'checkbox',
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.accidentInside
+					: value === false
+						? locale.activities.summary.notAccidentInside
+						: null
+		},
+		{
+			name: 'restless',
+			label: locale.activities.fields.restless,
+			input: 'checkbox',
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.restless
+					: value === false
+						? locale.activities.summary.notRestless
+						: null
+		}
+	],
 	car_ride: [
 		{
 			name: 'duration_min',

@@ -31,6 +31,9 @@ import type { Db } from './db';
 
 export type Stats = {
 	// codegen:stats-shape — npm run new-event inserts card data fields here
+	aloneMetrics: DetailMetric[];
+	aloneDetailDays: DetailDayCount[];
+	aloneDays: SimpleDay[];
 	carRideDetailDays: DetailDayCount[];
 	carRideMetrics: DetailMetric[];
 	carRideDays: SimpleDay[];
@@ -201,6 +204,19 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	// otherwise need listing a second time and eventually would not be.
 	const results = await Promise.all([
 		// codegen:stats-queries — npm run new-event inserts card queries here
+		db
+			.from('stats_detail_windows')
+			.select(METRIC_COLUMNS)
+			.eq('type_id', 'alone')
+			.eq('window_days', 30),
+		detailDayCounts(db, 'alone', daysAgo(DAILY_WINDOW_DAYS)),
+		db
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
+			.eq('type_id', 'alone')
+			.eq('period', 'day')
+			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
+			.order('bucket'),
 		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
 		db
 			.from('stats_detail_windows')
@@ -271,6 +287,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	const [
 		// codegen:stats-results — one name here per query above, same order
+		aloneMetricsRes,
+		aloneDetailDays,
+		aloneRes,
 		carRideDetailDays,
 		carRideMetricsRes,
 		carRideRes,
@@ -302,6 +321,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
+		aloneMetrics: present((aloneMetricsRes.data ?? []).map(toDetailMetric)),
+		aloneDetailDays,
+		aloneDays: rows.simpleDays(present((aloneRes.data ?? []).map(toTypeBucket)), 'alone'),
 		carRideDetailDays,
 		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
 		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),

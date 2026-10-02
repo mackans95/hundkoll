@@ -273,6 +273,11 @@ export const units = {
 export const activities = {
 	fields: {
 		// codegen:field-labels — npm run new-event inserts field labels here
+		anxiousAfterMin: 'Orolig efter (min)',
+		howled: 'Ylade',
+		destroyed: 'Förstörde något',
+		accidentInside: 'Olycka',
+		restless: 'Rastlös',
 		accident: 'Olycka?',
 		pooped: 'Bajsade',
 		threwUp: 'Spydde',
@@ -285,6 +290,14 @@ export const activities = {
 	/** Lower case: these are fragments joined into one line under an event. */
 	summary: {
 		// codegen:summary-words — npm run new-event inserts summary fragments here
+		howled: 'ylade',
+		notHowled: 'inte ylade',
+		destroyed: 'förstörde något',
+		notDestroyed: 'inte förstörde något',
+		accidentInside: 'olycka',
+		notAccidentInside: 'inte olycka',
+		restless: 'rastlös',
+		notRestless: 'inte rastlös',
 		pooped: 'bajsade',
 		threwUp: 'spydde',
 		pee: 'kiss',
@@ -313,6 +326,12 @@ const symbols = {
 export const stats = {
 	loadFailed: 'Kunde inte läsa statistiken. Försök igen om en stund.',
 	// codegen:stats-strings — npm run new-event inserts card strings here
+	alone: {
+		heading: '🏠 Ensamtid',
+		avgDurationMin: 'Snittlängd',
+		avgAnxiousAfterMin: 'Orolig efter',
+		tooltipLabel: 'Ensamtid'
+	},
 	carRide: {
 		heading: '🚗 Biltur',
 		avgDurationMin: 'Snittlängd',
