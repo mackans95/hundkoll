@@ -3,8 +3,8 @@
 // "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
-import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
-import { dayBreakdown } from './detailDays';
+import { fieldsFor, fieldsRevealedBy, type DetailField } from '$lib/events/fields';
+import { dayBreakdown, dayMeans } from './detailDays';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
@@ -34,6 +34,26 @@ function optionalMinutes(value: number | null): string {
 	return value === null
 		? locale.units.missing
 		: locale.units.approximately(format.minutesText(value));
+}
+
+/**
+ * A field label made short enough for a tooltip: no unit in parentheses, which
+ * the value already carries, and no question mark, which asks the dialog's
+ * question rather than naming an answer. "Längd (minuter)" → "Längd".
+ */
+function tooltipLabel(label: string): string {
+	return label.replace(/\s*\([^)]*\)$/, '').replace(/\?$/, '');
+}
+
+/**
+ * A number field's day as its own summary of the mean, rounded to the field's
+ * step: "30 min" for one event, "~32 min" for several.
+ */
+function meanText(field: DetailField, sum: number, n: number): string {
+	const decimals = field.step?.split('.')[1]?.length ?? 0;
+	const mean = Number((sum / n).toFixed(decimals));
+	const text = field.summarize?.(mean) ?? format.swedishNumber(mean);
+	return n > 1 ? locale.units.approximately(text) : text;
 }
 
 /** A tooltip cell; coloured when it stands in for a legend entry. */
@@ -75,7 +95,8 @@ export function simpleCountBuckets(
 		const n = byDay.get(day) ?? 0;
 		// Only what actually happened: a quiet day says the count and stops,
 		// rather than listing every field as a zero.
-		const detail = breakdown ? dayBreakdown(breakdown.counts, fields, day) : [];
+		const groups = breakdown ? dayBreakdown(breakdown.counts, fields, day) : [];
+		const means = breakdown && n > 0 ? dayMeans(breakdown.counts, fields, day) : [];
 
 		return {
 			label: format.dayLabel(day),
@@ -83,11 +104,29 @@ export function simpleCountBuckets(
 			segments: [n],
 			tooltip: {
 				heading: format.dayLabel(day),
+				// Like the walk tooltip: the count and the day's means first, then
+				// each field that happened with what it revealed boxed under it.
 				rows: [
-					tooltipRow(cell(label, String(n), color)),
-					...(detail.length > 0
-						? [tooltipRow(...detail.map((entry) => cell(entry.label, String(entry.n))))]
-						: [])
+					tooltipRow(
+						cell(label, String(n), color),
+						...means.map(({ field, sum, n: answered }) =>
+							cell(tooltipLabel(field.label), meanText(field, sum, answered))
+						)
+					),
+					...groups.flatMap((group) => [
+						tooltipRow(cell(`${tooltipLabel(group.label)}:`, String(group.n))),
+						...(group.children.length > 0
+							? [
+									{
+										nested: [
+											tooltipRow(
+												...group.children.map((child) => cell(child.label, String(child.n)))
+											)
+										]
+									}
+								]
+							: [])
+					])
 				]
 			}
 		};
