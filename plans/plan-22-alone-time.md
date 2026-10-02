@@ -176,11 +176,11 @@ The agreed layout:
 ```
 27/9
 🏠 3 │ Längd ~38 min
-● Lugn 1              50 min
-● Orolig 2           ~32 min
+● Lugn: 1    │  50 min
+● Orolig: 2  │ ~32 min
   ┌ Orolig efter ~14 min ┐
   └ Ylade 2 │ Rastlös 1  ┘
-● Vet ej 1            20 min
+● Vet ej: 1  │  20 min
 ```
 
 - The count and the day's length come first, as for walks.
@@ -191,8 +191,13 @@ The agreed layout:
 - `outcomeDays` now keeps each outcome's count, mean length and revealed answers, so the
   card no longer needs the generated per-field day counts.
 
-**Orolig is blue.** The meal chart's two greys, kept for Orolig and Vet ej, were too close
-for red-green colour-blind eyes. Blue stays apart from both the emerald and the grey.
+**Vet ej is blue, Orolig stays grey.** The meal chart's two greys, kept for Orolig and Vet
+ej, were too close for red-green colour-blind eyes. Orolig went blue first, then swapped
+after a look: grey reads as the negative one, and blue as neutral.
+
+**Outcome rows read "● Orolig: 1 │ 24 min"**: the count bold after a colon, and the length
+past a divider, like the first row. Before, the label and count ran together, with nothing
+in bold.
 
 Also, a tooltip cell's dot and label now sit together, so a lone cell reads
 "● Orolig 1 … 24 min" instead of spreading across the row. That tidies every chart's

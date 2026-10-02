@@ -16,9 +16,9 @@ export const ACCIDENT_COLORS = [
 ];
 
 /**
- * Ensamtid by outcome: Lugn, Orolig, Vet ej. Orolig is blue rather than the
- * meal chart's grey, which sat too close to Vet ej's for red-green
- * colour-blind eyes; blue stays apart from both emerald and grey for them.
+ * Ensamtid by outcome: Lugn, Orolig, Vet ej. Two greys, as on the meal chart,
+ * were too close for red-green colour-blind eyes, so Vet ej is blue: apart
+ * from both emerald and grey for them, and neutral where grey reads as "off".
  */
 export const ALONE_COLORS = [
 	'var(--chart-alone-1)',

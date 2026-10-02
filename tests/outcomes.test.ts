@@ -102,8 +102,11 @@ describe('aloneBuckets tooltip', () => {
 				{ label: '🏠', value: '4', big: true },
 				{ label: words.length, value: '~34 min' }
 			],
-			[{ label: `${words.legendCalm} 1`, value: '50 min', color: ALONE_COLORS[0] }],
-			[{ label: `${words.legendAnxious} 2`, value: '~32 min', color: ALONE_COLORS[1] }],
+			[{ label: `${words.legendCalm}:`, value: '1', color: ALONE_COLORS[0] }, { value: '50 min' }],
+			[
+				{ label: `${words.legendAnxious}:`, value: '2', color: ALONE_COLORS[1] },
+				{ value: '~32 min' }
+			],
 			{
 				nested: [
 					[{ label: words.after, value: '~14 min' }],
@@ -113,7 +116,10 @@ describe('aloneBuckets tooltip', () => {
 					]
 				]
 			},
-			[{ label: `${words.legendUnknown} 1`, value: '20 min', color: ALONE_COLORS[2] }]
+			[
+				{ label: `${words.legendUnknown}:`, value: '1', color: ALONE_COLORS[2] },
+				{ value: '20 min' }
+			]
 		]);
 	});
 
@@ -123,7 +129,7 @@ describe('aloneBuckets tooltip', () => {
 				{ label: '🏠', value: '1', big: true },
 				{ label: words.length, value: '45 min' }
 			],
-			[{ label: `${words.legendCalm} 1`, value: '45 min', color: ALONE_COLORS[0] }]
+			[{ label: `${words.legendCalm}:`, value: '1', color: ALONE_COLORS[0] }, { value: '45 min' }]
 		]);
 	});
 

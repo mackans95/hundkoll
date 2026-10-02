@@ -152,7 +152,10 @@ export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] 
 										)
 									].filter((cells) => cells.length > 0);
 									return [
-										tooltipRow(cell(`${label} ${group.count}`, meanMinutes(group.measure), color)),
+										// The count bold after a colon, the length past a divider, like the first row.
+										tooltipRow(cell(`${label}:`, String(group.count), color), {
+											value: meanMinutes(group.measure)
+										}),
 										...(nested.length > 0 ? [{ nested }] : [])
 									];
 								})
