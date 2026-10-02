@@ -141,6 +141,8 @@ wants them.
 
 ## Wanted later: live timing
 
+> Agreed 2026-10-02: **its own plan and PR, next** (plan 23), not part of this one.
+
 Start Ensamtid as you leave, and stop it when you're back, at which point the dialog opens
 with the length filled in and asks how it went. It would help most early in the training,
 when the times are short and minute-precise. It's its own plan, because today's live mode
