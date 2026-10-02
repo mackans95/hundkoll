@@ -79,10 +79,11 @@
 
 	<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
 	<AloneCard
-		days={data.aloneDays}
+		outcomes={data.aloneOutcomes}
 		today={data.today}
 		metrics={data.aloneMetrics}
 		detailDays={data.aloneDetailDays}
+		longestCalm={data.aloneLongestCalm}
 	/>
 	<CarRideCard
 		days={data.carRideDays}

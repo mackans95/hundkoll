@@ -7,8 +7,26 @@
 > the car rides event … No status tracking, this will be done whenever it's needed, not on a
 > schedule."
 
-> **Status: 🚧 In progress** — branch `feature/alone-time`. All ten questions answered; the
-> words changed after the design was written, see question 1.
+> **Status: ✅ Built, awaiting merge** — branch `feature/alone-time`. All ten questions
+> answered; the words changed after the design was written (question 1), so the field is
+> `calm` and the design below says Lugn/Orolig where it first said Lyckades/Misslyckades.
+> Verified in headless Chrome on the local stack:
+>
+> - the rose fourth row;
+> - the dialog: Vet ej preselected, Orolig revealing its fields with CSS alone;
+> - a save storing `{duration_min, calm: false, anxious_after_min, howled}` and summarising
+>   as "40 min · orolig · efter 15 min · ylade";
+> - the card's stacked bars and four tiles against hand-checked numbers;
+> - an edit from Orolig to Vet ej leaving only `{duration_min}`.
+>
+> Departures from the design:
+>
+> - **The card reads the type's own events**, not the type-bucket view: one read gives the
+>   split, the tooltip's signs and the longest calm stretch.
+> - **The Lugn share is computed from that split**, not from `share_answered`: the same
+>   number over the same 30 days, without widening `DetailMetric`.
+> - **Editing an outcome back to Vet ej** needed the outcome key added to the ones
+>   `applyEventEdit` replaces wholesale, or the old `false` would have stayed forever.
 
 ## The goal
 

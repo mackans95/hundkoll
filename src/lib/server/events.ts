@@ -351,11 +351,12 @@ export function parseEventEdit(form: FormData, event: EventRow): ParsedEdit {
 
 	// A reveal and its causes are dropped from the parse when the box is
 	// unticked, so merging would keep an accident on the row forever — there
-	// would be no way to correct one that was logged by mistake. Those keys are
-	// replaced wholesale; every other key keeps the merge above.
+	// would be no way to correct one that was logged by mistake. An outcome set
+	// back to "Vet ej" is the same. Those keys are replaced wholesale; every
+	// other key keeps the merge above.
 	const revealed = new Set<string>();
 	for (const field of fieldsFor(event.type_id)) {
-		if (field.input === 'reveal' || field.revealedBy) {
+		if (field.input === 'reveal' || field.input === 'outcome' || field.revealedBy) {
 			revealed.add(field.name);
 		}
 	}

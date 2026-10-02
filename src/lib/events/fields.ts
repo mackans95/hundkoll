@@ -4,14 +4,15 @@
 //
 // 'count' is a −/+ stepper. 'reveal' is a checkbox that uncovers the fields
 // naming it in revealedBy, and is not valid until one of them is answered:
-// "olycka" with no cause is not something that happened.
+// "olycka" with no cause is not something that happened. 'outcome' is a
+// three-way yes / no / don't know; its "no" uncovers its fields, all optional.
 
 import * as locale from '$lib/locale';
 
 export type DetailField = {
 	name: string;
 	label: string;
-	input: 'number' | 'checkbox' | 'count' | 'reveal';
+	input: 'number' | 'checkbox' | 'count' | 'reveal' | 'outcome';
 	step?: string;
 	required?: boolean;
 	/**
@@ -20,6 +21,13 @@ export type DetailField = {
 	 * its parent's value.
 	 */
 	revealedBy?: string;
+	/**
+	 * An outcome's three choices. Yes stores true, no stores false, and don't
+	 * know stores nothing, so a share over the field counts only the known ones.
+	 */
+	outcome?: { yes: string; no: string; unknown: string };
+	/** Another number field this one cannot exceed: anxious after 50 of 40 minutes. */
+	atMost?: string;
 	/** How the value reads in the events list; null hides it. */
 	summarize?: (value: unknown) => string | null;
 };
@@ -51,55 +59,55 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 				typeof value === 'number' ? locale.units.minutes(String(value).replace('.', ',')) : null
 		},
 		{
+			name: 'calm',
+			label: locale.activities.fields.calm,
+			input: 'outcome',
+			outcome: locale.activities.calmOutcome,
+			summarize: (value) =>
+				value === true
+					? locale.activities.summary.calm
+					: value === false
+						? locale.activities.summary.anxious
+						: null
+		},
+		{
 			name: 'anxious_after_min',
 			label: locale.activities.fields.anxiousAfterMin,
 			input: 'number',
+			revealedBy: 'calm',
+			atMost: 'duration_min',
 			summarize: (value) =>
-				typeof value === 'number' ? locale.units.minutes(String(value).replace('.', ',')) : null
+				typeof value === 'number'
+					? locale.activities.summary.after(locale.units.minutes(String(value).replace('.', ',')))
+					: null
 		},
 		{
 			name: 'howled',
 			label: locale.activities.fields.howled,
 			input: 'checkbox',
-			summarize: (value) =>
-				value === true
-					? locale.activities.summary.howled
-					: value === false
-						? locale.activities.summary.notHowled
-						: null
+			revealedBy: 'calm',
+			summarize: (value) => (value === true ? locale.activities.summary.howled : null)
 		},
 		{
 			name: 'destroyed',
 			label: locale.activities.fields.destroyed,
 			input: 'checkbox',
-			summarize: (value) =>
-				value === true
-					? locale.activities.summary.destroyed
-					: value === false
-						? locale.activities.summary.notDestroyed
-						: null
+			revealedBy: 'calm',
+			summarize: (value) => (value === true ? locale.activities.summary.destroyed : null)
 		},
 		{
 			name: 'accident_inside',
 			label: locale.activities.fields.accidentInside,
 			input: 'checkbox',
-			summarize: (value) =>
-				value === true
-					? locale.activities.summary.accidentInside
-					: value === false
-						? locale.activities.summary.notAccidentInside
-						: null
+			revealedBy: 'calm',
+			summarize: (value) => (value === true ? locale.activities.summary.accidentInside : null)
 		},
 		{
 			name: 'restless',
 			label: locale.activities.fields.restless,
 			input: 'checkbox',
-			summarize: (value) =>
-				value === true
-					? locale.activities.summary.restless
-					: value === false
-						? locale.activities.summary.notRestless
-						: null
+			revealedBy: 'calm',
+			summarize: (value) => (value === true ? locale.activities.summary.restless : null)
 		}
 	],
 	car_ride: [

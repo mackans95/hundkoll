@@ -220,6 +220,8 @@ export const errors = {
 	invalidValue: (field: string) => `Ogiltigt värde för ${field.toLowerCase()}.` as const,
 	/** A reveal was ticked with none of its causes picked. */
 	chooseOne: (field: string) => `Välj minst ett alternativ under ${field.toLowerCase()}.` as const,
+	exceeds: (field: string, limit: string) =>
+		`${field} kan inte vara mer än ${limit.toLowerCase()}.` as const,
 	logFailed: 'Kunde inte logga händelsen.',
 	endBeforeStart: 'Hemkomsten måste vara efter starten.',
 	/** A Logga flera row that failed, named by its number so it can be found. */
@@ -271,8 +273,11 @@ export const units = {
 
 /** What an activity's details are called, on the form and in the log list. */
 export const activities = {
+	/** Ensamtid's outcome buttons: about her, not the session. */
+	calmOutcome: { yes: 'Lugn', no: 'Orolig', unknown: 'Vet ej' },
 	fields: {
 		// codegen:field-labels — npm run new-event inserts field labels here
+		calm: 'Hur gick det?',
 		anxiousAfterMin: 'Orolig efter (min)',
 		howled: 'Ylade',
 		destroyed: 'Förstörde något',
@@ -290,14 +295,14 @@ export const activities = {
 	/** Lower case: these are fragments joined into one line under an event. */
 	summary: {
 		// codegen:summary-words — npm run new-event inserts summary fragments here
+		calm: 'lugn',
+		anxious: 'orolig',
+		/** After the outcome, when she grew anxious: "efter 20 min". */
+		after: (duration: string) => `efter ${duration}` as const,
 		howled: 'ylade',
-		notHowled: 'inte ylade',
 		destroyed: 'förstörde något',
-		notDestroyed: 'inte förstörde något',
 		accidentInside: 'olycka',
-		notAccidentInside: 'inte olycka',
 		restless: 'rastlös',
-		notRestless: 'inte rastlös',
 		pooped: 'bajsade',
 		threwUp: 'spydde',
 		pee: 'kiss',
@@ -329,8 +334,13 @@ export const stats = {
 	alone: {
 		heading: '🏠 Ensamtid',
 		avgDurationMin: 'Snittlängd',
+		calmShare: 'Lugn',
 		avgAnxiousAfterMin: 'Orolig efter',
-		tooltipLabel: 'Ensamtid'
+		longestCalm: 'Längsta lugna',
+		legendCalm: 'Lugn',
+		legendAnxious: 'Orolig',
+		legendUnknown: 'Vet ej',
+		emptyTooltip: 'Ensamtid'
 	},
 	carRide: {
 		heading: '🚗 Biltur',

@@ -4,7 +4,6 @@
 // and the tooltip/legend swatches reach them.
 
 // codegen:chart-colors — npm run new-event inserts card colors here
-export const ALONE_COLOR = 'var(--chart-alone)';
 export const CAR_RIDE_COLOR = 'var(--chart-car-ride)';
 export const WALK_COLOR = 'var(--chart-walk)';
 export const WEIGHT_COLOR = 'var(--chart-weight)';
@@ -14,6 +13,13 @@ export const ACCIDENT_COLORS = [
 	'var(--chart-accident-1)',
 	'var(--chart-accident-2)',
 	'var(--chart-accident-3)'
+];
+
+/** Ensamtid by outcome (Lugn, Orolig, Vet ej), the meal pair's logic: calm carries the story. */
+export const ALONE_COLORS = [
+	'var(--chart-alone-1)',
+	'var(--chart-alone-2)',
+	'var(--chart-alone-3)'
 ];
 
 /** Emphasis pair: finished carries the story, not-finished is context. */

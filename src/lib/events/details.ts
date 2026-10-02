@@ -12,7 +12,9 @@ import type { EventDetails } from '$lib/types/domain';
 import { fieldsFor, type DetailField } from './fields';
 
 export type ParsedDetails =
-	{ ok: true; details: EventDetails } | { ok: false; field: string; reason: 'value' | 'choice' };
+	| { ok: true; details: EventDetails }
+	| { ok: false; field: string; reason: 'value' | 'choice' }
+	| { ok: false; field: string; reason: 'exceeds'; limit: string };
 
 export type DetailsFailure = Extract<ParsedDetails, { ok: false }>;
 
@@ -22,9 +24,14 @@ export type DetailsFailure = Extract<ParsedDetails, { ok: false }>;
  * one place should not be worded in two.
  */
 export function detailsMessage(failure: DetailsFailure): string {
-	return failure.reason === 'choice'
-		? locale.errors.chooseOne(failure.field)
-		: locale.errors.invalidValue(failure.field);
+	switch (failure.reason) {
+		case 'choice':
+			return locale.errors.chooseOne(failure.field);
+		case 'exceeds':
+			return locale.errors.exceeds(failure.field, failure.limit);
+		default:
+			return locale.errors.invalidValue(failure.field);
+	}
 }
 
 /**
@@ -43,6 +50,11 @@ export function parseDetails(form: FormData, typeId: string): ParsedDetails {
 export function parseFields(form: FormData, fields: DetailField[]): ParsedDetails {
 	const details: EventDetails = {};
 	const ticked = (name: string) => form.get(name) === 'on';
+	// Whether a parent uncovers its fields: a ticked reveal, or an outcome's "no".
+	const revealed = (name: string) =>
+		fields.find((field) => field.name === name)?.input === 'outcome'
+			? form.get(name) === 'false'
+			: ticked(name);
 
 	for (const field of fields) {
 		if (field.input === 'reveal') {
@@ -54,10 +66,19 @@ export function parseFields(form: FormData, fields: DetailField[]): ParsedDetail
 			continue;
 		}
 
+		if (field.input === 'outcome') {
+			// "Vet ej" posts an empty value and stores nothing, so it is not counted either way.
+			const value = form.get(field.name);
+			if (value === 'true' || value === 'false') {
+				details[field.name] = value === 'true';
+			}
+			continue;
+		}
+
 		// A collapsed reveal still posts whatever its inputs were left at —
 		// hiding a checkbox does not clear it, and without JavaScript nothing
 		// does. The parent decides, not the child's own input.
-		if (field.revealedBy && !ticked(field.revealedBy)) {
+		if (field.revealedBy && !revealed(field.revealedBy)) {
 			continue;
 		}
 
@@ -111,6 +132,15 @@ export function parseFields(form: FormData, fields: DetailField[]): ParsedDetail
 		);
 		if (!answered) {
 			return { ok: false, field: field.label, reason: 'choice' };
+		}
+	}
+
+	for (const field of fields) {
+		const limit = fields.find((other) => other.name === field.atMost);
+		const value = details[field.name];
+		const max = limit ? details[limit.name] : undefined;
+		if (limit && typeof value === 'number' && typeof max === 'number' && value > max) {
+			return { ok: false, field: field.label, reason: 'exceeds', limit: limit.label };
 		}
 	}
 

@@ -1,57 +1,57 @@
 <script lang="ts">
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
-	import * as locale from '$lib/locale';
+	import ChartLegend, { type LegendItem } from '$lib/components/ChartLegend.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
 	import * as format from '$lib/format';
-	import { metricFor, totalEvents } from '$lib/stats/metrics';
-	import { avgTile, shareTile } from '$lib/stats/summary';
-	import { simpleCountBuckets } from '$lib/stats/buckets';
-	import { ALONE_COLOR } from '$lib/stats/palette';
-	import type { DetailDayCount, DetailMetric, SimpleDay } from '$lib/types/domain';
+	import * as locale from '$lib/locale';
+	import { aloneBuckets } from '$lib/stats/buckets';
+	import { metricFor } from '$lib/stats/metrics';
+	import { answeredShare, type OutcomeDay } from '$lib/stats/outcomes';
+	import { ALONE_COLORS } from '$lib/stats/palette';
+	import { avgTile, minutesTile, shareValueTile } from '$lib/stats/summary';
+	import type { DetailDayCount, DetailMetric } from '$lib/types/domain';
 
-	// metrics and detailDays are optional so a card can gain tiles or a tooltip
-	// breakdown later without the page having to pass anything until it does —
-	// see the metric kinds in scripts/new-event-core.ts.
 	let {
-		days,
+		outcomes,
 		today,
-		metrics = [],
-		detailDays = []
+		metrics,
+		detailDays,
+		longestCalm
 	}: {
-		days: SimpleDay[];
+		outcomes: OutcomeDay[];
 		today: string;
-		metrics?: DetailMetric[];
-		detailDays?: DetailDayCount[];
+		metrics: DetailMetric[];
+		detailDays: DetailDayCount[];
+		longestCalm: number | null;
 	} = $props();
 
-	const buckets = $derived(
-		simpleCountBuckets(days, today, locale.stats.alone.tooltipLabel, ALONE_COLOR, {
-			typeId: 'alone',
-			counts: detailDays
-		})
-	);
+	const words = locale.stats.alone;
+	const buckets = $derived(aloneBuckets(outcomes, today, detailDays));
+
+	// Vet ej only earns a legend entry once one exists, as the meal card's unknown does.
+	const hasUnknown = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
+	const legend = $derived<LegendItem[]>([
+		{ color: ALONE_COLORS[0], label: words.legendCalm },
+		{ color: ALONE_COLORS[1], label: words.legendAnxious },
+		...(hasUnknown ? [{ color: ALONE_COLORS[2], label: words.legendUnknown }] : [])
+	]);
 
 	const tiles = $derived([
-		avgTile(
-			locale.stats.alone.avgDurationMin,
-			metricFor(metrics, 'duration_min'),
-			format.minutesText
-		),
-		avgTile(
-			locale.stats.alone.avgAnxiousAfterMin,
-			metricFor(metrics, 'anxious_after_min'),
-			format.minutesText
-		)
+		avgTile(words.avgDurationMin, metricFor(metrics, 'duration_min'), format.minutesText),
+		shareValueTile(words.calmShare, answeredShare(outcomes)),
+		avgTile(words.avgAnxiousAfterMin, metricFor(metrics, 'anxious_after_min'), format.minutesText),
+		minutesTile(words.longestCalm, longestCalm)
 	]);
 </script>
 
-<FoldableCard title={locale.stats.alone.heading}>
+<FoldableCard title={words.heading}>
 	<StackedColumns
 		{buckets}
-		colors={[ALONE_COLOR]}
-		label={locale.stats.alone.heading}
+		colors={ALONE_COLORS}
+		label={words.heading}
 	/>
+	<ChartLegend items={legend} />
 	<div class="grid grid-cols-2 gap-2">
 		{#each tiles as tile (tile.label)}
 			<StatTile {tile} />

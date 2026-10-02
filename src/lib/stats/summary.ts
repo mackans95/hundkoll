@@ -157,3 +157,13 @@ export function accidentTiles(summary: StatSummary | null, tracked: number): Til
 		}
 	];
 }
+
+/** A share that may not exist yet, written as a percentage or a dash. No "~": it is counted. */
+export function shareValueTile(label: string, share: number | null): Tile {
+	return { label, value: share === null ? DASH : format.percentageText(share) };
+}
+
+/** A measured extreme, in minutes. No "~" either: it is one real event, not an average. */
+export function minutesTile(label: string, minutes: number | null): Tile {
+	return { label, value: minutes === null ? DASH : format.minutesText(minutes) };
+}

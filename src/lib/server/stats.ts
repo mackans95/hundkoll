@@ -15,6 +15,7 @@ import type {
 	DetailDayCount,
 	DetailMetric,
 	DetailWindowRow,
+	EventDetails,
 	MealDay,
 	Period,
 	SimpleDay,
@@ -26,6 +27,9 @@ import type {
 	WeightPoint
 } from '$lib/types/domain';
 import type { WalkDay } from '$lib/types/domain';
+import { fieldsFor } from '$lib/events/fields';
+import { countDetailDays } from '$lib/stats/detailDays';
+import { longestWhen, outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
 import { detailDayCounts, weightHistory } from './events';
 import type { Db } from './db';
 
@@ -33,7 +37,10 @@ export type Stats = {
 	// codegen:stats-shape — npm run new-event inserts card data fields here
 	aloneMetrics: DetailMetric[];
 	aloneDetailDays: DetailDayCount[];
-	aloneDays: SimpleDay[];
+	/** Lugn / Orolig / Vet ej per day: the card is stacked by outcome (plan 22). */
+	aloneOutcomes: OutcomeDay[];
+	/** The longest alone time she stayed calm through, in the 30 days. */
+	aloneLongestCalm: number | null;
 	carRideDetailDays: DetailDayCount[];
 	carRideMetrics: DetailMetric[];
 	carRideDays: SimpleDay[];
@@ -209,14 +216,13 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 			.select(METRIC_COLUMNS)
 			.eq('type_id', 'alone')
 			.eq('window_days', 30),
-		detailDayCounts(db, 'alone', daysAgo(DAILY_WINDOW_DAYS)),
+		// The type's own events: the outcome split, the tooltip's signs and the
+		// longest calm stretch all come from these, and no view can name the fields.
 		db
-			.from('stats_type_buckets')
-			.select(TYPE_BUCKET_COLUMNS)
+			.from('events')
+			.select('occurred_at, details')
 			.eq('type_id', 'alone')
-			.eq('period', 'day')
-			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
-			.order('bucket'),
+			.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS)),
 		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
 		db
 			.from('stats_detail_windows')
@@ -288,8 +294,7 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	const [
 		// codegen:stats-results — one name here per query above, same order
 		aloneMetricsRes,
-		aloneDetailDays,
-		aloneRes,
+		aloneEventsRes,
 		carRideDetailDays,
 		carRideMetricsRes,
 		carRideRes,
@@ -312,6 +317,11 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		(result) => result !== null && typeof result === 'object' && 'error' in result && result.error
 	);
 
+	const aloneEvents = (aloneEventsRes.data ?? []).map((row) => ({
+		occurred_at: row.occurred_at,
+		details: (row.details ?? {}) as EventDetails
+	}));
+
 	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
 	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
 	const trendRows = rows.trendBuckets(
@@ -322,8 +332,9 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
 		aloneMetrics: present((aloneMetricsRes.data ?? []).map(toDetailMetric)),
-		aloneDetailDays,
-		aloneDays: rows.simpleDays(present((aloneRes.data ?? []).map(toTypeBucket)), 'alone'),
+		aloneDetailDays: countDetailDays(aloneEvents, fieldsFor('alone')),
+		aloneOutcomes: outcomeDays(aloneEvents, 'calm'),
+		aloneLongestCalm: longestWhen(aloneEvents, 'duration_min', 'calm'),
 		carRideDetailDays,
 		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
 		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),

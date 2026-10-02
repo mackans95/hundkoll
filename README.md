@@ -291,8 +291,9 @@ Current catalogue:
 booleans and are still read correctly.
 
 Categories are tile colors on the log grid: emerald for `routine`, sky for `care`, amber
-for `health`, slate for `other` — the catch-all every new type lands in unless it obviously
-belongs to one of the first three — and rose for `absence`. Two of them also mean
+for `health`, and rose for both `other` — the catch-all every new type lands in unless it
+obviously belongs to one of the first three — and `absence`. `other` was slate until
+Ensamtid (plan 22), when Hundvakt's rose was liked enough to give it the whole last row. Two of them also mean
 something to the SQL: `routine` decides when tracking started, and `absence` is the one
 category with behaviour, described under [Away mode](#away-mode).
 
@@ -481,6 +482,14 @@ merge-then-`db-push` path. Doing it by hand is three steps, of which two are opt
      logging is offline-first, so a rule only the server knew would accept the
      event, close the dialog, and surface a failed row minutes later. That module
      is already shared with the queue, so both paths enforce it identically.
+
+   An **`outcome`** is a three-way answer, three buttons in a row: Ensamtid's _Lugn / Orolig
+   / Vet ej_. Yes stores `true`, no stores `false`, and don't know stores **nothing**, so a
+   share over it counts only the known answers. Its "no" uncovers the fields naming it in
+   `revealedBy`, all of them optional (unlike a reveal's causes), with `:has()` on the
+   fieldset, CSS only, like the reveal. A number field can also declare `atMost` another
+   one ("Orolig efter" can't exceed the length), checked in `parseDetails`. The generator
+   knows neither yet; Ensamtid's were added by hand after it ran.
 
 3. **Stats** — only if the type deserves a chart: see the next section.
 

@@ -81,13 +81,15 @@
    eyes. */
 :root {
 	/* codegen:chart-values — npm run new-event inserts card color pairs here */
-	--chart-alone: light-dark(#475569, #94a3b8);
 	--chart-car-ride: light-dark(#475569, #94a3b8);
 	--chart-walk: light-dark(#059669, #34d399);
 	--chart-weight: light-dark(#0284c7, #38bdf8);
 	--chart-accident-1: light-dark(#d97706, #fbbf24);
 	--chart-accident-2: light-dark(#92400e, #b45309);
 	--chart-accident-3: light-dark(#9ca3af, #6b7280);
+	--chart-alone-1: light-dark(#059669, #34d399);
+	--chart-alone-2: light-dark(#9ca3af, #6b7280);
+	--chart-alone-3: light-dark(#d1d5db, #4b5563);
 	--chart-meal-1: light-dark(#059669, #34d399);
 	--chart-meal-2: light-dark(#9ca3af, #6b7280);
 	--chart-meal-3: light-dark(#d1d5db, #4b5563);

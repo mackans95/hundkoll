@@ -136,3 +136,72 @@ describe('detailsMessage', () => {
 		);
 	});
 });
+
+// Ensamtid's three-way answer (plan 22), through the shipped type: what each
+// button stores decides what the Lugn share divides by.
+describe('an outcome (Ensamtid)', () => {
+	const parse = (entries: Record<string, string>) => parseDetails(form(entries), 'alone');
+
+	it('stores Lugn as true and leaves the anxious fields out, even if posted', () => {
+		expect(
+			parse({ duration_min: '40', calm: 'true', howled: 'on', anxious_after_min: '10' })
+		).toEqual({
+			ok: true,
+			details: { duration_min: 40, calm: true }
+		});
+	});
+
+	// Vet ej posts an empty value; stored as nothing, it is not counted either way.
+	it('stores nothing for Vet ej', () => {
+		expect(parse({ duration_min: '40', calm: '' })).toEqual({
+			ok: true,
+			details: { duration_min: 40 }
+		});
+	});
+
+	it('takes the signs and the time under Orolig', () => {
+		expect(
+			parse({
+				duration_min: '40',
+				calm: 'false',
+				anxious_after_min: '15',
+				howled: 'on',
+				restless: 'on'
+			})
+		).toEqual({
+			ok: true,
+			details: {
+				duration_min: 40,
+				calm: false,
+				anxious_after_min: 15,
+				howled: true,
+				restless: true
+			}
+		});
+	});
+
+	// Unlike a reveal, nothing under it is required: a neighbour may only have heard her.
+	it('accepts Orolig with nothing else said', () => {
+		expect(parse({ duration_min: '40', calm: 'false' })).toEqual({
+			ok: true,
+			details: { duration_min: 40, calm: false }
+		});
+	});
+
+	it('refuses an anxious time longer than the alone time', () => {
+		const parsed = parse({ duration_min: '20', calm: 'false', anxious_after_min: '25' });
+		expect(parsed.ok).toBe(false);
+		if (!parsed.ok) {
+			expect(detailsMessage(parsed)).toBe(
+				locale.errors.exceeds(
+					locale.activities.fields.anxiousAfterMin,
+					locale.activities.fields.durationMin
+				)
+			);
+		}
+	});
+
+	it('allows the anxious time to equal the alone time', () => {
+		expect(parse({ duration_min: '20', calm: 'false', anxious_after_min: '20' }).ok).toBe(true);
+	});
+});

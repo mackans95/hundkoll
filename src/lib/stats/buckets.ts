@@ -16,7 +16,8 @@ import type {
 	SimpleDay,
 	WalkDay
 } from '$lib/types/domain';
-import { MEAL_COLORS, WALK_COLOR } from './palette';
+import type { OutcomeDay } from './outcomes';
+import { ALONE_COLORS, MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
 const DAILY_WINDOW = 30;
@@ -88,6 +89,48 @@ export function simpleCountBuckets(
 						? [tooltipRow(...detail.map((entry) => cell(entry.label, String(entry.n))))]
 						: [])
 				]
+			}
+		};
+	});
+}
+
+/**
+ * Builds Ensamtid's columns for the last 30 days, stacked Lugn / Orolig / Vet
+ * ej like the meal chart, with the signs she showed under each day's counts.
+ */
+export function aloneBuckets(
+	days: OutcomeDay[],
+	today: string,
+	breakdown: DetailDayCount[]
+): ColumnBucket[] {
+	const byDay = new Map(days.map((day) => [day.day, day]));
+	const fields = fieldsFor('alone');
+	const words = locale.stats.alone;
+	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
+		const row = byDay.get(day);
+		const calm = row?.yes ?? 0;
+		const anxious = row?.no ?? 0;
+		const unknown = Math.max(0, (row?.n ?? 0) - calm - anxious);
+		const signs = dayBreakdown(breakdown, fields, day);
+		return {
+			label: format.dayLabel(day),
+			tick: i % DAY_TICK_EVERY === 0,
+			segments: [calm, anxious, unknown],
+			tooltip: {
+				heading: format.dayLabel(day),
+				rows:
+					(row?.n ?? 0) === 0
+						? [tooltipRow(cell(words.emptyTooltip, '0', ALONE_COLORS[0]))]
+						: [
+								tooltipRow(
+									calm > 0 ? cell(words.legendCalm, String(calm), ALONE_COLORS[0]) : null,
+									anxious > 0 ? cell(words.legendAnxious, String(anxious), ALONE_COLORS[1]) : null,
+									unknown > 0 ? cell(words.legendUnknown, String(unknown), ALONE_COLORS[2]) : null
+								),
+								...(signs.length > 0
+									? [tooltipRow(...signs.map((entry) => cell(entry.label, String(entry.n))))]
+									: [])
+							]
 			}
 		};
 	});

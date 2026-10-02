@@ -31,6 +31,11 @@
 		return typeof value === 'number' && value > 0 ? Math.floor(value) : 0;
 	}
 
+	/** A stored outcome as its radio value: "true", "false", or "" for don't know. */
+	function outcome(value: unknown): string {
+		return value === true ? 'true' : value === false ? 'false' : '';
+	}
+
 	/** A stored number as an input value; blank when there is nothing to show. */
 	function number(value: unknown): string {
 		return typeof value === 'number' ? String(value) : '';
@@ -102,6 +107,34 @@
 				{/each}
 			</div>
 		</div>
+	{:else if field.input === 'outcome' && field.outcome}
+		<!-- Three radios styled as one segmented control, like the theme picker.
+		     "Orolig" uncovers the rest with :has() on this fieldset, CSS only,
+		     for the same no-JavaScript reason as the reveal above. -->
+		<fieldset class="group/outcome flex flex-col gap-3">
+			<legend class="mb-1 text-sm font-medium text-ink-label">{field.label}</legend>
+			<div class="flex rounded-lg bg-surface-hover p-1">
+				{#each [{ value: 'true', label: field.outcome.yes }, { value: 'false', label: field.outcome.no }, { value: '', label: field.outcome.unknown }] as choice (choice.value)}
+					<label
+						class="flex-1 cursor-pointer rounded-md py-1.5 text-center text-sm font-medium text-ink-muted has-checked:bg-surface-raised has-checked:text-ink has-checked:shadow-sm has-focus-visible:ring-2 has-focus-visible:ring-emerald-600"
+					>
+						<input
+							type="radio"
+							class="sr-only"
+							name={prefix + field.name}
+							value={choice.value}
+							checked={outcome(values[field.name]) === choice.value}
+						/>
+						{choice.label}
+					</label>
+				{/each}
+			</div>
+			<div class="ml-6 hidden flex-col gap-3 group-has-[[value=false]:checked]/outcome:flex">
+				{#each fieldsRevealedBy(fields, field.name) as revealed (revealed.name)}
+					{@render input(revealed)}
+				{/each}
+			</div>
+		</fieldset>
 	{:else}
 		{@render input(field)}
 	{/if}
