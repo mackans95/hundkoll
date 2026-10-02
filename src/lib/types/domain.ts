@@ -147,7 +147,8 @@ export type DetailWindowRow = DetailMetric & { type_id: string; share_answered: 
  * generated card's tooltip breaks its bar down by. Counted in TypeScript
  * rather than SQL; see $lib/stats/detailDays.ts for why.
  */
-export type DetailDayCount = { day: string; field: string; n: number };
+/** A field's day: a count, or for a number field the events that had it and their sum. */
+export type DetailDayCount = { day: string; field: string; n: number; sum?: number };
 
 /** Accidents binned by day, ISO week or month, split kiss/bajs. */
 export type AccidentBin = { bucket: string; n: number; pee: number; poop: number };

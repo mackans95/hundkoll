@@ -3,8 +3,8 @@
 // "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
-import { fieldsFor } from '$lib/events/fields';
-import { dayBreakdown } from './detailDays';
+import { fieldsFor, fieldsRevealedBy, type DetailField } from '$lib/events/fields';
+import { dayBreakdown, dayMeans } from './detailDays';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
@@ -16,7 +16,8 @@ import type {
 	SimpleDay,
 	WalkDay
 } from '$lib/types/domain';
-import { MEAL_COLORS, WALK_COLOR } from './palette';
+import type { Mean, OutcomeDay } from './outcomes';
+import { ALONE_COLORS, MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
 const DAILY_WINDOW = 30;
@@ -33,6 +34,26 @@ function optionalMinutes(value: number | null): string {
 	return value === null
 		? locale.units.missing
 		: locale.units.approximately(format.minutesText(value));
+}
+
+/**
+ * A field label made short enough for a tooltip: no unit in parentheses, which
+ * the value already carries, and no question mark, which asks the dialog's
+ * question rather than naming an answer. "Längd (minuter)" → "Längd".
+ */
+function tooltipLabel(label: string): string {
+	return label.replace(/\s*\([^)]*\)$/, '').replace(/\?$/, '');
+}
+
+/**
+ * A number field's day as its own summary of the mean, rounded to the field's
+ * step: "30 min" for one event, "~32 min" for several.
+ */
+function meanText(field: DetailField, sum: number, n: number): string {
+	const decimals = field.step?.split('.')[1]?.length ?? 0;
+	const mean = Number((sum / n).toFixed(decimals));
+	const text = field.summarize?.(mean) ?? format.swedishNumber(mean);
+	return n > 1 ? locale.units.approximately(text) : text;
 }
 
 /** A tooltip cell; coloured when it stands in for a legend entry. */
@@ -74,7 +95,8 @@ export function simpleCountBuckets(
 		const n = byDay.get(day) ?? 0;
 		// Only what actually happened: a quiet day says the count and stops,
 		// rather than listing every field as a zero.
-		const detail = breakdown ? dayBreakdown(breakdown.counts, fields, day) : [];
+		const groups = breakdown ? dayBreakdown(breakdown.counts, fields, day) : [];
+		const means = breakdown && n > 0 ? dayMeans(breakdown.counts, fields, day) : [];
 
 		return {
 			label: format.dayLabel(day),
@@ -82,12 +104,101 @@ export function simpleCountBuckets(
 			segments: [n],
 			tooltip: {
 				heading: format.dayLabel(day),
+				// Like the walk tooltip: the count and the day's means first, then
+				// each field that happened with what it revealed boxed under it.
 				rows: [
-					tooltipRow(cell(label, String(n), color)),
-					...(detail.length > 0
-						? [tooltipRow(...detail.map((entry) => cell(entry.label, String(entry.n))))]
-						: [])
+					tooltipRow(
+						cell(label, String(n), color),
+						...means.map(({ field, sum, n: answered }) =>
+							cell(tooltipLabel(field.label), meanText(field, sum, answered))
+						)
+					),
+					...groups.flatMap((group) => [
+						tooltipRow(cell(`${tooltipLabel(group.label)}:`, String(group.n))),
+						...(group.children.length > 0
+							? [
+									{
+										nested: [
+											tooltipRow(
+												...group.children.map((child) => cell(child.label, String(child.n)))
+											)
+										]
+									}
+								]
+							: [])
+					])
 				]
+			}
+		};
+	});
+}
+
+/** A length that may be a mean: "42 min" for one event, "~42 min" for several. */
+function meanMinutes(mean: Mean): string {
+	if (mean.n === 0) {
+		return locale.units.missing;
+	}
+	const text = format.minutesText(mean.sum / mean.n);
+	return mean.n > 1 ? locale.units.approximately(text) : text;
+}
+
+/**
+ * Builds Ensamtid's columns for the last 30 days, stacked Lugn / Orolig / Vet
+ * ej like the meal chart. The tooltip reads like the walk one (the count and
+ * the day's length), then a row per outcome with its own length, and what was
+ * noticed under Orolig in an inset box beneath it, so one anxious session with
+ * two signs never reads as three events.
+ */
+export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] {
+	const byDay = new Map(days.map((day) => [day.day, day]));
+	const words = locale.stats.alone;
+	const revealed = fieldsRevealedBy(fieldsFor('alone'), 'calm');
+	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
+		const row = byDay.get(day);
+		const groups = row
+			? [
+					{ group: row.yes, label: words.legendCalm, color: ALONE_COLORS[0] },
+					{ group: row.no, label: words.legendAnxious, color: ALONE_COLORS[1] },
+					{ group: row.unknown, label: words.legendUnknown, color: ALONE_COLORS[2] }
+				]
+			: [];
+		return {
+			label: format.dayLabel(day),
+			tick: i % DAY_TICK_EVERY === 0,
+			segments: [row?.yes.count ?? 0, row?.no.count ?? 0, row?.unknown.count ?? 0],
+			tooltip: {
+				heading: format.dayLabel(day),
+				rows: !row
+					? [tooltipRow(cell(words.emptyTooltip, '0', ALONE_COLORS[0]))]
+					: [
+							tooltipRow(
+								countCell(locale.stats.symbols.alone, row.n),
+								cell(words.length, meanMinutes(row.measure))
+							),
+							...groups
+								.filter(({ group }) => group.count > 0)
+								.flatMap(({ group, label, color }) => {
+									const nested = [
+										...revealed
+											.filter((field) => (group.numbers[field.name]?.n ?? 0) > 0)
+											.map((field) =>
+												tooltipRow(cell(words.after, meanMinutes(group.numbers[field.name])))
+											),
+										tooltipRow(
+											...revealed
+												.filter((field) => (group.counts[field.name] ?? 0) > 0)
+												.map((field) => cell(field.label, String(group.counts[field.name])))
+										)
+									].filter((cells) => cells.length > 0);
+									return [
+										// The count bold after a colon, the length past a divider, like the first row.
+										tooltipRow(cell(`${label}:`, String(group.count), color), {
+											value: meanMinutes(group.measure)
+										}),
+										...(nested.length > 0 ? [{ nested }] : [])
+									];
+								})
+						]
 			}
 		};
 	});

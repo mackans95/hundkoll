@@ -291,8 +291,9 @@ Current catalogue:
 booleans and are still read correctly.
 
 Categories are tile colors on the log grid: emerald for `routine`, sky for `care`, amber
-for `health`, slate for `other` — the catch-all every new type lands in unless it obviously
-belongs to one of the first three — and rose for `absence`. Two of them also mean
+for `health`, and rose for both `other` — the catch-all every new type lands in unless it
+obviously belongs to one of the first three — and `absence`. `other` was slate until
+Ensamtid (plan 22), when Hundvakt's rose was liked enough to give it the whole last row. Two of them also mean
 something to the SQL: `routine` decides when tracking started, and `absence` is the one
 category with behaviour, described under [Away mode](#away-mode).
 
@@ -482,6 +483,14 @@ merge-then-`db-push` path. Doing it by hand is three steps, of which two are opt
      event, close the dialog, and surface a failed row minutes later. That module
      is already shared with the queue, so both paths enforce it identically.
 
+   An **`outcome`** is a three-way answer, three buttons in a row: Ensamtid's _Lugn / Orolig
+   / Vet ej_. Yes stores `true`, no stores `false`, and don't know stores **nothing**, so a
+   share over it counts only the known answers. Its "no" uncovers the fields naming it in
+   `revealedBy`, all of them optional (unlike a reveal's causes), with `:has()` on the
+   fieldset, CSS only, like the reveal. A number field can also declare `atMost` another
+   one ("Orolig efter" can't exceed the length), checked in `parseDetails`. The generator
+   knows neither yet; Ensamtid's were added by hand after it ran.
+
 3. **Stats** — only if the type deserves a chart: see the next section.
 
 The files the generator edits carry `codegen:` marker comments at its insertion points.
@@ -515,19 +524,22 @@ checked-in components you edit freely afterwards. Anything fancier (an accidents
 period picker, stacked segments from details) starts from a generated card and gets
 hand-finished.
 
-A generated card's tooltip breaks each bar down by **every field the type collects that
-can be counted** — a checkbox, a count or a reveal — showing only what actually happened
-that day:
+A generated card's tooltip reads like the walk one: the day's count with the mean of each
+number field (the length), then **every field the type collects that can be counted** (a
+checkbox, a count or a reveal) that actually happened that day, **with a reveal's causes
+boxed under it**, so one ride that threw up reads as one ride:
 
 ```
-27/8
-Biltur 5
-Olycka? 3 · Bajsade 2 · Spydde 2
+18/9
+● Biltur 3 │ Längd ~8 min
+Olycka: 1
+  ┌ Spydde 1 ┐
 ```
 
 Nothing is declared for this: the fields come from `DETAIL_FIELDS` and their captions are
-the labels the dialog already renders, in declaration order. Numbers are left out, since
-"45" under a bar reads as a count and is not one.
+the labels the dialog already renders, in declaration order, shortened for the tooltip
+(no unit in parentheses, no question mark). A number is shown as the day's mean in the
+first row, never as a total: "45" under a bar reads as a count and is not one.
 
 That count is the one aggregate on this screen that is **not** SQL, and it is there by the
 rule above rather than for convenience: `stats_detail_buckets` could sum it, but it could

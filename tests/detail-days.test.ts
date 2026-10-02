@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { DetailField } from '$lib/events/fields';
-import { countDetailDays, dayBreakdown } from '$lib/stats/detailDays';
+import { countDetailDays, dayBreakdown, dayMeans } from '$lib/stats/detailDays';
 
 const FIELDS: DetailField[] = [
 	{ name: 'duration_min', label: 'Längd', input: 'number' },
@@ -35,14 +35,18 @@ describe('countDetailDays', () => {
 		);
 	});
 
-	// A number under a bar reads as a count and is not one, so duration is left
-	// out entirely rather than summed into something meaningless.
-	it('ignores number fields', () => {
+	// A number under a bar reads as a count and is not one, so it is kept as a
+	// sum over the events that had it: the tooltip shows the mean, the length.
+	it('keeps a number field as a sum over the events that had it', () => {
 		const counts = countDetailDays(
-			[{ occurred_at: '2026-08-20T09:00:00Z', details: { duration_min: 45 } }],
+			[
+				{ occurred_at: '2026-08-20T09:00:00Z', details: { duration_min: 45 } },
+				{ occurred_at: '2026-08-20T12:00:00Z', details: { duration_min: 15 } },
+				{ occurred_at: '2026-08-20T15:00:00Z', details: {} }
+			],
 			FIELDS
 		);
-		expect(counts).toEqual([]);
+		expect(counts).toEqual([{ day: '2026-08-20', field: 'duration_min', n: 2, sum: 60 }]);
 	});
 
 	// The reason this is not a SQL date_trunc: a late-evening event in summer is
@@ -69,20 +73,29 @@ describe('dayBreakdown', () => {
 	const counts = [
 		{ day: '2026-08-20', field: 'pee', n: 3 },
 		{ day: '2026-08-20', field: 'accident', n: 1 },
-		{ day: '2026-08-19', field: 'accident', n: 2 }
+		{ day: '2026-08-20', field: 'threw_up', n: 1 },
+		{ day: '2026-08-19', field: 'accident', n: 2 },
+		{ day: '2026-08-20', field: 'duration_min', n: 2, sum: 60 }
 	];
 
-	// Declaration order, which is dialog order — so the tooltip reads the way
-	// the form did, not the way the Map happened to be built.
-	it('lists one day in the order the fields were declared', () => {
+	// Declaration order, which is dialog order, and a reveal's causes nested in
+	// it: one ride that threw up is one group, not two counts side by side.
+	it('groups each reveal with what it revealed, in declaration order', () => {
 		expect(dayBreakdown(counts, FIELDS, '2026-08-20')).toEqual([
-			{ label: 'Olycka', n: 1 },
-			{ label: 'Kiss', n: 3 }
+			{ label: 'Olycka', n: 1, children: [{ label: 'Spydde', n: 1 }] },
+			{ label: 'Kiss', n: 3, children: [] }
 		]);
 	});
 
 	it('leaves out what did not happen, and is empty for a quiet day', () => {
-		expect(dayBreakdown(counts, FIELDS, '2026-08-19')).toEqual([{ label: 'Olycka', n: 2 }]);
+		expect(dayBreakdown(counts, FIELDS, '2026-08-19')).toEqual([
+			{ label: 'Olycka', n: 2, children: [] }
+		]);
 		expect(dayBreakdown(counts, FIELDS, '2026-08-18')).toEqual([]);
+	});
+
+	it('gives a number field as its sum and count, for the mean', () => {
+		expect(dayMeans(counts, FIELDS, '2026-08-20')).toEqual([{ field: FIELDS[0], sum: 60, n: 2 }]);
+		expect(dayMeans(counts, FIELDS, '2026-08-19')).toEqual([]);
 	});
 });

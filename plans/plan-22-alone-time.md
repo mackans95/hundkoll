@@ -1,0 +1,213 @@
+# Plan 22 — Ensamtid: logging time alone
+
+> Source: asked 2026-10-02 — "a new event type … for alone time, so 'Ensamtid' for the
+> title. I want to be able to log how long she has/was alone for, and if the alone time was
+> 'successful', meaning if she started howling or barking or anything else that might
+> indicate she felt in distress being alone … The stats page option should be similar to
+> the car rides event … No status tracking, this will be done whenever it's needed, not on a
+> schedule."
+
+> **Status: ✅ Built, awaiting merge** — branch `feature/alone-time`. All ten questions
+> answered; the words changed after the design was written (question 1), so the field is
+> `calm` and the design below says Lugn/Orolig where it first said Lyckades/Misslyckades.
+> Verified in headless Chrome on the local stack:
+>
+> - the rose fourth row;
+> - the dialog: Vet ej preselected, Orolig revealing its fields with CSS alone;
+> - a save storing `{duration_min, calm: false, anxious_after_min, howled}` and summarising
+>   as "40 min · orolig · efter 15 min · ylade";
+> - the card's stacked bars and four tiles against hand-checked numbers;
+> - an edit from Orolig to Vet ej leaving only `{duration_min}`.
+>
+> Departures from the design:
+>
+> - **The card reads the type's own events**, not the type-bucket view: one read gives the
+>   split, the tooltip's signs and the longest calm stretch.
+> - **The Lugn share is computed from that split**, not from `share_answered`: the same
+>   number over the same 30 days, without widening `DetailMetric`.
+> - **Editing an outcome back to Vet ej** needed the outcome key added to the ones
+>   `applyEventEdit` replaces wholesale, or the old `false` would have stayed forever.
+
+## The goal
+
+One more tile, **🏠 Ensamtid**, that logs a stretch of time she was left alone, how long it
+lasted, and whether it went well. On Statistik, a card like Biltur's, showing how often
+she's left alone, for how long, and how often without distress. Over weeks, that last
+number is the one that says whether alone-time training is working.
+
+## What is already there, and makes this mostly a generated type
+
+- **A new type with no schedule is one migration row.** With `interval` null it never
+  appears on Status, so it gets no reminders (plan 19) and no Settings field to fill in.
+- **Biltur is almost exactly this shape:** a required `duration_min`, plus a `reveal`
+  ("Olycka?") that uncovers what happened. Its card is a counts chart with an "Snittlängd"
+  tile and a "share without" tile. `npm run new-event` scaffolds all of that from flags:
+  migration, detail fields, locale, card, query and page wiring.
+- **A `reveal` stores nothing on a good day**, and `share-without` divides by every event
+  of the type. So "share of alone times without distress" needs no SQL and treats an
+  untouched reveal as success, the way "Utan olycka" works today.
+- **The tooltip breakdown is automatic:** every checkbox under the reveal shows under its
+  day's bar ("Ensamtid 2 · Oro? 1 · Ylade 1").
+
+## Decided
+
+| Question                  | Answer                                                                                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| How is the outcome known? | Often it isn't (no camera yet, though one would be best), so the answer is **three-way**: _Lyckades / Misslyckades / Vet ej_. "Oro" is dropped as the word. |
+| Which signs?              | **Ylade** (covers barking and whining too), **Förstörde något**, **Olycka** (peed or pooped inside), **Rastlös** (covers scratching at the door too).       |
+| When did it go wrong?     | Yes: **"Misslyckades efter (min)"**, one of the key metrics, to see over time how long she manages.                                                         |
+| "Längsta lyckade" tile?   | Yes, **next to** a normal Biltur-like card, not instead of it.                                                                                              |
+| Live timing?              | **Wanted, later**: especially early in the training. Not in this plan; written down below.                                                                  |
+| Colour and icon?          | 🏠, and **Biltur and Ensamtid take Hundvakt's rose**.                                                                                                       |
+
+## The design
+
+### The type
+
+```sql
+insert into event_types (id, label, category, interval, interval_type, icon, sort_order)
+values ('alone', 'Ensamtid', 'other', null, 'days', '🏠', 105);
+```
+
+`105` puts it between Biltur and Hundvakt, so the fourth row is **Biltur · Ensamtid ·
+Hundvakt**, all rose.
+
+### The colour: `other` becomes rose
+
+Tile colour comes from the category (`CATEGORY_COLORS` in `LogGrid.svelte`). Ensamtid can't
+be `absence`, because that category pauses Status and the averages (plan 16). So `other`
+takes `absence`'s rose classes, and Biltur and Ensamtid change with it. Today `other` is
+only Biltur, and the next generated `other` type will be rose too. The comment there
+explaining slate for colour-blindness gets updated: rose was judged on the phone and is
+liked. No migration; it's one line of Tailwind classes.
+
+### The fields
+
+| Field              | Input               | Label                            | Stored                           |
+| ------------------ | ------------------- | -------------------------------- | -------------------------------- |
+| `duration_min`     | `number`, required  | Längd (min)                      | always                           |
+| `succeeded`        | **`outcome`** (new) | Lyckades / Misslyckades / Vet ej | `true` / `false` / _nothing_     |
+| `failed_after_min` | `number`            | Misslyckades efter (min)         | only when `succeeded` is `false` |
+| `howled`           | `checkbox`          | Ylade                            | only when `succeeded` is `false` |
+| `destroyed`        | `checkbox`          | Förstörde något                  | only when `succeeded` is `false` |
+| `accident`         | `checkbox`          | Olycka                           | only when `succeeded` is `false` |
+| `restless`         | `checkbox`          | Rastlös                          | only when `succeeded` is `false` |
+
+**`outcome` is the one new input kind:** three buttons in a row, like the theme picker in
+Inställningar.
+
+- **Vet ej stores nothing**, the way an untouched reveal does. That's what makes the stats
+  honest: `share` divides only by the events that answered (`share_answered` in
+  `stats_detail_windows`, the same thing that makes Matning's "åt upp" exclude unrecorded
+  meals). So **"Lyckade" is lyckade ÷ (lyckade + misslyckade)**, and a Vet ej neither helps
+  nor hurts.
+- **Misslyckades reveals the rest**, like a ticked reveal does. Generalised as
+  `revealedBy: 'succeeded'` plus `revealedWhen: false`, and with CSS (`peer-checked:` on
+  that one radio button), so the server-rendered dialog still works without JavaScript, as
+  plan 3's reveals do.
+- **One cross-field rule** in `parseDetails`: `failed_after_min` can't exceed
+  `duration_min`. It goes there, not in the action, for the same offline-first reason as the
+  reveal rule.
+
+### Statistik: a Biltur-like card, plus
+
+A counts card generated like `CarRideCard`: alone times per day, with a tooltip breakdown
+("Ensamtid 2 · Lyckades 1 · Ylade 1") and four tiles:
+
+| Tile             | Kind                 | Reads                                                  |
+| ---------------- | -------------------- | ------------------------------------------------------ |
+| Snittlängd       | `avg`                | `duration_min`                                         |
+| Lyckade          | `share`              | `succeeded`, over the answered ones                    |
+| Misslyckas efter | `avg`                | `failed_after_min`, the edge to stay under             |
+| Längsta lyckade  | **`max-when`** (new) | the longest `duration_min` where `succeeded` is `true` |
+
+`max-when` is computed in TypeScript over the type's own events, as `detailDays` already
+reads them, rather than as a new SQL view. That's the README's rule: choosing the field is
+the catalogue's knowledge.
+
+### Generator, then by hand
+
+`npm run new-event` writes the migration, the plain fields, the card with its `avg` and
+`share` tiles, the query and the page wiring. Then by hand:
+
+- the `outcome` input (`fields.ts` type, `DetailFields`, `parseDetails`, the events-list
+  summary "lyckades" / "misslyckades efter 20 min · ylade");
+- `revealedWhen`, and the cross-field rule;
+- the `max-when` tile;
+- the colour change.
+
+The generator doesn't learn `outcome` or `max-when` in this plan; it can once a second type
+wants them.
+
+## Wanted later: live timing
+
+> Agreed 2026-10-02: **its own plan and PR, next** (plan 23), not part of this one.
+
+Start Ensamtid as you leave, and stop it when you're back, at which point the dialog opens
+with the length filled in and asks how it went. It would help most early in the training,
+when the times are short and minute-precise. It's its own plan, because today's live mode
+(`activeWalk.svelte.ts`, plan 1) is built around the walk's pee and poop counts. Making it
+generic is the work.
+
+## Order of work
+
+1. Generator run on the branch, reviewed.
+2. `outcome` + `revealedWhen` + the cross-field rule, with tests (`details.test.ts`).
+3. `max-when` and the four tiles; the colour.
+4. `npm run db-local`, then a probe: the dialog's three outcomes and what each stores, the
+   tile on the grid, the card against snapshot data with a few logged alone times.
+5. PR. After merge, `npm run db-push`. No APK.
+
+## Questions, and the answers
+
+1. **Words?** _**Lugn / Orolig / Vet ej**_, about her rather than the session. The field
+   is `calm`, and the rest follows: "Orolig efter (min)", and the tiles "Lugn" and
+   "Längsta lugna".
+2. **Must a sign be given when she was anxious?** _Optional._
+3. **Is "Orolig efter" optional?** _Yes, optional._
+4. **The chart?** _Stacked by outcome_, like Matning's åt upp / åt inte upp.
+
+## Revised after a look at the card
+
+With fake data in the local database (2026-10-02), two changes.
+
+**The tooltip reads like the walk one, with Orolig's signs inside Orolig.** The generated
+breakdown put "Orolig 1 · Ylade 1 · Rastlös 1" side by side, which reads as three events.
+The agreed layout:
+
+```
+27/9
+🏠 3 │ Längd ~38 min
+● Lugn: 1    │  50 min
+● Orolig: 2  │ ~32 min
+  ┌ Orolig efter ~14 min ┐
+  └ Ylade 2 │ Rastlös 1  ┘
+● Vet ej: 1  │  20 min
+```
+
+- The count and the day's length come first, as for walks.
+- Then a row per outcome that happened, with its own length.
+- What was noticed under Orolig goes in an inset box beneath it. That's a new tooltip row
+  type (`TooltipGroup`), drawn by `ColumnTooltip`.
+- "~" only for a mean of more than one session.
+- `outcomeDays` now keeps each outcome's count, mean length and revealed answers, so the
+  card no longer needs the generated per-field day counts.
+
+**Vet ej is blue, Orolig stays grey.** The meal chart's two greys, kept for Orolig and Vet
+ej, were too close for red-green colour-blind eyes. Orolig went blue first, then swapped
+after a look: grey reads as the negative one, and blue as neutral.
+
+**Outcome rows read "● Orolig: 1 │ 24 min"**: the count bold after a colon, and the length
+past a divider, like the first row. Before, the label and count ran together, with nothing
+in bold.
+
+Also, a tooltip cell's dot and label now sit together, so a lone cell reads
+"● Orolig 1 … 24 min" instead of spreading across the row. That tidies every chart's
+single-cell rows.
+
+## Not in scope
+
+- Status, intervals and reminders: it happens when it's needed.
+- Live timing (above; wanted, a later plan).
+- Anything on the lock screen or the widget.
+- Teaching the generator `outcome` / `max-when`.

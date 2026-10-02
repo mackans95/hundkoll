@@ -33,17 +33,17 @@
 	} = $props();
 
 	// Category identity is carried by the tile colours alone — one grid, no
-	// sub-headings, so every activity is one thumb-reach away. Slate for
-	// 'other' on purpose: a violet would collapse toward sky under red-green
-	// color-blindness, where a muted neutral stays apart from all three. Rose
-	// for 'absence' is a first pick on the same reasoning — darker and duller
-	// than amber to those eyes — and is to be judged on the phone.
+	// sub-headings, so every activity is one thumb-reach away. Rose, darker and
+	// duller than amber under red-green colour-blindness, was judged on the
+	// phone for Hundvakt and liked enough that 'other' took it too (plan 22):
+	// Biltur, Ensamtid and Hundvakt share the last row and its colour.
+	const ROSE = 'border-rose-800 bg-rose-600 hover:bg-rose-700 active:bg-rose-700';
 	const CATEGORY_COLORS: Record<EventCategory, string> = {
 		routine: 'border-emerald-800 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-700',
 		care: 'border-sky-800 bg-sky-600 hover:bg-sky-700 active:bg-sky-700',
 		health: 'border-amber-800 bg-amber-600 hover:bg-amber-700 active:bg-amber-700',
-		other: 'border-slate-800 bg-slate-600 hover:bg-slate-700 active:bg-slate-700',
-		absence: 'border-rose-800 bg-rose-600 hover:bg-rose-700 active:bg-rose-700'
+		other: ROSE,
+		absence: ROSE
 	};
 
 	/**
