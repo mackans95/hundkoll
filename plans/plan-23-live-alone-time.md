@@ -4,8 +4,26 @@
 > good for the beginning of the training especially" — picked up 2026-10-03: "I'm ready to
 > get to work on the live-version for Ensamtid."
 
-> **Status: 🚧 In progress** — branch `feature/live-alone-time`. All five questions answered
-> (below), every recommendation taken.
+> **Status: ✅ Built, awaiting merge** — branch `feature/live-alone-time`. All five questions
+> answered (below). Verified:
+>
+> - **In headless Chrome on the local stack:**
+>   - a walk stored in the old shape coming back running with its counts, then counted
+>     and saved as one row;
+>   - Ensamtid's card with the reference line;
+>   - Hemma opening the dialog prefilled (start time, Längd, the session's id);
+>   - closing it keeping the session stopped, and Svara reopening it;
+>   - Lugn → Spara storing one row and clearing the card.
+> - **On the phone, locked:** the single Hemma button; the notification turning into
+>   "hemma efter N min"; tapping it opening the answer with the length up to Hemma; Spara
+>   storing it with the session's id.
+>
+> Departures from the design:
+>
+> - **The files kept their old storage key** (`hundkoll:active-walk:v1`), so a running walk
+>   needs no migration step.
+> - **A Hemma from the lock screen reaches the page as a callback** (`handleHome`) rather
+>   than an `$effect` on a flag, since it is an event, not derived state.
 
 ## The goal
 
