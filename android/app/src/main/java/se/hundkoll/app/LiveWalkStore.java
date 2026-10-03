@@ -60,6 +60,21 @@ final class LiveWalkStore {
         return walk;
     }
 
+    /** Hemma: the first press stops the clock; a second keeps the first instant. */
+    synchronized JSONObject stop(long at) {
+        JSONObject walk = walk();
+        if (walk == null) return null;
+        if (walk.optLong("endedAt") <= 0) {
+            try {
+                walk.put("endedAt", at);
+            } catch (JSONException e) {
+                return walk;
+            }
+            setWalk(walk);
+        }
+        return walk;
+    }
+
     /** The id of the last walk Spara stored, so the page can drop its copy. */
     synchronized String savedId() {
         return prefs.getString(SAVED, null);

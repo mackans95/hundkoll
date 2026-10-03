@@ -25,6 +25,7 @@ public class LiveWalkReceiver extends BroadcastReceiver {
     static final String ADD_PEE = "se.hundkoll.app.live-walk.ADD_PEE";
     static final String ADD_POOP = "se.hundkoll.app.live-walk.ADD_POOP";
     static final String SAVE = "se.hundkoll.app.live-walk.SAVE";
+    static final String HOME = "se.hundkoll.app.live-walk.HOME";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -33,6 +34,13 @@ public class LiveWalkReceiver extends BroadcastReceiver {
 
         if (ADD_PEE.equals(action) || ADD_POOP.equals(action)) {
             JSONObject walk = store.increment(ADD_PEE.equals(action) ? "pee" : "poop");
+            if (walk != null) {
+                LiveWalkNotification.show(context, walk);
+                LiveWalkPlugin.emitChanged(walk);
+            }
+        } else if (HOME.equals(action)) {
+            // The clock stops at the door; the answer is asked when the app opens.
+            JSONObject walk = store.stop(System.currentTimeMillis());
             if (walk != null) {
                 LiveWalkNotification.show(context, walk);
                 LiveWalkPlugin.emitChanged(walk);
