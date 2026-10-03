@@ -27,10 +27,26 @@ final class LiveWalkNotification {
         if (words == null) return;
         ensureChannel(context, words.optString("channel"));
 
+        // Ensamtid after Hemma (plan 23): nothing left to tap but the answer, in the app.
+        boolean timing = "timing".equals(walk.optString("kind"));
+        long endedAt = walk.optLong("endedAt");
+        if (timing && endedAt > 0) {
+            long minutes = Math.max(1, Math.round((endedAt - walk.optLong("startedAt")) / 60_000.0));
+            post(
+                context,
+                base(context)
+                    .setContentTitle(words.optString("stopped") + " " + minutes + " " + words.optString("minutes"))
+                    .setContentText(words.optString("answer"))
+                    .setOnlyAlertOnce(true)
+                    .setSilent(true)
+            );
+            return;
+        }
+
         // A custom view, so the buttons show without expanding. That rules out
         // Android 16's promotion to a Live Update, which OnePlus did not grant anyway.
-        RemoteViews small = buttons(context, walk, words, R.layout.notification_live_walk);
-        RemoteViews big = buttons(context, walk, words, R.layout.notification_live_walk_big);
+        RemoteViews small = buttons(context, walk, words, R.layout.notification_live_walk, timing);
+        RemoteViews big = buttons(context, walk, words, R.layout.notification_live_walk_big, timing);
         big.setTextViewText(R.id.live_walk_title, words.optString("title"));
 
         NotificationCompat.Builder builder = base(context)
@@ -48,8 +64,16 @@ final class LiveWalkNotification {
         post(context, builder);
     }
 
-    private static RemoteViews buttons(Context context, JSONObject walk, JSONObject words, int layout) {
+    private static RemoteViews buttons(Context context, JSONObject walk, JSONObject words, int layout, boolean timing) {
         RemoteViews views = new RemoteViews(context.getPackageName(), layout);
+        if (timing) {
+            // Ensamtid only times: one button, Hemma, which stops the clock.
+            views.setViewVisibility(R.id.live_walk_pee, android.view.View.GONE);
+            views.setViewVisibility(R.id.live_walk_poop, android.view.View.GONE);
+            views.setTextViewText(R.id.live_walk_save, words.optString("home"));
+            views.setOnClickPendingIntent(R.id.live_walk_save, broadcast(context, LiveWalkReceiver.HOME));
+            return views;
+        }
         views.setTextViewText(R.id.live_walk_pee, words.optString("addPee") + " · " + walk.optInt("pee"));
         views.setTextViewText(R.id.live_walk_poop, words.optString("addPoop") + " · " + walk.optInt("poop"));
         views.setTextViewText(R.id.live_walk_save, words.optString("save"));

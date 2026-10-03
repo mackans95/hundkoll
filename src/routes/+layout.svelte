@@ -12,7 +12,7 @@
 		pushWanted,
 		refreshPush
 	} from '$lib/native';
-	import { syncWithLockScreen } from '$lib/offline/activeWalk.svelte';
+	import { syncWithLockScreen } from '$lib/offline/activeSession.svelte';
 	import { catchUp } from '$lib/offline/catchUp';
 	import { loadTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';

@@ -47,6 +47,7 @@ public class LiveWalkPlugin extends Plugin {
             result.put("id", walk.optString("id"));
             result.put("pee", walk.optInt("pee"));
             result.put("poop", walk.optInt("poop"));
+            result.put("endedAt", walk.optLong("endedAt"));
         }
         result.put("savedId", store.savedId());
         call.resolve(result);

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LIVE_TYPE_IDS } from '$lib/events/fields';
+	import { LIVE_TYPES } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import type { EventCategory, EventType } from '$lib/types/domain';
 
@@ -56,7 +56,7 @@
 		// Live types start logging on the tap itself, and a type already running
 		// points back at its card rather than starting a second one; the
 		// ?detail= href below keeps the pre-hydration path on the dialog.
-		if (busy || LIVE_TYPE_IDS.has(type.id)) {
+		if (busy || type.id in LIVE_TYPES) {
 			onStartLive(type);
 			return;
 		}

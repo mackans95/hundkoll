@@ -51,6 +51,14 @@ export const log = {
 		/** On the grid tile while its activity is running. */
 		tile: 'Pågår…',
 		finish: 'Avsluta & spara',
+		/** A timing session (Ensamtid): stops the clock and asks how it went. */
+		home: 'Hemma',
+		/** Reopens the answer for a session already stopped. */
+		answer: 'Svara',
+		stopped: (activity: string, elapsed: string) => `${activity} · hemma efter ${elapsed}` as const,
+		/** Her reference numbers under Ensamtid's timer, from the last 30 days. */
+		longestCalm: (minutes: string) => `Längsta lugna ${minutes}` as const,
+		anxiousAfter: (minutes: string) => `orolig efter ${minutes}` as const,
 		adjustStart: 'Justera starttid',
 		backdateInstead: 'Logga i efterhand istället',
 		/** Over the editable minutes input when a walk ran suspiciously long. */
@@ -62,8 +70,14 @@ export const log = {
 		addPee: '+ Kiss',
 		addPoop: '+ Bajs',
 		save: 'Spara',
+		/** The timing kind's one button (Ensamtid): stops the clock. */
+		home: 'Hemma',
+		/** After Hemma on the lock screen; the minutes follow, from native. */
+		stopped: (activity: string) => `${activity} · hemma efter` as const,
+		minutes: 'min',
+		answer: 'Tryck för att svara',
 		/** Android's name for the notification channel, shown in its settings. */
-		channel: 'Pågående promenad',
+		channel: 'Pågående',
 		pendingTitle: (activity: string) => `${activity} sparad` as const,
 		pendingBody: 'Skickas när du öppnar appen'
 	},
@@ -191,10 +205,10 @@ export const settings = {
 		failed: 'Kunde inte slå på påminnelser. Försök igen.',
 		/** Android's name for the notification channel, shown in its settings. */
 		channel: 'Påminnelser',
-		lockScreen: 'Promenad på låsskärmen',
+		lockScreen: 'Pågående på låsskärmen',
 		lockScreenHelp:
-			'En pågående promenad visas med knappar för kiss, bajs och spara, utan att låsa upp.',
-		lockScreenFailed: 'Kunde inte slå på promenad på låsskärmen. Försök igen.'
+			'En pågående promenad eller ensamtid visas på låsskärmen: kiss, bajs och spara för promenaden, hemma för ensamtiden, utan att låsa upp.',
+		lockScreenFailed: 'Kunde inte slå på pågående på låsskärmen. Försök igen.'
 	}
 } as const;
 

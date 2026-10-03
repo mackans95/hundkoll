@@ -784,17 +784,34 @@ the same two variables). To let the local cron call it, add the two Vault entrie
 URL `http://supabase_kong_hundkoll:8000/functions/v1/remind`. The full loop on a phone is an
 APK against a local preview (see [Android app](#android-app)) with the switch turned on.
 
-### The walk on the lock screen
+### Live sessions, and the lock screen
 
-With **Promenad på låsskärmen** on (Inställningar, per phone), a running walk is an ongoing
-notification: **+ Kiss · n**, **+ Bajs · n** and **Spara**, usable without unlocking.
-Tapping it elsewhere opens the app. The native side is a local plugin in
+A tile in `LIVE_TYPES` (`fields.ts`) starts a live session instead of opening the dialog,
+one at a time, held device-locally (`activeSession.svelte.ts`). There are two kinds (plan
+23):
+
+- **Counting: the walk.** Counters on the card, and **Avsluta & spara** saves at once.
+- **Timing: Ensamtid.** Only a timer and a note, with her reference numbers (Längsta lugna,
+  Orolig efter, the last 30 days) under it. **Hemma** stops the clock and opens the type's
+  own dialog with Tidpunkt at the start, Längd the minutes away and the note carried over,
+  saved with the session's id. Closed without saving, the session stays stopped and the
+  card offers **Svara**; it never runs again.
+
+Every length is derived from `startedAt` (and `endedAt`, once stopped), so a killed app
+loses nothing. A walk stored before plan 23 had its counts at the top level, and is read
+into `counts`.
+
+With **Pågående på låsskärmen** on (Inställningar, per phone), a running session is an
+ongoing notification, usable without unlocking: the walk's **+ Kiss · n**, **+ Bajs · n**
+and **Spara**, or Ensamtid's single **Hemma**, after which it reads "hemma efter N min ·
+Tryck för att svara" and opens the answer. Tapping it elsewhere opens the app. The native side is a local plugin in
 `android/app/src/main/java/se/hundkoll/app/` (`LiveWalk*.java`), registered in
 `MainActivity`.
 
 - **Native holds the counts while it is up** (SharedPreferences), so taps land with the app
   killed. The page mirrors every change to it (an effect on Logga) and adopts its counts
-  on load and resume (`reconcileWalk` in `liveWalk.ts`, tested).
+  on load and resume (`reconcileSession` in `liveSession.ts`, tested), including a Hemma
+  pressed there.
 - **Spara saves without the page**: it posts the same fields as Avsluta to `?/log` with the
   WebView's cookies and writes any `Set-Cookie` back, so a session refresh during the save
   cannot become a replay. Without signal, the fields go to a native outbox, and a "skickas
@@ -829,7 +846,7 @@ not needed:
   `?detail=<id>` route stays as the pre-hydration and no-JavaScript fallback, and closing
   it uses `replaceState` rather than a navigation, since there is no new data to fetch.
   For a live type that fallback lands on the backdating dialog, which is not what the tap
-  meant, so `+page.svelte` converts a live `?detail=` into a running walk on mount and
+  meant, so `+page.svelte` converts a live `?detail=` into a running session on mount and
   tidies the URL away. That covers both the tap that beat hydration and the installed app
   reopening the URL it was closed at; without JavaScript the dialog stands, as before.
 - **Saving** writes to the queue, closes the dialog, and sends afterwards. The row shows
