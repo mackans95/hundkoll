@@ -3,7 +3,12 @@
 
 import { goto } from '$app/navigation';
 import * as locale from '$lib/locale';
-import { fixedWalkFields, type ActiveWalk, type LockScreenState } from '$lib/offline/liveWalk';
+import { LIVE_TYPES } from '$lib/events/fields';
+import {
+	fixedSessionFields,
+	type LiveSession,
+	type LockScreenState
+} from '$lib/offline/liveSession';
 import type { EventType } from '$lib/types/domain';
 
 /** Set by capacitor.config.ts's appendUserAgent. */
@@ -171,35 +176,45 @@ export async function disableLockScreen(): Promise<void> {
 	await (await liveWalk()).plugin.hide();
 }
 
-/** Puts the walk on the lock screen, or takes it off; counts included, so native matches the card. */
-export async function mirrorWalk(
-	walk: ActiveWalk | null,
+/**
+ * Puts the session on the lock screen, or takes it off. Counts and the end are
+ * included, so native matches the card; the kind picks the variant: the walk's
+ * + Kiss / + Bajs / Spara, or Ensamtid's single Hemma.
+ */
+export async function mirrorSession(
+	session: LiveSession | null,
 	type: Pick<EventType, 'label' | 'icon'> | null
 ): Promise<void> {
 	if (!lockScreenWanted()) {
 		return;
 	}
 	const { plugin } = await liveWalk();
-	if (!walk || !type) {
+	if (!session || !type) {
 		await plugin.hide();
 		return;
 	}
 	const activity = type.icon ? `${type.icon} ${type.label}` : type.label;
 	const words = locale.log.lockScreenWalk;
 	await plugin.show({
-		id: walk.id,
+		id: session.id,
+		kind: LIVE_TYPES[session.typeId] ?? 'counting',
 		label: type.label,
 		icon: type.icon ?? '',
-		startedAt: new Date(walk.startedAt).getTime(),
-		pee: walk.pee,
-		poop: walk.poop,
+		startedAt: new Date(session.startedAt).getTime(),
+		endedAt: session.endedAt ? new Date(session.endedAt).getTime() : 0,
+		pee: session.counts.pee ?? 0,
+		poop: session.counts.poop ?? 0,
 		origin: location.origin,
-		fields: fixedWalkFields(walk),
+		fields: fixedSessionFields(session),
 		words: {
 			title: words.title(activity),
 			addPee: words.addPee,
 			addPoop: words.addPoop,
 			save: words.save,
+			home: words.home,
+			stopped: words.stopped(activity),
+			minutes: words.minutes,
+			answer: words.answer,
 			channel: words.channel,
 			pendingTitle: words.pendingTitle(type.label),
 			pendingBody: words.pendingBody

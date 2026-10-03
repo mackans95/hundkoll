@@ -6,7 +6,7 @@
 	import { fieldsFor } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
 	import { createLogSubmit } from '$lib/offline/submit';
-	import type { EventType } from '$lib/types/domain';
+	import type { EventDetails, EventType } from '$lib/types/domain';
 	import DetailFields from './DetailFields.svelte';
 	import NoteField from './NoteField.svelte';
 
@@ -16,7 +16,11 @@
 		eventId,
 		message,
 		origin,
-		onClose
+		onClose,
+		occurredLocal = nowLocal,
+		values = {},
+		note = '',
+		onSaved = onClose
 	}: {
 		type: Pick<EventType, 'id' | 'label' | 'icon' | 'category'>;
 		nowLocal: string;
@@ -26,6 +30,13 @@
 		origin: DOMRect | null;
 		/** Closes the dialog. The page owns this, since it opened it. */
 		onClose: () => void;
+		/** Tidpunkt's start value; now unless a live session ended (plan 23). */
+		occurredLocal?: string;
+		/** The fields' start values: a timing session's Längd, say. */
+		values?: EventDetails;
+		note?: string;
+		/** Once the row is queued; a live session ends here, a plain cancel does not. */
+		onSaved?: () => void;
 	} = $props();
 
 	const fields = $derived(fieldsFor(type.id));
@@ -42,7 +53,7 @@
 	// function once: the {#key} around this dialog in +page.svelte is what
 	// remounts form and handler together when the activity changes.
 	const submit = $derived(
-		createLogSubmit(type, onClose, (reason) => {
+		createLogSubmit(type, onSaved, (reason) => {
 			rejected = reason;
 		})
 	);
@@ -94,7 +105,7 @@
 			<input
 				type="datetime-local"
 				name="occurred_at"
-				value={nowLocal}
+				value={occurredLocal}
 				max={nowLocal}
 				required
 				class="rounded-lg border-edge-strong"
@@ -116,9 +127,15 @@
 			</label>
 		{/if}
 
-		<DetailFields {fields} />
+		<DetailFields
+			{fields}
+			{values}
+		/>
 
-		<NoteField />
+		<NoteField
+			value={note}
+			open={note !== ''}
+		/>
 
 		<div class="mt-2 flex gap-2">
 			<a

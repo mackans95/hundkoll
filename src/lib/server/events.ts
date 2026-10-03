@@ -4,6 +4,7 @@ import { splitRows } from '$lib/events/bulk';
 import { detailsMessage, parseDetails } from '$lib/events/details';
 import { fieldsFor } from '$lib/events/fields';
 import { countDetailDays } from '$lib/stats/detailDays';
+import { longestWhen } from '$lib/stats/outcomes';
 import * as time from '$lib/time';
 import type { Json } from '$lib/types/database';
 import type {
@@ -474,4 +475,34 @@ export async function applyEventReturn(db: Db, form: FormData): Promise<EditOutc
 	return count === 0
 		? { ok: false, status: 404, message: locale.errors.alreadyHome }
 		: { ok: true };
+}
+
+/**
+ * Ensamtid's reference numbers for its live card (plan 23): the longest alone
+ * time she stayed calm through, and when she grew anxious on average, over the
+ * same 30 days as the Statistik tiles. A failed read only loses the line.
+ */
+export async function aloneReference(
+	db: Db
+): Promise<{ longestCalm: number | null; anxiousAfter: number | null }> {
+	const since = time.addDays(time.stockholmNowForInput().slice(0, 10), -30);
+	const { data, error } = await db
+		.from('events')
+		.select('occurred_at, details')
+		.eq('type_id', 'alone')
+		.gte('occurred_at', since);
+	if (error) {
+		console.error('alone reference read failed:', error.code, error.message);
+	}
+	const rows = (data ?? []).map((row) => ({
+		occurred_at: row.occurred_at,
+		details: (row.details ?? {}) as EventDetails
+	}));
+	const after = rows
+		.map((row) => row.details.anxious_after_min)
+		.filter((value): value is number => typeof value === 'number');
+	return {
+		longestCalm: longestWhen(rows, 'duration_min', 'calm'),
+		anxiousAfter: after.length > 0 ? after.reduce((sum, n) => sum + n, 0) / after.length : null
+	};
 }

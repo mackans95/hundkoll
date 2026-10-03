@@ -13,7 +13,7 @@
 import { invalidateAll } from '$app/navigation';
 import { page } from '$app/state';
 import { RETRY_DELAYS_MS, hasLanded, isStale } from './freshness';
-import { syncWithLockScreen } from './activeWalk.svelte';
+import { syncWithLockScreen } from './activeSession.svelte';
 import { loadQueue, sendPending } from './queue.svelte';
 
 /** When this context last saw the server answer, on the phone's own clock. */

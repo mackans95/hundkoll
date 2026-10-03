@@ -219,11 +219,14 @@ export const LEGACY_SUMMARIES: Record<
 };
 
 /**
- * The types a tile tap logs live — start now, finish later — instead of
- * opening the backdating dialog. Declared here with the other per-type
- * facts, so a future timed activity is one id.
+ * The types a tile tap logs live (start now, finish later) instead of opening
+ * the backdating dialog, and how (plan 23): a counting type is counted while
+ * it runs and saved at once; a timing type is only timed, and Hemma opens its
+ * own dialog for the rest. Declared here with the other per-type facts, so a
+ * future live activity is one line.
  */
-export const LIVE_TYPE_IDS = new Set(['walk']);
+export type LiveKind = 'counting' | 'timing';
+export const LIVE_TYPES: Record<string, LiveKind> = { walk: 'counting', alone: 'timing' };
 
 /**
  * Lists the detail fields an activity collects, which is none for most of

@@ -4,6 +4,7 @@ import * as locale from '$lib/locale';
 import { listEventTypes } from '$lib/server/care';
 import { currentDog } from '$lib/server/dog';
 import {
+	aloneReference,
 	applyEventDelete,
 	applyEventEdit,
 	applyEventReturn,
@@ -22,12 +23,14 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 	// renders the log dialog — so both open without JavaScript.
 	const eventParam = url.searchParams.get('event');
 
-	const [dog, types, events, away, editEvent] = await Promise.all([
+	const [dog, types, events, away, editEvent, aloneRef] = await Promise.all([
 		currentDog(supabase),
 		listEventTypes(supabase),
 		recentEvents(supabase),
 		currentAbsence(supabase),
-		eventParam ? getEvent(supabase, eventParam) : null
+		eventParam ? getEvent(supabase, eventParam) : null,
+		// For a live Ensamtid's card, which the server cannot know is running.
+		aloneReference(supabase)
 	]);
 
 	// ?detail=<type_id> renders the backdating dialog server-side, so it
@@ -55,6 +58,7 @@ export const load: PageServerLoad = async ({ url, setHeaders, locals: { supabase
 		// the same screen.
 		typesFailed: types === null,
 		editEvent,
+		aloneReference: aloneRef,
 		detailType: types?.find((type) => type.id === detailParam) ?? null,
 		nowLocal: time.stockholmNowForInput(),
 		// Travels with the form so a resubmit collides on the primary key

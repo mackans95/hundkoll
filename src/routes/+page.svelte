@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Card from '$lib/components/Card.svelte';
-	import ActiveWalkCard from '$lib/components/log/ActiveWalkCard.svelte';
+	import LiveSessionCard from '$lib/components/log/LiveSessionCard.svelte';
 	import AwayCard from '$lib/components/log/AwayCard.svelte';
 	import EventList from '$lib/components/log/EventList.svelte';
 	import EventSheet from '$lib/components/log/EventSheet.svelte';
@@ -10,15 +10,18 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { isAbsence } from '$lib/events/absence';
-	import { LIVE_TYPE_IDS } from '$lib/events/fields';
+	import { LIVE_TYPES } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
-	import { mirrorWalk } from '$lib/native';
+	import { mirrorSession } from '$lib/native';
 	import {
-		activeWalk,
-		loadActiveWalk,
+		activeSession,
+		discardSession,
+		handleHome,
+		loadActiveSession,
 		lockScreen,
-		startWalk
-	} from '$lib/offline/activeWalk.svelte';
+		startSession
+	} from '$lib/offline/activeSession.svelte';
+	import { durationMinutes } from '$lib/offline/liveSession';
 	import { offlineQueue } from '$lib/offline/queue.svelte';
 	import * as time from '$lib/time';
 	import type { EventRow, EventType } from '$lib/types/domain';
@@ -27,13 +30,13 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	onMount(() => {
-		// A walk may still be running from before the app was killed.
-		loadActiveWalk();
+		// A walk or an Ensamtid may still be running from before the app was killed.
+		loadActiveSession();
 		// A live type's ?detail= means the tap beat hydration, or the installed
 		// app reopened the URL it was closed at; do what the tap meant. After
-		// loadActiveWalk, so a walk that survived the kill wins over the URL.
-		if (data.detailType && LIVE_TYPE_IDS.has(data.detailType.id)) {
-			startWalk(data.detailType.id);
+		// loadActiveSession, so a session that survived the kill wins over the URL.
+		if (data.detailType && data.detailType.id in LIVE_TYPES) {
+			startSession(data.detailType.id);
 			urlDialogClosed = true;
 			// A task later: the router finishes starting after mount, and
 			// replaceState throws until then. Left in place, ?detail= would
@@ -49,6 +52,8 @@
 		nowLocal: string;
 		/** Null when ?detail= opened it, since then no tile was tapped. */
 		origin: DOMRect | null;
+		/** A live Ensamtid's answer (plan 23): its start, its length, its note. */
+		live?: { occurredLocal: string; values: Record<string, number>; note: string };
 	};
 
 	// Set when the page opened the dialog itself; `data.detailType` only comes
@@ -74,31 +79,55 @@
 			document.getElementById('away')?.scrollIntoView({ behavior: 'smooth' });
 			return;
 		}
-		if (activeWalk.current) {
-			document.getElementById('active-walk')?.scrollIntoView({ behavior: 'smooth' });
+		if (activeSession.current) {
+			document.getElementById('live-session')?.scrollIntoView({ behavior: 'smooth' });
 			return;
 		}
-		startWalk(type.id);
+		startSession(type.id);
 	}
 
-	// The running walk's catalogue row, for the card's label and icon. Gone
+	// The running session's catalogue row, for the card's label and icon. Gone
 	// from the catalogue (never, in practice) would simply hide the card.
 	const liveType = $derived(
-		activeWalk.current
-			? (data.types.find((type) => type.id === activeWalk.current?.typeId) ?? null)
+		activeSession.current
+			? (data.types.find((type) => type.id === activeSession.current?.typeId) ?? null)
 			: null
 	);
+
+	/**
+	 * A stopped Ensamtid's answer: the type's own dialog, with Tidpunkt at the
+	 * start, Längd the minutes away and the note carried over. The session's id
+	 * is the row id, so a double tap or a replay stores it once.
+	 */
+	function answer() {
+		const session = activeSession.current;
+		if (!session || !liveType) return;
+		opened = {
+			type: liveType,
+			eventId: session.id,
+			nowLocal: time.stockholmNowForInput(),
+			origin: null,
+			live: {
+				occurredLocal: time.stockholmForInput(new Date(session.startedAt)),
+				values: { duration_min: durationMinutes(session, new Date()) },
+				note: session.note
+			}
+		};
+	}
+
+	// Hemma pressed on the lock screen asks here, once the page knows of it.
+	onMount(() => handleHome(answer));
 
 	// Every change to the walk reaches the lock screen (plan 20), once it has
 	// been lined up with what was tapped there. The note is the only thing
 	// typed, so a pause lets a sentence through as one update.
 	let mirrorTimer: ReturnType<typeof setTimeout> | undefined;
 	$effect(() => {
-		const walk = activeWalk.current;
+		const session = activeSession.current;
 		const type = liveType;
 		if (!lockScreen.synced) return;
 		clearTimeout(mirrorTimer);
-		mirrorTimer = setTimeout(() => void mirrorWalk(walk, type), 300);
+		mirrorTimer = setTimeout(() => void mirrorSession(session, type), 300);
 	});
 
 	// The tiles whose activity already has a card on the page.
@@ -186,10 +215,13 @@
 	{/if}
 
 	{#if liveType}
-		<div id="active-walk">
-			<ActiveWalkCard
+		<div id="live-session">
+			<LiveSessionCard
 				type={liveType}
+				kind={LIVE_TYPES[liveType.id] ?? 'counting'}
+				reference={liveType.id === 'alone' ? data.aloneReference : null}
 				onBackdate={(type) => open(type, null)}
+				onAnswer={answer}
 			/>
 		</div>
 	{/if}
@@ -244,6 +276,15 @@
 			origin={dialog.origin}
 			message={form?.message ?? null}
 			onClose={close}
+			occurredLocal={dialog.live?.occurredLocal}
+			values={dialog.live?.values}
+			note={dialog.live?.note}
+			onSaved={dialog.live
+				? () => {
+						discardSession();
+						close();
+					}
+				: close}
 		/>
 	{/key}
 {/if}

@@ -4,8 +4,8 @@
 > good for the beginning of the training especially" — picked up 2026-10-03: "I'm ready to
 > get to work on the live-version for Ensamtid."
 
-> **Status: 📝 Proposed** — branch `feature/live-alone-time`. The design below is a
-> recommendation; the questions at the end decide the parts that are yours to decide.
+> **Status: 🚧 In progress** — branch `feature/live-alone-time`. All five questions answered
+> (below), every recommendation taken.
 
 ## The goal
 
@@ -121,27 +121,14 @@ That's native work, so **one APK install**.
    the screen locked.
 4. PR. After merge: no migration, no `db-push`; the APK is already installed from step 3.
 
-## Questions
+## Questions, and the answers
 
-1. **When does the clock stop: at Hemma, or at Spara?** _Recommendation: Hemma._ You press
-   it at the door; the dialog can wait for your shoes and the greeting without adding
-   minutes.
-2. **The lock screen: Ensamtid there too, with Hemma?** It's the moment the phone is in
-   your hand at the door. _Recommendation: yes._ It's also the bigger half of the work, so
-   it could be a follow-up if you'd rather have the card first.
-3. **A planned length?** Separation training usually decides the time _before_ leaving,
-   just under where she got anxious last time. Optionally pick one when starting (say, 20
-   min); the card and notification show "12 av 20 min", and the phone buzzes once when it's
-   time to head home. The buzz is a scheduled native notification, so more native work.
-   _Recommendation: worth having, but as its own small plan after this one, once the basic
-   loop has been used for a while._
-4. **Your reference numbers on the card?** E.g. "Längsta lugna 55 min · Orolig efter ~24
-   min" under the timer, so you know where her limit is while you're out. They're on
-   Statistik already; Logga would need one small extra read. _Recommendation: yes, it's
-   cheap and it's the number you'd want while away._
-5. **The lock-screen switch's name.** "Promenad på låsskärmen" would now cover Ensamtid
-   too. _Recommendation: rename it "Pågående på låsskärmen"_, one switch for both, rather
-   than a switch per type.
+1. **When does the clock stop?** _At Hemma._
+2. **Ensamtid on the lock screen with Hemma?** _Yes, in this plan._
+3. **A planned length with an alert?** _Yes, as its own small plan right after this one._
+4. **Reference numbers on the card?** _Yes:_ Längsta lugna and Orolig efter under the
+   timer.
+5. **The switch's name?** _"Pågående på låsskärmen"_, one switch for both kinds.
 
 ## Not in scope
 
