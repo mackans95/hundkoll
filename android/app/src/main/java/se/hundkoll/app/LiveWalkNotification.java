@@ -19,6 +19,9 @@ final class LiveWalkNotification {
     private static final int ID = 2001;
     // Its own id, so hiding a walk never takes the "sent later" notice with it.
     private static final int PENDING_ID = 2002;
+    // The planned length's buzz (plan 24), on a channel of its own that may make a sound.
+    private static final int ALERT_ID = 2003;
+    static final String ALERT_CHANNEL = "live-walk-alert";
 
     private LiveWalkNotification() {}
 
@@ -30,6 +33,7 @@ final class LiveWalkNotification {
         // Ensamtid after Hemma (plan 23): nothing left to tap but the answer, in the app.
         boolean timing = "timing".equals(walk.optString("kind"));
         long endedAt = walk.optLong("endedAt");
+        LiveWalkAlarm.sync(context, walk);
         if (timing && endedAt > 0) {
             long minutes = Math.max(1, Math.round((endedAt - walk.optLong("startedAt")) / 60_000.0));
             post(
@@ -60,6 +64,11 @@ final class LiveWalkNotification {
             .setWhen(walk.optLong("startedAt"))
             .setShowWhen(true)
             .setUsesChronometer(true);
+        String plan = words.optString("plan");
+        if (timing && !plan.isEmpty()) {
+            // In the header beside the timer: "Hundkoll · plan 20 min · 12:03".
+            builder.setSubText(plan);
+        }
 
         post(context, builder);
     }
@@ -98,6 +107,40 @@ final class LiveWalkNotification {
 
     static void hide(Context context) {
         NotificationManagerCompat.from(context).cancel(ID);
+        NotificationManagerCompat.from(context).cancel(ALERT_ID);
+        LiveWalkAlarm.cancel(context);
+    }
+
+    /** Time to head home: sound and vibration, unlike the silent running notification. */
+    static void showAlert(Context context, JSONObject walk) {
+        JSONObject words = walk.optJSONObject("words");
+        if (words == null) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                ALERT_CHANNEL,
+                words.optString("alertChannel"),
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.enableVibration(true);
+            context.getSystemService(NotificationManager.class).createNotificationChannel(channel);
+        }
+        Intent open = new Intent(context, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, ALERT_CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_paw)
+            .setColor(ContextCompat.getColor(context, R.color.notification))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .setContentTitle(words.optString("alertTitle"))
+            .setContentText(words.optString("alertBody"))
+            .setContentIntent(PendingIntent.getActivity(context, 1, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+        try {
+            NotificationManagerCompat.from(context).notify(ALERT_ID, builder.build());
+        } catch (SecurityException e) {
+            // Notification permission taken back in Android's settings.
+        }
     }
 
     /** The page has taken the unsent walks, so "sent when you open the app" is done. */

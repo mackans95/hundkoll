@@ -202,6 +202,10 @@ export async function mirrorSession(
 		icon: type.icon ?? '',
 		startedAt: new Date(session.startedAt).getTime(),
 		endedAt: session.endedAt ? new Date(session.endedAt).getTime() : 0,
+		// When the planned length is up, for the alarm; 0 without a plan.
+		plannedAt: session.plannedMin
+			? new Date(session.startedAt).getTime() + session.plannedMin * 60_000
+			: 0,
 		pee: session.counts.pee ?? 0,
 		poop: session.counts.poop ?? 0,
 		origin: location.origin,
@@ -215,6 +219,10 @@ export async function mirrorSession(
 			stopped: words.stopped(activity),
 			minutes: words.minutes,
 			answer: words.answer,
+			plan: session.plannedMin ? words.plan(session.plannedMin) : '',
+			alertTitle: words.alertTitle(type.icon ?? ''),
+			alertBody: session.plannedMin ? words.alertBody(session.plannedMin) : '',
+			alertChannel: words.alertChannel,
 			channel: words.channel,
 			pendingTitle: words.pendingTitle(type.label),
 			pendingBody: words.pendingBody

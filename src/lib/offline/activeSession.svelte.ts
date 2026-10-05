@@ -144,7 +144,8 @@ export function startSession(typeId: string): void {
 		startedAt: new Date().toISOString(),
 		endedAt: null,
 		counts,
-		note: ''
+		note: '',
+		plannedMin: null
 	};
 	persist();
 }
@@ -165,6 +166,11 @@ export function updateNote(note: string): void {
 export function adjustStart(instant: Date): void {
 	const capped = Math.min(instant.getTime(), Date.now());
 	update({ startedAt: new Date(capped).toISOString() });
+}
+
+/** The planned length, or null to clear it (plan 24). */
+export function setPlan(minutes: number | null): void {
+	update({ plannedMin: minutes });
 }
 
 /**

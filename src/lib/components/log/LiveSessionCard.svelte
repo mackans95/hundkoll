@@ -12,9 +12,16 @@
 		finishSession,
 		stopSession,
 		updateCount,
+		setPlan,
 		updateNote
 	} from '$lib/offline/activeSession.svelte';
-	import { durationMinutes, elapsedMinutes, LONG_SESSION_MINUTES } from '$lib/offline/liveSession';
+	import {
+		durationMinutes,
+		elapsedMinutes,
+		LONG_SESSION_MINUTES,
+		PLAN_CHOICES,
+		suggestedPlan
+	} from '$lib/offline/liveSession';
 	import type { EventType } from '$lib/types/domain';
 	import CountStepper from './CountStepper.svelte';
 	import NoteField from './NoteField.svelte';
@@ -87,6 +94,12 @@
 		}
 	}
 
+	const suggestion = $derived(reference ? suggestedPlan(reference) : null);
+
+	function choosePlan(minutes: number) {
+		setPlan(session?.plannedMin === minutes ? null : minutes);
+	}
+
 	const referenceText = $derived.by(() => {
 		if (!reference) return null;
 		const parts = [
@@ -103,6 +116,21 @@
 	});
 </script>
 
+{#snippet chip(minutes: number, label: string, suggested: boolean)}
+	<button
+		type="button"
+		aria-pressed={session?.plannedMin === minutes}
+		onclick={() => choosePlan(minutes)}
+		class="min-h-9 rounded-full border px-3 text-sm font-medium {session?.plannedMin === minutes
+			? 'border-emerald-600 bg-emerald-600 text-white'
+			: suggested
+				? 'border-emerald-600 text-ink'
+				: 'border-edge-strong text-ink-muted'}"
+	>
+		{label}
+	</button>
+{/snippet}
+
 {#if session}
 	<Card>
 		<h2 class="font-bold">
@@ -111,6 +139,12 @@
 				{locale.log.liveWalk.stopped(
 					type.label,
 					locale.units.minutes(String(durationMinutes(session, clock.now)))
+				)}
+			{:else if session.plannedMin}
+				{locale.log.liveWalk.statusPlanned(
+					type.label,
+					elapsedMinutes(session, clock.now),
+					locale.units.minutes(String(session.plannedMin))
 				)}
 			{:else}
 				{locale.log.liveWalk.status(
@@ -122,6 +156,21 @@
 
 		{#if kind === 'timing' && referenceText}
 			<p class="text-sm text-ink-muted">{referenceText}</p>
+		{/if}
+
+		{#if kind === 'timing' && !stopped}
+			<!-- Plan 24. Tapping the chosen one again clears it: no plan counts up as before. -->
+			<div class="flex flex-col gap-1.5">
+				<span class="text-sm font-medium text-ink-label">{locale.log.liveWalk.plan}</span>
+				<div class="flex flex-wrap gap-1.5">
+					{#if suggestion !== null}
+						{@render chip(suggestion, locale.log.liveWalk.suggestion(suggestion), true)}
+					{/if}
+					{#each PLAN_CHOICES.filter((minutes) => minutes !== suggestion) as minutes (minutes)}
+						{@render chip(minutes, String(minutes), false)}
+					{/each}
+				</div>
+			</div>
 		{/if}
 
 		{#if kind === 'counting'}
