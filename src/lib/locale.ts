@@ -56,6 +56,11 @@ export const log = {
 		/** Reopens the answer for a session already stopped. */
 		answer: 'Svara',
 		stopped: (activity: string, elapsed: string) => `${activity} · hemma efter ${elapsed}` as const,
+		/** With a planned length (plan 24): "Ensamtid pågår · 12 av 20 min". */
+		statusPlanned: (activity: string, elapsed: number, planned: string) =>
+			`${activity} pågår · ${elapsed} av ${planned}` as const,
+		plan: 'Planerad tid',
+		suggestion: (minutes: number) => `Förslag ${minutes}` as const,
 		/** Her reference numbers under Ensamtid's timer, from the last 30 days. */
 		longestCalm: (minutes: string) => `Längsta lugna ${minutes}` as const,
 		anxiousAfter: (minutes: string) => `orolig efter ${minutes}` as const,
@@ -72,6 +77,12 @@ export const log = {
 		save: 'Spara',
 		/** The timing kind's one button (Ensamtid): stops the clock. */
 		home: 'Hemma',
+		/** In the header next to the timer, with a planned length. */
+		plan: (minutes: number) => `plan ${minutes} min` as const,
+		/** The buzz when the planned length is up (plan 24). */
+		alertTitle: (icon: string) => `${icon} Dags att gå hem`.trim(),
+		alertBody: (minutes: number) => `${minutes} min har gått` as const,
+		alertChannel: 'Dags att gå hem',
 		/** After Hemma on the lock screen; the minutes follow, from native. */
 		stopped: (activity: string) => `${activity} · hemma efter` as const,
 		minutes: 'min',

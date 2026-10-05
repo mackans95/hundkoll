@@ -57,4 +57,10 @@
     <!-- Without it the WebView never fires online/offline, and the queue
          waits for the next launch or resume to send. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- The planned Ensamtid's buzz (plan 24) must be on the minute. Granted at
+         install on Android 13+, no prompt; older Android uses SCHEDULE_EXACT_ALARM. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
 </manifest>

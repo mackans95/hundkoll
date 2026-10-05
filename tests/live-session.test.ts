@@ -10,6 +10,7 @@ import {
 	fixedSessionFields,
 	parseStoredSession,
 	reconcileSession,
+	suggestedPlan,
 	type LiveSession
 } from '$lib/offline/liveSession';
 import * as time from '$lib/time';
@@ -20,7 +21,8 @@ const walk: LiveSession = {
 	startedAt: '2026-08-20T10:00:00.000Z',
 	endedAt: null,
 	counts: { pee: 2, poop: 1 },
-	note: 'regn'
+	note: 'regn',
+	plannedMin: null
 };
 
 const alone: LiveSession = {
@@ -29,7 +31,8 @@ const alone: LiveSession = {
 	startedAt: '2026-10-03T08:00:00.000Z',
 	endedAt: null,
 	counts: {},
-	note: ''
+	note: '',
+	plannedMin: null
 };
 
 describe('parseStoredSession', () => {
@@ -185,5 +188,48 @@ describe('reconcileSession', () => {
 			kind: 'keep'
 		});
 		expect(reconcileSession(walk, {})).toEqual({ kind: 'keep' });
+	});
+});
+
+// Plan 24: a timing session's planned length, kept while it runs.
+describe('a planned length', () => {
+	it('round-trips, and refuses junk', () => {
+		const planned = { ...alone, plannedMin: 20 };
+		expect(parseStoredSession(JSON.stringify(planned))).toEqual(planned);
+		expect(parseStoredSession(JSON.stringify({ ...alone, plannedMin: -5 }))?.plannedMin).toBeNull();
+		expect(
+			parseStoredSession(JSON.stringify({ ...alone, plannedMin: 'soon' }))?.plannedMin
+		).toBeNull();
+	});
+
+	// Sessions stored before plan 24 have no plan at all.
+	it('is null for a session stored without one', () => {
+		const { plannedMin: _plan, ...old } = alone;
+		expect(parseStoredSession(JSON.stringify(old))?.plannedMin).toBeNull();
+	});
+
+	it('is never saved with the event', () => {
+		const fields = buildSessionFields(
+			{ ...alone, plannedMin: 20 },
+			new Date('2026-10-03T08:23:00.000Z')
+		);
+		expect(Object.keys(fields)).not.toContain('plannedMin');
+	});
+});
+
+describe('suggestedPlan', () => {
+	// Just under where she grew anxious: the usual training rule.
+	it('rounds her anxious-after average down to 5 minutes', () => {
+		expect(suggestedPlan({ longestCalm: 55, anxiousAfter: 24.4 })).toBe(20);
+		expect(suggestedPlan({ longestCalm: 55, anxiousAfter: 25 })).toBe(25);
+	});
+
+	it('falls back to her longest calm stretch, and to nothing', () => {
+		expect(suggestedPlan({ longestCalm: 42, anxiousAfter: null })).toBe(40);
+		expect(suggestedPlan({ longestCalm: null, anxiousAfter: null })).toBeNull();
+	});
+
+	it('never suggests under 5 minutes', () => {
+		expect(suggestedPlan({ longestCalm: null, anxiousAfter: 3 })).toBe(5);
 	});
 });

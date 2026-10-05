@@ -26,6 +26,7 @@ public class LiveWalkReceiver extends BroadcastReceiver {
     static final String ADD_POOP = "se.hundkoll.app.live-walk.ADD_POOP";
     static final String SAVE = "se.hundkoll.app.live-walk.SAVE";
     static final String HOME = "se.hundkoll.app.live-walk.HOME";
+    static final String ALERT = "se.hundkoll.app.live-walk.ALERT";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -37,6 +38,12 @@ public class LiveWalkReceiver extends BroadcastReceiver {
             if (walk != null) {
                 LiveWalkNotification.show(context, walk);
                 LiveWalkPlugin.emitChanged(walk);
+            }
+        } else if (ALERT.equals(action)) {
+            // Only for the session it was set for, and only while it still runs.
+            JSONObject walk = store.walk();
+            if (walk != null && walk.optString("id").equals(intent.getStringExtra("id")) && walk.optLong("endedAt") <= 0) {
+                LiveWalkNotification.showAlert(context, walk);
             }
         } else if (HOME.equals(action)) {
             // The clock stops at the door; the answer is asked when the app opens.

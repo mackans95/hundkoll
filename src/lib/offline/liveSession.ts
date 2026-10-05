@@ -23,6 +23,8 @@ export type LiveSession = {
 	/** What a counting session counts while it runs: the walk's kiss and bajs. */
 	counts: Record<string, number>;
 	note: string;
+	/** A timing session's planned length (plan 24); only while it runs, never saved. */
+	plannedMin: number | null;
 };
 
 /** Past this, Avsluta shows the computed duration for a check before saving. */
@@ -70,11 +72,31 @@ export function parseStoredSession(raw: string | null): LiveSession | null {
 			startedAt: value.startedAt,
 			endedAt,
 			counts: Object.fromEntries(Object.entries(stored).map(([key, n]) => [key, cleanCount(n)])),
-			note: typeof value.note === 'string' ? value.note : ''
+			note: typeof value.note === 'string' ? value.note : '',
+			plannedMin:
+				typeof value.plannedMin === 'number' && value.plannedMin > 0
+					? Math.round(value.plannedMin)
+					: null
 		};
 	} catch {
 		return null;
 	}
+}
+
+/** The planned lengths the card offers, in minutes. */
+export const PLAN_CHOICES = [5, 10, 15, 20, 30, 45, 60];
+
+/**
+ * The card's suggested plan: just under where she grew anxious lately, the
+ * usual training rule, rounded down to 5 minutes; her longest calm stretch if
+ * she has not been anxious; nothing without either. Never under 5.
+ */
+export function suggestedPlan(reference: {
+	longestCalm: number | null;
+	anxiousAfter: number | null;
+}): number | null {
+	const basis = reference.anxiousAfter ?? reference.longestCalm;
+	return basis === null ? null : Math.max(5, Math.floor(basis / 5) * 5);
 }
 
 /** Where the clock stops: Hemma's instant once pressed, otherwise now. */
