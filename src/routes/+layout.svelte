@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import AppMenu from '$lib/components/AppMenu.svelte';
 	import * as locale from '$lib/locale';
 	import {
 		isNativeApp,
@@ -40,7 +41,7 @@
 		{ href: resolve('/'), label: locale.nav.log, icon: '🐾' },
 		{ href: resolve('/status'), label: locale.nav.status, icon: '⏱️' },
 		{ href: resolve('/stats'), label: locale.nav.stats, icon: '📊' },
-		{ href: resolve('/settings'), label: locale.nav.settings, icon: '⚙️' }
+		{ href: resolve('/trends'), label: locale.nav.trends, icon: '📈' }
 	];
 </script>
 
@@ -56,6 +57,10 @@
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
 	<div class="pb-[calc(5rem+var(--nav-inset))]">
+		<!-- Zero height: the menu sits over each page's own header. -->
+		<div class="relative mx-auto max-w-sm">
+			<AppMenu />
+		</div>
 		{@render children()}
 	</div>
 	<!-- The safe-area padding lives inside each tab, not on the nav, so a

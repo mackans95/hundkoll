@@ -23,7 +23,13 @@ export const nav = {
 	log: 'Logga',
 	status: 'Status',
 	stats: 'Statistik',
-	settings: 'Inställningar'
+	trends: 'Trender',
+	/** The ☰ button's name for a screen reader. */
+	menu: 'Meny'
+} as const;
+
+export const trends = {
+	title: nav.trends
 } as const;
 
 export const log = {
@@ -189,10 +195,20 @@ export const status = {
 } as const;
 
 export const settings = {
-	title: nav.settings,
+	title: 'Inställningar',
+	/** The sub-pages, as the menu and their own headings name them. */
+	pages: {
+		intervals: 'Intervaller',
+		appearance: 'Utseende',
+		notifications: 'Aviseringar',
+		tables: 'Tabeller',
+		trends: 'Trender'
+	},
+	tablesStub: 'Här kommer du att kunna välja vad Statistik visar.',
+	trendsStub: 'Här kommer du att kunna välja vilka trender som visas.',
+	notificationsAppOnly: 'Aviseringar finns bara i Android-appen.',
 	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra intervall.',
 	saved: 'Sparat!',
-	intervalsHeading: 'Intervall',
 	intervalsHelp:
 		'Antal dagar eller timmar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
 	hours: 'timmar',
@@ -208,7 +224,6 @@ export const settings = {
 		dark: 'Mörkt'
 	},
 	push: {
-		heading: 'Aviseringar',
 		toggle: 'Påminnelser på den här telefonen',
 		help: 'Promenad och matning 30 minuter innan. Återkommande en vecka innan och samma dag, kl. 9.',
 		denied:

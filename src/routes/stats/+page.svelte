@@ -5,7 +5,6 @@
 	import CarRideCard from '$lib/components/stats/CarRideCard.svelte';
 	import AccidentCard from '$lib/components/stats/AccidentCard.svelte';
 	import MealCard from '$lib/components/stats/MealCard.svelte';
-	import TrendCard from '$lib/components/stats/TrendCard.svelte';
 	import WalkCard from '$lib/components/stats/WalkCard.svelte';
 	import WeightCard from '$lib/components/stats/WeightCard.svelte';
 	import * as locale from '$lib/locale';
@@ -24,11 +23,9 @@
 		{ value: 'month', label: locale.stats.periods.month }
 	];
 
-	// Each tab bar changes its own parameter and leaves the other alone.
-	// Relative rather than resolve()'d: a tab swaps one parameter and stays
+	// Relative rather than resolve()'d: a tab swaps the parameter and stays
 	// where it is, so the path is deliberately whatever page this is.
-	const periodHref = (value: Period) => `?period=${value}&trend=${data.trend}`;
-	const trendHref = (value: Period) => `?period=${data.period}&trend=${value}`;
+	const periodHref = (value: Period) => `?period=${value}`;
 </script>
 
 <svelte:head><title>{locale.app.pageTitle(locale.stats.title)}</title></svelte:head>
@@ -42,16 +39,6 @@
 	{#if data.failed}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
 	{/if}
-
-	<TrendCard
-		period={data.trend}
-		prev={data.trendPrev}
-		latest={data.trendLatest}
-		prevBucket={data.trendPrevBucket}
-		latestBucket={data.trendLatestBucket}
-		{tabs}
-		tabHref={trendHref}
-	/>
 
 	<WalkCard
 		days={data.walkDays}

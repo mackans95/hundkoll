@@ -12,6 +12,10 @@ declare global {
 			session: Session | null;
 			user: User | null;
 		}
+		interface PageState {
+			/** The ☰ menu is open: a shallow history entry, so Back closes it. */
+			menuOpen?: boolean;
+		}
 		interface PageData {
 			session: Session | null;
 			user: User | null;

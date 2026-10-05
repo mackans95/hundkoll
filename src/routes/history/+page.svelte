@@ -68,7 +68,7 @@
 <svelte:head><title>{locale.app.pageTitle(locale.history.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4">
-	<header class="flex items-baseline justify-between gap-2 px-1">
+	<header class="flex items-baseline justify-between gap-2 pr-14 pl-1">
 		<h1 class="text-3xl font-bold">{locale.history.title}</h1>
 		<a
 			href={resolve('/')}
