@@ -797,6 +797,12 @@ one at a time, held device-locally (`activeSession.svelte.ts`). There are two ki
   saved with the session's id. Closed without saving, the session stays stopped and the
   card offers **Svara**; it never runs again.
 
+A live Ensamtid can carry a **planned length** (plan 24), picked on the card: a "Förslag"
+chip just under her recent Orolig efter, then 5–60 min. The card reads "12 av 20 min", the
+lock screen's header says "plan 20 min", and an exact alarm (`LiveWalkAlarm`,
+`USE_EXACT_ALARM`) buzzes "Dags att gå hem" on its own channel when it's up. The plan is
+never saved with the event. OnePlus may deliver it up to ~40 s late.
+
 Every length is derived from `startedAt` (and `endedAt`, once stopped), so a killed app
 loses nothing. A walk stored before plan 23 had its counts at the top level, and is read
 into `counts`.

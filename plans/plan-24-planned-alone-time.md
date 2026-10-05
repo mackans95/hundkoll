@@ -4,8 +4,21 @@
 > after". Picked up 2026-10-05: "start with building out the planned time part of the
 > Ensamtid card, so we have everything we have talked about done before I move on."
 
-> **Status: 🚧 In progress** — branch `feature/alone-planned-time`. The four questions were
-> answered before writing (below); every recommendation was taken.
+> **Status: ✅ Built, awaiting merge** — branch `feature/alone-planned-time`. The four
+> questions were answered before writing (below), every recommendation taken. Verified:
+>
+> - **Headless Chrome:** "Förslag 20" from an orolig-efter of ~22 min, the plain 20 chip
+>   left out, and "0 av 20 min" once chosen.
+> - **On the phone over USB, locked:**
+>   - `USE_EXACT_ALARM` granted at install;
+>   - "plan 5 min" in the header;
+>   - the buzz with "🏠 Dags att gå hem · 5 min har gått";
+>   - a plan change moving the alarm (13:43 → 13:53);
+>   - Hemma removing it.
+>
+> One finding: **the buzz came 40 s late** (13:43:28 → 13:44:08). OnePlus gave the exact
+> alarm a 40 s window anyway. That's acceptable at minute scale; `setAlarmClock` would be
+> to-the-second but would show as the phone's next alarm, so it isn't used.
 
 ## The goal
 
