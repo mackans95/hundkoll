@@ -83,9 +83,6 @@
 {/snippet}
 
 <section class="flex flex-col gap-2">
-	<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
-		{locale.settings.push.heading}
-	</h2>
 	{@render row(
 		locale.settings.push.toggle,
 		locale.settings.push.help,

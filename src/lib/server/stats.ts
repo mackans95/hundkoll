@@ -43,14 +43,9 @@ export type Stats = {
 	carRideMetrics: DetailMetric[];
 	carRideDays: SimpleDay[];
 	period: Period;
-	trend: Period;
 	/** The Stockholm day the query windows were cut from, for the charts to
 	 * zero-fill the same window. */
 	today: string;
-	trendPrev: TrendBucket | null;
-	trendLatest: TrendBucket | null;
-	trendPrevBucket: string;
-	trendLatestBucket: string;
 	summary: StatSummary | null;
 	walkDays: WalkDay[];
 	mealDays: MealDay[];
@@ -186,14 +181,27 @@ function present<T>(rows: (T | null)[]): T[] {
 	return rows.filter((row): row is T => row !== null);
 }
 
-/** Everything the stats screen shows, for one period and one trend period. */
-export async function loadStats(db: Db, period: Period, trend: Period): Promise<Stats> {
+/**
+ * Reads a period out of a query string, falling back to the daily view when
+ * the parameter is missing or is not one we recognise.
+ * "week" → "week", "fortnight" → "day"
+ */
+export function toPeriod(raw: string | null): Period {
+	// A record: adding a Period without teaching this function is a compile error.
+	const PERIODS: Record<Period, true> = { day: true, week: true, month: true };
+
+	// hasOwn, not `in` — `in` walks the prototype chain, so ?period=toString
+	// would pass for a period.
+	return raw !== null && Object.hasOwn(PERIODS, raw) ? (raw as Period) : 'day';
+}
+
+/** Everything the stats screen shows, for one period. */
+export async function loadStats(db: Db, period: Period): Promise<Stats> {
 	// How far back to read per bin size, each covering a dozen-ish buckets.
 	const BIN_WINDOW_DAYS: Record<Period, number> = { day: 30, week: 84, month: 365 };
 	const DAILY_WINDOW_DAYS = 30;
 
 	const today = time.stockholmNowForInput().slice(0, 10);
-	const { prev: trendPrevBucket, latest: trendLatestBucket } = trendBucketKeys(today, trend);
 
 	// Counted in Stockholm days, the same days the charts zero-fill — a UTC
 	// cutoff would disagree with them for the hours around midnight.
@@ -272,20 +280,6 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 			.in('field', ['pee', 'poop'])
 			.eq('period', period)
 			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period])),
-		// No type filter: a bucket the wide view produced exists if *anything*
-		// was logged in it, so a week of only car rides still compares.
-		db
-			.from('stats_type_buckets')
-			.select(TYPE_BUCKET_COLUMNS)
-			.eq('period', trend)
-			.in('bucket', [trendPrevBucket, trendLatestBucket]),
-		db
-			.from('stats_detail_buckets')
-			.select(DETAIL_BUCKET_COLUMNS)
-			.in('type_id', DAILY_TYPES)
-			.in('field', ['duration_min', 'finished'])
-			.eq('period', trend)
-			.in('bucket', [trendPrevBucket, trendLatestBucket]),
 		weightHistory(db)
 	]);
 
@@ -302,8 +296,6 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		windowDetailRes,
 		binsRes,
 		binDetailRes,
-		trendRes,
-		trendDetailRes,
 		weights
 	] = results;
 
@@ -322,10 +314,6 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 
 	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
 	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
-	const trendRows = rows.trendBuckets(
-		present((trendRes.data ?? []).map(toTypeBucket)),
-		present((trendDetailRes.data ?? []).map(toDetailBucket))
-	);
 
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
@@ -340,12 +328,7 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
 		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),
 		period,
-		trend,
 		today,
-		trendPrev: trendRows.find((row) => row.bucket === trendPrevBucket) ?? null,
-		trendLatest: trendRows.find((row) => row.bucket === trendLatestBucket) ?? null,
-		trendPrevBucket,
-		trendLatestBucket,
 		summary: rows.statSummary(
 			present((windowsRes.data ?? []).map(toTypeWindow)),
 			present((windowDetailRes.data ?? []).map(toDetailWindow))
@@ -358,5 +341,51 @@ export async function loadStats(db: Db, period: Period, trend: Period): Promise<
 		),
 		weights,
 		failed
+	};
+}
+
+export type Trends = {
+	period: Period;
+	prev: TrendBucket | null;
+	latest: TrendBucket | null;
+	prevBucket: string;
+	latestBucket: string;
+	failed: boolean;
+};
+
+/** The last two complete buckets of one period, for the trends screen. */
+export async function loadTrends(db: Db, period: Period): Promise<Trends> {
+	const today = time.stockholmNowForInput().slice(0, 10);
+	const { prev: prevBucket, latest: latestBucket } = trendBucketKeys(today, period);
+
+	const [typeRes, detailRes] = await Promise.all([
+		// No type filter: a bucket the wide view produced exists if *anything*
+		// was logged in it, so a week of only car rides still compares.
+		db
+			.from('stats_type_buckets')
+			.select(TYPE_BUCKET_COLUMNS)
+			.eq('period', period)
+			.in('bucket', [prevBucket, latestBucket]),
+		db
+			.from('stats_detail_buckets')
+			.select(DETAIL_BUCKET_COLUMNS)
+			.in('type_id', ['walk', 'meal'])
+			.in('field', ['duration_min', 'finished'])
+			.eq('period', period)
+			.in('bucket', [prevBucket, latestBucket])
+	]);
+
+	const buckets = rows.trendBuckets(
+		present((typeRes.data ?? []).map(toTypeBucket)),
+		present((detailRes.data ?? []).map(toDetailBucket))
+	);
+
+	return {
+		period,
+		prev: buckets.find((row) => row.bucket === prevBucket) ?? null,
+		latest: buckets.find((row) => row.bucket === latestBucket) ?? null,
+		prevBucket,
+		latestBucket,
+		failed: Boolean(typeRes.error || detailRes.error)
 	};
 }

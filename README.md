@@ -8,14 +8,20 @@ The question the app exists to answer is _"when was X last done, and is it overd
 
 ## The app
 
-Four screens, as a bottom tab bar:
+Four screens, as a bottom tab bar, and a ☰ menu for the settings:
 
-| Screen            | What it does                                                                                                                                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Logga** (`/`)   | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. While the dog is with someone else, a card on top says so, with one button for coming home. |
-| **Status**        | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average; paused while she is away.          |
-| **Statistik**     | Trends between the last two complete periods, plus per-topic cards for walks, food, accidents and weight.                                                                                                               |
-| **Inställningar** | The interval for each activity, editable. Daily ones choose between a fixed number of hours and following the average. Blank means "no schedule". Also logout.                                                          |
+| Screen                  | What it does                                                                                                                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Logga** (`/`)         | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. While the dog is with someone else, a card on top says so, with one button for coming home. |
+| **Status**              | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average; paused while she is away.          |
+| **Statistik**           | Per-topic cards for walks, food, accidents, weight, alone time and car rides.                                                                                                                                           |
+| **Trender** (`/trends`) | The last two complete days, weeks or months side by side.                                                                                                                                                               |
+
+**☰**, top right on every screen, is a `<details>` dropdown of the **Inställningar** sub-pages
+(`/settings/…`): Intervaller (the interval for each activity; daily ones choose between a
+fixed number of hours and following the average, blank means "no schedule"), Utseende (the
+theme), Aviseringar (in the app only), and Tabeller and Trender, stubs for now. Logga ut is at
+its foot. Opening it is a shallow history entry, so the Back gesture closes it (plan 25).
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
 than a fifth tab — the tab bar is for daily screens, and history is an occasional lookup.
@@ -764,7 +770,7 @@ pg_cron, every minute → public.remind_tick() → POST the `remind` Edge Functi
 dropping:` in the function logs) with the token's start and FCM's answer.
 - **`?dry&now=<iso>`** answers what the function would send at that moment, claiming and
   sending nothing: the way to check a rule against real data without waiting for 09:00.
-- **The switch is per phone** (Inställningar, only inside the app): Android's permission,
+- **The switch is per phone** (☰ → Aviseringar, only inside the app): Android's permission,
   then an FCM token, then `POST /push` stores it. Off deletes the row. Every launch with it on
   refreshes the token, since FCM rotates them.
 - **The server cannot tell the app from a browser.** The `HundkollApp` user-agent suffix is
@@ -807,7 +813,7 @@ Every length is derived from `startedAt` (and `endedAt`, once stopped), so a kil
 loses nothing. A walk stored before plan 23 had its counts at the top level, and is read
 into `counts`.
 
-With **Pågående på låsskärmen** on (Inställningar, per phone), a running session is an
+With **Pågående på låsskärmen** on (☰ → Aviseringar, per phone), a running session is an
 ongoing notification, usable without unlocking: the walk's **+ Kiss · n**, **+ Bajs · n**
 and **Spara**, or Ensamtid's single **Hemma**, after which it reads "hemma efter N min ·
 Tryck för att svara" and opens the answer. Tapping it elsewhere opens the app. The native side is a local plugin in
