@@ -17,7 +17,13 @@
 >   picker, and its interval saved from its page shows in the list; an unknown id is a 404;
 >   no exceptions.
 >
-> **Not yet on the phone.** `db-push` only after the merge.
+> **Added after the first review: a "På Status" switch** (below). Verified the same way:
+> Olycka hidden disappears from Status, shows "dold på Status" in the list, stays a tile on
+> Logga and comes back when ticked; Hundvakt has no switch; a `?dry` run of `remind` skips
+> a hidden type that is due.
+>
+> **Not yet on the phone.** After the merge: `db-push`, then `functions-deploy` for the
+> reminder change.
 
 ## The goal
 
@@ -182,8 +188,30 @@ create table type_settings (
   type's page and see Status follow; an old `/settings/intervals` link redirects.
 - `db-push` only after the merge.
 
+## Added: hiding a type from Status
+
+> Source, 2026-10-05: "im never going to be putting a tracking on Olyckor … so i would like
+> to be able to say in the settings that this type should not show up there at all, so we
+> don't have a bunch of unneccesary items on different views."
+
+Status visibility had no home in plans 27–29, uses the same table and page, and is small,
+so it is part of this plan. **Statistik visibility stays with plan 28**, which already
+stores which cards show and in what order; its switch can sit on the type page too.
+
+- **`show_on_status boolean`** on `type_settings` (migration 20261005130000), null meaning
+  shown, with its own column grant.
+- **Off hides the type from all of Status** (daily, timed and "senast") and **silences
+  its reminders**: `remind` reads the hidden rows as service_role and skips them. A
+  reminder for something Status no longer shows would be noise. It stays a tile on Logga,
+  so an accident can still be logged.
+- **The page's checkbox** posts a hidden `false` ahead of its `true`, since an unticked box
+  posts nothing. No value at all means the form had no such field.
+- **Not offered for the absence type** (Hundvakt): it is the banner on Status, never a card.
+- A failed settings read shows everything: an extra card is the safer mistake.
+
 ## Not in scope
 
-- The statistics, Tabeller and Trender choices themselves (plans 27–29).
+- The statistics, Tabeller and Trender choices themselves (plans 27–29), including hiding a
+  card from Statistik (plan 28).
 - Moving the interval off `event_types`.
 - Per-type tile colours, or a free colour picker.

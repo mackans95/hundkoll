@@ -6,9 +6,11 @@ import * as locale from '$lib/locale';
 import { chartColorKey, paletteFor } from '$lib/stats/palette';
 import { planTypeSettings, typeSettings } from '$lib/typeSettings';
 
-const form = (fields: Record<string, string>) => {
+const form = (fields: Record<string, string | string[]>) => {
 	const data = new FormData();
-	for (const [key, value] of Object.entries(fields)) data.set(key, value);
+	for (const [key, value] of Object.entries(fields)) {
+		for (const one of [value].flat()) data.append(key, one);
+	}
 	return data;
 };
 
@@ -34,13 +36,13 @@ describe('chartColorKey', () => {
 
 describe('typeSettings', () => {
 	it('fills a missing row from the defaults', () => {
-		expect(typeSettings('walk')).toEqual({ chartColor: 'green' });
+		expect(typeSettings('walk')).toEqual({ chartColor: 'green', showOnStatus: true });
 	});
 
 	it('has no colour for a type without a card', () => {
-		expect(typeSettings('bath', { type_id: 'bath', chart_color: 'blue' })).toEqual({
-			chartColor: null
-		});
+		expect(
+			typeSettings('bath', { type_id: 'bath', chart_color: 'blue', show_on_status: null })
+		).toEqual({ chartColor: null, showOnStatus: true });
 	});
 });
 
@@ -67,5 +69,27 @@ describe('planTypeSettings', () => {
 
 	it('ignores a colour posted for a type without a card', () => {
 		expect(planTypeSettings('bath', null, form({ chart_color: 'blue' }))).toEqual({ patch: {} });
+	});
+
+	// The page posts a hidden "false" ahead of the checkbox's "true".
+	it('hides a type from Status when the box is unticked', () => {
+		expect(planTypeSettings('accident', null, form({ show_on_status: 'false' }))).toEqual({
+			patch: { show_on_status: false }
+		});
+	});
+
+	it('shows it again when ticked, and writes nothing when unchanged', () => {
+		const hidden = { type_id: 'accident', chart_color: null, show_on_status: false };
+		expect(
+			planTypeSettings('accident', hidden, form({ show_on_status: ['false', 'true'] }))
+		).toEqual({ patch: { show_on_status: true } });
+		expect(planTypeSettings('accident', null, form({ show_on_status: ['false', 'true'] }))).toEqual(
+			{ patch: {} }
+		);
+	});
+
+	it('leaves Status alone when the form has no such field', () => {
+		const hidden = { type_id: 'accident', chart_color: null, show_on_status: false };
+		expect(planTypeSettings('accident', hidden, form({}))).toEqual({ patch: {} });
 	});
 });

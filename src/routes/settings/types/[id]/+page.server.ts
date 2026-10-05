@@ -25,6 +25,8 @@ export const load: PageServerLoad = async ({ params, url, setHeaders, locals: { 
 		type: type ?? null,
 		settings: typeSettings(params.id, settings?.get(params.id)),
 		palette: params.id in CHARTED_TYPES ? paletteFor(params.id) : [],
+		// The absence type is the banner on Status, never a card, so there is nothing to hide.
+		statusOption: type?.category !== 'absence',
 		// A form over defaults it could not read would save over the real choice.
 		failed: types === null || settings === null,
 		saved: url.searchParams.has('saved')

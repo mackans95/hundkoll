@@ -214,6 +214,11 @@ export const settings = {
 		interval: 'Intervall',
 		noInterval: 'inget intervall',
 		followsAverage: 'följer snittet',
+		shownOn: 'Visas',
+		showOnStatus: 'På Status',
+		showOnStatusHelp:
+			'Av döljer typen på Status och stänger av dess påminnelser. Den går fortfarande att logga.',
+		hiddenOnStatus: 'dold på Status',
 		chartColor: 'Diagramfärg',
 		chartColorHelp: 'Färgen på typens diagram i Statistik.',
 		noChart: 'Inget diagram i Statistik visar den här typen ännu.',

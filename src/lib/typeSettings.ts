@@ -9,17 +9,20 @@ import type { TypeSettingsRow } from '$lib/types/domain';
 export type TypeSettings = {
 	/** Null for a type with no card on Statistik. */
 	chartColor: PaletteKey | null;
+	/** Off hides the type from Status and silences its reminders. */
+	showOnStatus: boolean;
 };
 
 /** One type's settings, a missing row and null columns filled from the defaults. */
 export function typeSettings(typeId: string, row?: TypeSettingsRow | null): TypeSettings {
 	return {
-		chartColor: typeId in CHARTED_TYPES ? chartColorKey(typeId, row?.chart_color) : null
+		chartColor: typeId in CHARTED_TYPES ? chartColorKey(typeId, row?.chart_color) : null,
+		showOnStatus: row?.show_on_status ?? true
 	};
 }
 
 /** The columns the update grant allows. */
-export type TypeSettingsPatch = Partial<Pick<TypeSettingsRow, 'chart_color'>>;
+export type TypeSettingsPatch = Partial<Pick<TypeSettingsRow, 'chart_color' | 'show_on_status'>>;
 
 /**
  * Turns the type page's form into the columns it changes, against what is
@@ -43,6 +46,16 @@ export function planTypeSettings(
 		// saving an interval should not freeze the default colour into a row.
 		if (color !== typeSettings(typeId, row).chartColor) {
 			patch.chart_color = color;
+		}
+	}
+
+	// An unticked checkbox posts nothing, so the page sends a hidden "false"
+	// ahead of it; no value at all means the form had no such field.
+	const shown = form.getAll('show_on_status');
+	if (shown.length > 0) {
+		const show = shown.includes('true');
+		if (show !== typeSettings(typeId, row).showOnStatus) {
+			patch.show_on_status = show;
 		}
 	}
 

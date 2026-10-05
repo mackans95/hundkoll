@@ -3,12 +3,14 @@ import { planTypeSettings } from '$lib/typeSettings';
 import type { TypeSettingsRow } from '$lib/types/domain';
 import type { Db } from './db';
 
+const COLUMNS = 'type_id, chart_color, show_on_status';
+
 /**
  * Every stored row, by type. RLS limits them to the household's own. Null
  * means the read failed; a type without a row simply has its defaults.
  */
 export async function listTypeSettings(db: Db): Promise<Map<string, TypeSettingsRow> | null> {
-	const { data, error } = await db.from('type_settings').select('type_id, chart_color');
+	const { data, error } = await db.from('type_settings').select(COLUMNS);
 
 	if (error) {
 		console.error('type settings read failed:', error.code, error.message);
@@ -30,7 +32,7 @@ export async function saveTypeSettings(
 ): Promise<string | null> {
 	const { data: row, error: readError } = await db
 		.from('type_settings')
-		.select('type_id, chart_color')
+		.select(COLUMNS)
 		.eq('type_id', typeId)
 		.maybeSingle();
 

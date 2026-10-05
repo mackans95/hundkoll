@@ -313,16 +313,19 @@ export type Database = {
 				Row: {
 					chart_color: string | null;
 					household_id: string;
+					show_on_status: boolean | null;
 					type_id: string;
 				};
 				Insert: {
 					chart_color?: string | null;
 					household_id: string;
+					show_on_status?: boolean | null;
 					type_id: string;
 				};
 				Update: {
 					chart_color?: string | null;
 					household_id?: string;
+					show_on_status?: boolean | null;
 					type_id?: string;
 				};
 				Relationships: [

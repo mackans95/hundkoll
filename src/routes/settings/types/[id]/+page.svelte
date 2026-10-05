@@ -47,6 +47,31 @@
 				<IntervalField type={data.type} />
 			</section>
 
+			{#if data.statusOption}
+				<section class="flex flex-col gap-2">
+					{@render heading(words.shownOn)}
+					<label
+						class="flex items-center justify-between gap-3 rounded-2xl border border-edge bg-surface-raised px-4 py-3"
+					>
+						<span class="font-medium">{words.showOnStatus}</span>
+						<!-- An unticked box posts nothing; the hidden "false" says the field was there. -->
+						<input
+							type="hidden"
+							name="show_on_status"
+							value="false"
+						/>
+						<input
+							type="checkbox"
+							name="show_on_status"
+							value="true"
+							checked={data.settings.showOnStatus}
+							class="size-6 rounded border-edge-strong text-emerald-600"
+						/>
+					</label>
+					<p class="px-1 text-sm text-ink-muted">{words.showOnStatusHelp}</p>
+				</section>
+			{/if}
+
 			<section class="flex flex-col gap-2">
 				{@render heading(words.chartColor)}
 				{#if data.palette.length > 0}

@@ -20,7 +20,8 @@ Four screens, as a bottom tab bar, and a ☰ menu for the settings:
 **☰**, top right on every screen, is a `<details>` dropdown of the **Inställningar** sub-pages
 (`/settings/…`): Typer (every activity, each opening its own page: the interval — daily
 ones choose between a fixed number of hours and following the average, blank means "no
-schedule" — and its chart colour on Statistik; plan 26), Utseende (the
+schedule" — whether it shows on Status at all, which also silences its reminders, and its
+chart colour on Statistik; plan 26), Utseende (the
 theme), Aviseringar (in the app only), and Tabeller and Trender, stubs for now. Logga ut is at
 its foot. Opening it is a shallow history entry, so the Back gesture closes it (plan 25).
 

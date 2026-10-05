@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 	const now =
 		dry && url.searchParams.get('now') ? new Date(url.searchParams.get('now')!) : new Date();
 
-	const [status, absences, dogs] = await Promise.all([
+	const [status, absences, dogs, hidden] = await Promise.all([
 		db.from('dog_care_status').select('*'),
 		db
 			.from('events')
@@ -33,19 +33,26 @@ Deno.serve(async (req) => {
 			.eq('event_types.category', 'absence')
 			.is('ended_at', null)
 			.lte('occurred_at', now.toISOString()),
-		db.from('dogs').select('id, household_id')
+		db.from('dogs').select('id, household_id'),
+		// Types hidden from Status in Settings (plan 26) remind nobody either.
+		db.from('type_settings').select('household_id, type_id').eq('show_on_status', false)
 	]);
-	if (status.error || absences.error || dogs.error) {
-		console.error('remind read failed:', status.error ?? absences.error ?? dogs.error);
+	if (status.error || absences.error || dogs.error || hidden.error) {
+		console.error(
+			'remind read failed:',
+			status.error ?? absences.error ?? dogs.error ?? hidden.error
+		);
 		return Response.json({ error: 'read failed' }, { status: 500 });
 	}
 
 	const away = new Set(absences.data.map((e) => e.dog_id));
 	const household = new Map(dogs.data.map((d) => [d.id, d.household_id]));
+	const off = new Set(hidden.data.map((s) => `${s.household_id}:${s.type_id}`));
 	const due: Due[] = [];
 	for (const row of status.data) {
 		// The absence type is the banner on Status, not a card of its own.
 		if (!row.dog_id || !row.type_id || row.category === 'absence') continue;
+		if (off.has(`${household.get(row.dog_id)}:${row.type_id}`)) continue;
 		const kind = reminderDue(row as ReminderRow, away.has(row.dog_id), now);
 		if (kind) {
 			due.push({

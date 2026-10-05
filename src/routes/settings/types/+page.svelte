@@ -34,7 +34,11 @@
 					class="flex items-center gap-3 rounded-2xl border border-edge bg-surface-raised px-4 py-3 hover:bg-surface-hover"
 				>
 					<span class="font-medium">{type.icon} {type.label}</span>
-					<span class="ml-auto text-sm text-ink-muted">{format.intervalSetting(type)}</span>
+					<span class="ml-auto text-sm text-ink-muted">
+						{type.settings.showOnStatus
+							? format.intervalSetting(type)
+							: locale.settings.type.hiddenOnStatus}
+					</span>
 					<!-- Drawn empty for a type with no chart, so the column stays aligned. -->
 					<span
 						class="size-3 shrink-0 rounded-full"
