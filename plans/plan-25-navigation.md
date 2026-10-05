@@ -17,8 +17,13 @@
 > - `/settings` redirecting, Spara showing "Sparat!", Tema switching, Logga ut;
 > - no exceptions.
 >
-> **Not yet checked on the phone:** the Back gesture. It walks the same WebView history the
-> probe's `history.back()` does, but it hasn't been tried.
+> **On the phone**, a test APK against the local preview, then back to production:
+>
+> - a real edge swipe and the Back key each closing the menu, leaving Status where it was;
+> - swiping back from a sub-page landing on Status, with the menu closed;
+> - Aviseringar listed and showing both switches;
+> - Trender's period stepping back one swipe at a time;
+> - ☰ clear of the status bar.
 >
 > One departure from the design: **picking an entry pops the menu's entry and then
 > navigates**, rather than replacing it with `data-sveltekit-replacestate`. A replaced entry
