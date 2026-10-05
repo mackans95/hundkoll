@@ -17,7 +17,6 @@ import type {
 	WalkDay
 } from '$lib/types/domain';
 import type { Mean, OutcomeDay } from './outcomes';
-import { ALONE_COLORS, MEAL_COLORS, WALK_COLOR } from './palette';
 
 // Window widths and tick spacing, shared so the charts line up with each other.
 const DAILY_WINDOW = 30;
@@ -149,7 +148,7 @@ function meanMinutes(mean: Mean): string {
  * noticed under Orolig in an inset box beneath it, so one anxious session with
  * two signs never reads as three events.
  */
-export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] {
+export function aloneBuckets(days: OutcomeDay[], today: string, colors: string[]): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 	const words = locale.stats.alone;
 	const revealed = fieldsRevealedBy(fieldsFor('alone'), 'calm');
@@ -157,9 +156,9 @@ export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] 
 		const row = byDay.get(day);
 		const groups = row
 			? [
-					{ group: row.yes, label: words.legendCalm, color: ALONE_COLORS[0] },
-					{ group: row.no, label: words.legendAnxious, color: ALONE_COLORS[1] },
-					{ group: row.unknown, label: words.legendUnknown, color: ALONE_COLORS[2] }
+					{ group: row.yes, label: words.legendCalm, color: colors[0] },
+					{ group: row.no, label: words.legendAnxious, color: colors[1] },
+					{ group: row.unknown, label: words.legendUnknown, color: colors[2] }
 				]
 			: [];
 		return {
@@ -169,7 +168,7 @@ export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] 
 			tooltip: {
 				heading: format.dayLabel(day),
 				rows: !row
-					? [tooltipRow(cell(words.emptyTooltip, '0', ALONE_COLORS[0]))]
+					? [tooltipRow(cell(words.emptyTooltip, '0', colors[0]))]
 					: [
 							tooltipRow(
 								countCell(locale.stats.symbols.alone, row.n),
@@ -208,7 +207,7 @@ export function aloneBuckets(days: OutcomeDay[], today: string): ColumnBucket[] 
  * Builds the walks-per-day columns for the last 30 days. Each column carries
  * its own counts and averages, so the tooltip needs no further query.
  */
-export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
+export function walkBuckets(days: WalkDay[], today: string, color: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
 	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
@@ -222,7 +221,7 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					n === 0
-						? [tooltipRow(cell(locale.stats.walks.emptyTooltip, '0', WALK_COLOR))]
+						? [tooltipRow(cell(locale.stats.walks.emptyTooltip, '0', color))]
 						: [
 								tooltipRow(
 									countCell(locale.stats.symbols.walk, n),
@@ -244,7 +243,7 @@ export function walkBuckets(days: WalkDay[], today: string): ColumnBucket[] {
  * she finished. A meal logged with a quick tap says nothing either way, so it
  * becomes a third "unknown" segment rather than being counted as unfinished.
  */
-export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
+export function mealBuckets(days: MealDay[], today: string, color: string): ColumnBucket[] {
 	const byDay = new Map(days.map((day) => [day.day, day]));
 
 	return time.lastDays(today, DAILY_WINDOW).map((day, i) => {
@@ -262,7 +261,7 @@ export function mealBuckets(days: MealDay[], today: string): ColumnBucket[] {
 				heading: format.dayLabel(day),
 				rows:
 					(row?.n ?? 0) === 0
-						? [tooltipRow(cell(locale.stats.meals.emptyTooltip, '0', MEAL_COLORS[0]))]
+						? [tooltipRow(cell(locale.stats.meals.emptyTooltip, '0', color))]
 						: [
 								tooltipRow(
 									countCell(locale.stats.symbols.finished, finished),

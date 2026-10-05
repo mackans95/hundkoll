@@ -65,7 +65,7 @@ describe('simpleCountBuckets', () => {
 
 describe('walkBuckets', () => {
 	it('zero-fills 30 days with a tick every 7th column', () => {
-		const buckets = walkBuckets([], TODAY);
+		const buckets = walkBuckets([], TODAY, 'green');
 		expect(buckets).toHaveLength(30);
 		expect(buckets[0].label).toBe('16/7');
 		expect(buckets[29].label).toBe('14/8');
@@ -91,7 +91,7 @@ describe('walkBuckets', () => {
 			avg_gap_min: null,
 			avg_duration_min: null
 		};
-		const buckets = walkBuckets([day], TODAY);
+		const buckets = walkBuckets([day], TODAY, 'green');
 		expect(buckets[29].segments).toEqual([3]);
 		expect(buckets[28].segments).toEqual([0]);
 	});
@@ -106,7 +106,7 @@ describe('mealBuckets', () => {
 			finished_false: 1,
 			avg_gap_min: null
 		};
-		expect(mealBuckets([day], TODAY)[29].segments).toEqual([1, 1, 1]);
+		expect(mealBuckets([day], TODAY, 'green')[29].segments).toEqual([1, 1, 1]);
 	});
 
 	it('never lets a miscounted day produce a negative unknown segment', () => {
@@ -117,7 +117,7 @@ describe('mealBuckets', () => {
 			finished_false: 0,
 			avg_gap_min: null
 		};
-		expect(mealBuckets([day], TODAY)[29].segments).toEqual([2, 0, 0]);
+		expect(mealBuckets([day], TODAY, 'green')[29].segments).toEqual([2, 0, 0]);
 	});
 });
 

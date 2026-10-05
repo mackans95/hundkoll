@@ -12,7 +12,7 @@
 	});
 
 	const pages = $derived([
-		{ href: resolve('/settings/intervals'), label: locale.settings.pages.intervals, icon: '⏰' },
+		{ href: resolve('/settings/types'), label: locale.settings.pages.types, icon: '🗂️' },
 		{ href: resolve('/settings/appearance'), label: locale.settings.pages.appearance, icon: '🎨' },
 		...(nativeApp
 			? [

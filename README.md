@@ -18,8 +18,9 @@ Four screens, as a bottom tab bar, and a ☰ menu for the settings:
 | **Trender** (`/trends`) | The last two complete days, weeks or months side by side.                                                                                                                                                               |
 
 **☰**, top right on every screen, is a `<details>` dropdown of the **Inställningar** sub-pages
-(`/settings/…`): Intervaller (the interval for each activity; daily ones choose between a
-fixed number of hours and following the average, blank means "no schedule"), Utseende (the
+(`/settings/…`): Typer (every activity, each opening its own page: the interval — daily
+ones choose between a fixed number of hours and following the average, blank means "no
+schedule" — and its chart colour on Statistik; plan 26), Utseende (the
 theme), Aviseringar (in the app only), and Tabeller and Trender, stubs for now. Logga ut is at
 its foot. Opening it is a shallow history entry, so the Back gesture closes it (plan 25).
 
@@ -264,7 +265,9 @@ they came from.
 The insight the schema is built on: **everything logged is the same thing — an event with a
 timestamp.** Walks, meals and nail trims differ only in whether they have an expected
 recurrence and which detail fields they carry. So there is one `events` table with a `jsonb`
-details column, plus an `event_types` catalogue holding the intervals. One event has an end
+details column, plus an `event_types` catalogue holding the intervals, and `type_settings`
+for the household's per-type choices (the chart colour; null or no row means the default in
+`src/lib/typeSettings.ts`). One event has an end
 as well as a start — an absence, the dog with someone else — and that end is a column,
 `ended_at`, null for everything else and for an absence still going on; see
 [Away mode](#away-mode).
@@ -521,8 +524,10 @@ Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
 3. **Buckets** in `src/lib/stats/buckets.ts` — pure rows-in, zero-filled-columns-out;
    `simpleCountBuckets` already covers the plain counts case.
 4. **The card** in `src/lib/components/stats/`, wired into
-   `src/routes/stats/+page.svelte`, with its light/dark color pair in `layout.css` and
-   the `var()` handle in `palette.ts`.
+   `src/routes/stats/+page.svelte`, taking its colour from `data.chartColors`. List the
+   type in `CHARTED_TYPES` in `palette.ts` so Settings offers it a colour; the palette is
+   a fixed set of light/dark pairs validated together for red-green colour-blind eyes, so
+   a card picks from it rather than adding its own.
 
 `npm run new-event` scaffolds the two common shapes — counts-per-day
 (`StackedColumns`, like walks) and trend-line (`TrendLine`, like weight) — as ordinary

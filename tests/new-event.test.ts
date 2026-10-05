@@ -378,7 +378,14 @@ describe('generate', () => {
 		).toBe(true);
 		const card = output.creates.find((create) => create.path.endsWith('.svelte'));
 		expect(card?.path).toBe('src/lib/components/stats/NailCheckCard.svelte');
-		expect(card?.content).toContain('NAIL_CHECK_COLOR');
+		// The colour comes from Settings, through the page, not from a constant.
+		expect(card?.content).toContain('colors={[color]}');
+		expect(output.edits.find((edit) => edit.marker === 'codegen:charted-types')?.insert).toBe(
+			"\tnail_check: 'single',\n"
+		);
+		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toContain(
+			'color={data.chartColors.nail_check.main}'
+		);
 		expect(card?.content).toContain('locale.stats.nailCheck.heading');
 		expect(card?.content).not.toMatch(/{{[A-Za-z]+}}/);
 	});

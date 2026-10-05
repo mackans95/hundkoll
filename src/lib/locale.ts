@@ -198,7 +198,7 @@ export const settings = {
 	title: 'Inställningar',
 	/** The sub-pages, as the menu and their own headings name them. */
 	pages: {
-		intervals: 'Intervaller',
+		types: 'Typer',
 		appearance: 'Utseende',
 		notifications: 'Aviseringar',
 		tables: 'Tabeller',
@@ -207,7 +207,22 @@ export const settings = {
 	tablesStub: 'Här kommer du att kunna välja vad Statistik visar.',
 	trendsStub: 'Här kommer du att kunna välja vilka trender som visas.',
 	notificationsAppOnly: 'Aviseringar finns bara i Android-appen.',
-	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra intervall.',
+	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra dem.',
+	typesHelp: 'Välj en typ för att ändra dess intervall och hur den visas.',
+	/** The type page's sections, and what each type's row in the list says. */
+	type: {
+		interval: 'Intervall',
+		noInterval: 'inget intervall',
+		followsAverage: 'följer snittet',
+		chartColor: 'Diagramfärg',
+		chartColorHelp: 'Färgen på typens diagram i Statistik.',
+		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
+		stats: 'Statistik',
+		statsStub: 'Här kommer du att kunna välja vad Statistik visar för typen.',
+		trends: 'Trender',
+		trendsStub: 'Här kommer du att kunna välja om typen tas med i Trender.',
+		back: 'Alla typer'
+	},
 	saved: 'Sparat!',
 	intervalsHelp:
 		'Antal dagar eller timmar mellan varje gång. Lämna tomt för aktiviteter utan fast intervall.',
@@ -273,6 +288,8 @@ export const errors = {
 	intervalRange: 'Intervall måste vara ett antal dagar eller timmar (minst 1).',
 	modeHoursNoNumber: 'Fast intervall måste ha antal timmar satt.',
 	saveFailed: 'Kunde inte spara.',
+	invalidColor: 'Välj en av färgerna.',
+	unknownType: 'Typen finns inte.',
 	deleteFailed: 'Kunde inte ta bort.',
 	/** Edited or deleted on the other phone while this sheet was open. */
 	eventGone: 'Händelsen finns inte längre.',

@@ -7,7 +7,6 @@
 	import { metricFor, totalEvents } from '$lib/stats/metrics';
 	import { avgTile, shareTile } from '$lib/stats/summary';
 	import { simpleCountBuckets } from '$lib/stats/buckets';
-	import { CAR_RIDE_COLOR } from '$lib/stats/palette';
 	import type { DetailDayCount, DetailMetric, SimpleDay } from '$lib/types/domain';
 
 	// metrics and detailDays are optional so a card can gain tiles or a tooltip
@@ -17,16 +16,19 @@
 		days,
 		today,
 		metrics = [],
-		detailDays = []
+		detailDays = [],
+		color
 	}: {
 		days: SimpleDay[];
 		today: string;
 		metrics?: DetailMetric[];
 		detailDays?: DetailDayCount[];
+		/** The type's main colour, as Settings chose it. */
+		color: string;
 	} = $props();
 
 	const buckets = $derived(
-		simpleCountBuckets(days, today, locale.stats.carRide.tooltipLabel, CAR_RIDE_COLOR, {
+		simpleCountBuckets(days, today, locale.stats.carRide.tooltipLabel, color, {
 			typeId: 'car_ride',
 			counts: detailDays
 		})
@@ -50,7 +52,7 @@
 <FoldableCard title={locale.stats.carRide.heading}>
 	<StackedColumns
 		{buckets}
-		colors={[CAR_RIDE_COLOR]}
+		colors={[color]}
 		label={locale.stats.carRide.heading}
 	/>
 	<div class="grid grid-cols-2 gap-2">

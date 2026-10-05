@@ -4,13 +4,13 @@
 
 	let {
 		points,
-		color = 'var(--chart-weight)',
+		color,
 		unit = '',
 		height = 150,
 		label
 	}: {
 		points: TrendPoint[];
-		color?: string;
+		color: string;
 		unit?: string;
 		height?: number;
 		/** Accessible name for the chart, e.g. the card heading. */

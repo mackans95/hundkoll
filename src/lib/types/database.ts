@@ -309,6 +309,53 @@ export type Database = {
 					}
 				];
 			};
+			type_settings: {
+				Row: {
+					chart_color: string | null;
+					household_id: string;
+					type_id: string;
+				};
+				Insert: {
+					chart_color?: string | null;
+					household_id: string;
+					type_id: string;
+				};
+				Update: {
+					chart_color?: string | null;
+					household_id?: string;
+					type_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'type_settings_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: false;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'type_settings_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'type_settings_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'type_settings_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
+					}
+				];
+			};
 		};
 		Views: {
 			dog_care_status: {

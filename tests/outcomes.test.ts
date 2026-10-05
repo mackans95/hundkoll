@@ -7,7 +7,9 @@ import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import * as locale from '$lib/locale';
 import { aloneBuckets } from '$lib/stats/buckets';
 import { answeredShare, longestWhen, outcomeDays } from '$lib/stats/outcomes';
-import { ALONE_COLORS } from '$lib/stats/palette';
+
+// Stand-ins: the builder draws whatever colours the card hands it.
+const ALONE_COLORS = ['calm', 'anxious', 'unknown'];
 
 const row = (occurred_at: string, details: Record<string, number | boolean>) => ({
 	occurred_at,
@@ -87,7 +89,7 @@ describe('longestWhen', () => {
 
 describe('aloneBuckets tooltip', () => {
 	const words = locale.stats.alone;
-	const buckets = aloneBuckets(outcomeDays(rows, SPEC), '2026-09-28');
+	const buckets = aloneBuckets(outcomeDays(rows, SPEC), '2026-09-28', ALONE_COLORS);
 	const day = buckets[28];
 
 	it('stacks Lugn, Orolig, Vet ej', () => {

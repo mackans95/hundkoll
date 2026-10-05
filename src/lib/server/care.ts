@@ -87,11 +87,15 @@ export async function careStatus(
 }
 
 /**
- * Saves whichever intervals the settings form changed, leaving the rest
- * untouched. Returns a Swedish error message, or null when all of them stuck.
+ * Saves one type's interval from its settings page, if the form changed it.
+ * Scoped to the type because a field the form lacks reads as cleared.
+ * Returns a Swedish error message, or null when it stuck.
  */
-export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
-	const { data: types } = await db.from('event_types').select('id, interval, interval_type');
+export async function saveInterval(db: Db, typeId: string, form: FormData): Promise<string | null> {
+	const { data: types } = await db
+		.from('event_types')
+		.select('id, interval, interval_type')
+		.eq('id', typeId);
 
 	const plan = planIntervalChanges(
 		(types ?? []).map((row) => ({

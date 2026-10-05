@@ -30,6 +30,8 @@ import type { WalkDay } from '$lib/types/domain';
 import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import { longestWhen, outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
 import { detailDayCounts, weightHistory } from './events';
+import { listTypeSettings } from './typeSettings';
+import { CHARTED_TYPES, chartColor, chartColorKey, type ChartColor } from '$lib/stats/palette';
 import type { Db } from './db';
 
 export type Stats = {
@@ -51,6 +53,8 @@ export type Stats = {
 	mealDays: MealDay[];
 	accidentBins: AccidentBin[];
 	weights: WeightPoint[];
+	/** Each charted type's colour, as Settings chose it (plan 26). */
+	chartColors: Record<string, ChartColor>;
 	/** Whether any read failed. Empty charts and unreadable ones look the same
 	 * otherwise, and the second must not be cached as the first. */
 	failed: boolean;
@@ -280,7 +284,9 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 			.in('field', ['pee', 'poop'])
 			.eq('period', period)
 			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period])),
-		weightHistory(db)
+		weightHistory(db),
+		// A failed read draws the defaults, which is no reason to call the page failed.
+		listTypeSettings(db)
 	]);
 
 	const [
@@ -296,7 +302,8 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 		windowDetailRes,
 		binsRes,
 		binDetailRes,
-		weights
+		weights,
+		settings
 	] = results;
 
 	// Asked of the array rather than of each name, so a query added here later —
@@ -340,6 +347,12 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 			present((binDetailRes.data ?? []).map(toDetailBucket))
 		),
 		weights,
+		chartColors: Object.fromEntries(
+			Object.keys(CHARTED_TYPES).map((typeId) => [
+				typeId,
+				chartColor(chartColorKey(typeId, settings?.get(typeId)?.chart_color))
+			])
+		),
 		failed
 	};
 }

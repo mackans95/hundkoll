@@ -44,12 +44,14 @@
 		days={data.walkDays}
 		summary={data.summary}
 		today={data.today}
+		color={data.chartColors.walk}
 	/>
 
 	<MealCard
 		days={data.mealDays}
 		summary={data.summary}
 		today={data.today}
+		color={data.chartColors.meal}
 	/>
 
 	<AccidentCard
@@ -60,9 +62,13 @@
 		today={data.today}
 		{tabs}
 		tabHref={periodHref}
+		color={data.chartColors.accident}
 	/>
 
-	<WeightCard weights={data.weights} />
+	<WeightCard
+		weights={data.weights}
+		color={data.chartColors.weight}
+	/>
 
 	<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
 	<AloneCard
@@ -70,11 +76,13 @@
 		today={data.today}
 		metrics={data.aloneMetrics}
 		longestCalm={data.aloneLongestCalm}
+		color={data.chartColors.alone}
 	/>
 	<CarRideCard
 		days={data.carRideDays}
 		today={data.today}
 		metrics={data.carRideMetrics}
 		detailDays={data.carRideDetailDays}
+		color={data.chartColors.car_ride.main}
 	/>
 </main>
