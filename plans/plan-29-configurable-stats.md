@@ -4,7 +4,7 @@
 > (with/without day/week/month selection) / timeline (Weight))", and "which additional boxes
 > to include and track (e.g. '🚶 per dag' for Walks)".
 
-> **Status: ✅ 29a built, awaiting merge; 29b next** — branch `feature/configurable-stats`.
+> **Status: ✅ 29a built, verified on the phone, awaiting merge; 29b next** — branch `feature/configurable-stats`.
 > Requires plans 26 and 28 (both merged). **Two PRs**: 29a (config, loader, tiles), then 29b
 > (chart kinds). 29a verified on the local stack with a production snapshot:
 >
@@ -25,7 +25,12 @@
 > hand-written tile builders, `metrics.ts` and `answeredShare` are gone; Trender's number
 > formatting now shares `numberWriter` with the tiles.
 >
-> **Not yet on the phone.** After the merge: `db-push`.
+> **On the phone** (test APK against the local preview, then back to production): the tile
+> editor and Statistik following it, as above. One change from it: the type page says
+> "Osparade ändringar." under Spara while anything on it has changed, as Trender and
+> Tabeller do, cleared once the save goes through.
+>
+> After the merge: `db-push`.
 
 ## Why the README's decision changes
 
