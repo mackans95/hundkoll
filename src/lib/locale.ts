@@ -204,6 +204,18 @@ export const settings = {
 		tables: 'Tabeller',
 		trends: 'Trender'
 	},
+	/** A type's chart, on its page (plan 29b). */
+	chart: {
+		kind: 'Diagram',
+		bars: 'Staplar',
+		timeline: 'Tidslinje',
+		split: 'Uppdelning',
+		picker: 'Flikar för dag, vecka och månad',
+		tooltip: 'Rutan vid tryck',
+		text: 'Text',
+		emoji: 'Emoji',
+		field: 'Värde'
+	},
 	/** Settings → Tabeller (plan 28). */
 	tables: {
 		help: 'Statistik visar korten i den här ordningen. Bocka ur ett kort för att dölja det.',
@@ -246,6 +258,7 @@ export const settings = {
 		stats: 'Statistik',
 		showOnStats: 'På Statistik',
 		tilesHelp: 'Rutorna under typens diagram i Statistik, i den här ordningen.',
+		chartHelp: 'Hur typens diagram i Statistik ser ut.',
 		noTiles: 'Inga rutor.',
 		addTile: 'Lägg till ruta',
 		trends: 'Trender',
@@ -418,7 +431,7 @@ const symbols = {
 
 export const stats = {
 	loadFailed: 'Kunde inte läsa statistiken. Försök igen om en stund.',
-	// codegen:stats-strings — npm run new-event inserts card strings here
+	// The cards' own words, for the six whose captions predate their configuration.
 	alone: {
 		heading: '🏠 Ensamtid',
 		avgDurationMin: 'Snittlängd',
@@ -460,7 +473,8 @@ export const stats = {
 		/** A checkbox's "no", when the field declares no answers of its own. */
 		notAnswer: (field: string) => `Inte ${field.toLowerCase()}` as const,
 		/** An event that didn't answer the field a chart is split by. */
-		unknown: 'Okänt'
+		unknown: 'Okänt',
+		emptyTimeline: 'Inget loggat ännu.'
 	},
 	/** Built captions for a tile chosen in Settings: "Utan olycka", "Längsta lugn". */
 	tiles: {

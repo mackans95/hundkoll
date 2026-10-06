@@ -1,23 +1,14 @@
-// The generic bar chart (plan 29b) against the hand-written builders it
-// replaces: each of today's cards, from its default configuration, has to draw
-// the same columns and the same tooltips, cell for cell.
+// The generic bar chart (plan 29b) against today's cards: each, from its
+// default configuration, has to draw the same columns and tooltips, cell for
+// cell. The snapshots were written by the hand-written builders it replaced,
+// on these same fixtures, and checked equal before those were deleted.
 
 import { describe, expect, it } from 'vitest';
 import * as locale from '$lib/locale';
-import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import { barBuckets, barColors, type BarChart } from '$lib/stats/bars';
-import {
-	accidentBuckets,
-	aloneBuckets,
-	mealBuckets,
-	simpleCountBuckets,
-	walkBuckets
-} from '$lib/stats/buckets';
 import { defaultChart } from '$lib/stats/cardSpec';
-import { countDetailDays, type DetailRow } from '$lib/stats/detailDays';
-import { outcomeDays } from '$lib/stats/outcomes';
-import { accidentColors, aloneColors, chartColor, mealColors } from '$lib/stats/palette';
-import * as rows from '$lib/stats/rows';
+import type { DetailRow } from '$lib/stats/detailDays';
+import { accidentColors, chartColor } from '$lib/stats/palette';
 import type { DetailBucketRow, Period, TypeBucketRow } from '$lib/types/domain';
 
 const TODAY = '2026-10-06';
@@ -78,15 +69,6 @@ const generic = (
 	});
 };
 
-/**
- * The old builder's output is the snapshot; the generic one has to equal it.
- * Once the old builders are gone, only the snapshot remains to compare with.
- */
-function golden(actual: unknown, expected: unknown) {
-	expect(expected).toMatchSnapshot();
-	expect(actual).toEqual(expected);
-}
-
 describe('the generic chart draws today’s cards exactly', () => {
 	it('Promenader: emoji counts, the gap and the length', () => {
 		const buckets = [bucket('walk', '2026-10-05', 7, 140), bucket('walk', '2026-10-04', 1)];
@@ -95,10 +77,9 @@ describe('the generic chart draws today’s cards exactly', () => {
 			detail('walk', '2026-10-05', 'poop', { total: 2 }),
 			detail('walk', '2026-10-05', 'duration_min', { avg_number: 12.4 })
 		];
-		golden(
-			generic('walk', locale.stats.symbols.walk, 'Promenad', 'day', buckets, details),
-			walkBuckets(rows.walkDays(buckets, details), TODAY, COLOR.main)
-		);
+		expect(
+			generic('walk', locale.stats.symbols.walk, 'Promenad', 'day', buckets, details)
+		).toMatchSnapshot();
 	});
 
 	it('Mat: finished or not, the share and the gap', () => {
@@ -107,10 +88,7 @@ describe('the generic chart draws today’s cards exactly', () => {
 			detail('meal', '2026-10-05', 'finished', { answered: 2, happened: 1 }),
 			detail('meal', '2026-10-03', 'finished', { answered: 2, happened: 2 })
 		];
-		golden(
-			generic('meal', null, 'Matning', 'day', buckets, details),
-			mealBuckets(rows.mealDays(buckets, details), TODAY, mealColors(COLOR)[0])
-		);
+		expect(generic('meal', null, 'Matning', 'day', buckets, details)).toMatchSnapshot();
 	});
 
 	for (const period of ['day', 'week', 'month'] as const) {
@@ -121,10 +99,7 @@ describe('the generic chart draws today’s cards exactly', () => {
 				detail('accident', at, 'pee', { total: 2 }),
 				detail('accident', at, 'poop', { total: 1 })
 			];
-			golden(
-				generic('accident', null, 'Olycka', period, buckets, details),
-				accidentBuckets(rows.accidentBins(buckets, details), period, TODAY)
-			);
+			expect(generic('accident', null, 'Olycka', period, buckets, details)).toMatchSnapshot();
 		});
 	}
 
@@ -139,15 +114,9 @@ describe('the generic chart draws today’s cards exactly', () => {
 			}),
 			event('2026-10-04', 9, { duration_min: 20 })
 		];
-		const spec = {
-			outcome: 'calm',
-			measure: 'duration_min',
-			revealed: fieldsRevealedBy(fieldsFor('alone'), 'calm')
-		};
-		golden(
-			generic('alone', locale.stats.symbols.alone, 'Ensamtid', 'day', [], [], events),
-			aloneBuckets(outcomeDays(events, spec), TODAY, aloneColors(COLOR))
-		);
+		expect(
+			generic('alone', locale.stats.symbols.alone, 'Ensamtid', 'day', [], [], events)
+		).toMatchSnapshot();
 	});
 
 	it('Biltur: the count, the length, and each field that happened', () => {
@@ -156,16 +125,7 @@ describe('the generic chart draws today’s cards exactly', () => {
 			event('2026-10-05', 8, { duration_min: 20, accident: true, threw_up: true }),
 			event('2026-10-05', 14, { duration_min: 30 })
 		];
-		golden(
-			generic('car_ride', '🚗', 'Biltur', 'day', buckets, [], events),
-			simpleCountBuckets(
-				[{ day: '2026-10-05', n: 2 }],
-				TODAY,
-				locale.stats.carRide.tooltipLabel,
-				COLOR.main,
-				{ typeId: 'car_ride', counts: countDetailDays(events, fieldsFor('car_ride')) }
-			)
-		);
+		expect(generic('car_ride', '🚗', 'Biltur', 'day', buckets, [], events)).toMatchSnapshot();
 	});
 
 	it('Olyckor’s colours are kiss, bajs and the neutral', () => {

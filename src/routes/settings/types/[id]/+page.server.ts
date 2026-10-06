@@ -3,7 +3,8 @@ import * as locale from '$lib/locale';
 import { listEventTypes, saveInterval } from '$lib/server/care';
 import { readsFailed } from '$lib/server/reads';
 import { listTypeSettings, saveTypeSettings } from '$lib/server/typeSettings';
-import { CHARTED_TYPES, paletteFor } from '$lib/stats/palette';
+import { CHARTED_TYPES, PALETTE } from '$lib/stats/palette';
+import { fieldsFor, shortFieldLabel } from '$lib/events/fields';
 import { typeSettings } from '$lib/typeSettings';
 import { readTrendConfig, saveTrendConfig } from '$lib/server/trendSettings';
 import {
@@ -16,8 +17,28 @@ import {
 import type { Db } from '$lib/server/db';
 import { readCardConfig, saveCardConfig } from '$lib/server/statsSettings';
 import { sameCards, setCardShown } from '$lib/stats/cardConfig';
-import { tileKey, tileLabel, tilesFor } from '$lib/stats/cardSpec';
+import {
+	splitKey,
+	splitLabel,
+	splitsFor,
+	tileKey,
+	tileLabel,
+	tilesFor,
+	timelineFieldsFor,
+	type ChartSpec
+} from '$lib/stats/cardSpec';
 import type { Actions, PageServerLoad } from './$types';
+
+/** The chart as the page's controls hold it. */
+function chartForm(typeId: string, chart: ChartSpec | null) {
+	return {
+		kind: chart?.kind ?? 'bars',
+		split: chart?.kind === 'bars' ? splitKey(chart.split) : 'none',
+		picker: chart?.kind === 'bars' && chart.picker,
+		tooltip: chart?.kind === 'bars' ? chart.tooltip : ('text' as const),
+		field: chart?.kind === 'timeline' ? chart.field : (timelineFieldsFor(typeId)[0] ?? '')
+	};
+}
 
 export const load: PageServerLoad = async ({ params, setHeaders, locals: { supabase } }) => {
 	const [types, settings] = await Promise.all([
@@ -39,7 +60,25 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals: { supab
 		// Null only when the catalogue read failed; the page says so instead of a form.
 		type: type ?? null,
 		settings: typeSettings(params.id, settings?.get(params.id)),
-		palette: params.id in CHARTED_TYPES ? paletteFor(params.id) : [],
+		// Every entry: the page drops the neutral while the chart it shows is split.
+		palette: params.id in CHARTED_TYPES ? PALETTE : [],
+		chart: chartForm(params.id, typeSettings(params.id, settings?.get(params.id)).chart),
+		splitOptions:
+			params.id in CHARTED_TYPES
+				? splitsFor(params.id).map((split) => ({
+						key: splitKey(split),
+						label: splitLabel(params.id, split)
+					}))
+				: [],
+		timelineOptions:
+			params.id in CHARTED_TYPES
+				? timelineFieldsFor(params.id).map((name) => ({
+						key: name,
+						label: shortFieldLabel(
+							fieldsFor(params.id).find((field) => field.name === name)?.label ?? name
+						)
+					}))
+				: [],
 		// The absence type is the banner on Status, never a card, so there is nothing to hide.
 		statusOption: type?.category !== 'absence',
 		// Only a type with a card on Statistik has one to show or hide.

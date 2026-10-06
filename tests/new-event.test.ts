@@ -1,29 +1,14 @@
-// The generator's pure core against a fixture spec. The card templates are
-// read from disk on purpose: a template drifting away from the tokens the
-// core fills fails here, not in a future generation.
+// The generator's pure core against a fixture spec.
 
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
 	existingKeysAfter,
 	existingTypeIds,
 	generate,
 	nextSortOrder,
-	renderTemplate,
 	validateSpec,
 	type EventSpec
 } from '../scripts/new-event-core.ts';
-
-const templates = {
-	counts: readFileSync(
-		new URL('../scripts/templates/counts-card.svelte.tpl', import.meta.url),
-		'utf8'
-	),
-	trend: readFileSync(
-		new URL('../scripts/templates/trend-card.svelte.tpl', import.meta.url),
-		'utf8'
-	)
-};
 
 const SEED_SQL = `insert into event_types (id, label, category, interval_days, sort_order) values
 	('walk', 'Promenad', 'routine', null, 10),
@@ -193,13 +178,13 @@ describe('validateSpec', () => {
 
 	it('only lets a trend line plot a declared number field', () => {
 		expect(
-			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'claw_len', unit: 'mm' } }, [])
+			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'claw_len' } }, [])
 		).toEqual([]);
 		expect(
-			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'missing', unit: 'mm' } }, [])
+			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'missing' } }, [])
 		).not.toEqual([]);
 		expect(
-			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'bled', unit: 'mm' } }, [])
+			validateSpec({ ...fixture, stats: { kind: 'trend-line', field: 'bled' } }, [])
 		).not.toEqual([]);
 	});
 });
@@ -238,15 +223,8 @@ describe('existingKeysAfter', () => {
 	});
 });
 
-describe('renderTemplate', () => {
-	it('fills every token and refuses leftovers', () => {
-		expect(renderTemplate('a {{x}} b {{x}}', { x: '1' })).toBe('a 1 b 1');
-		expect(() => renderTemplate('a {{x}} {{y}}', { x: '1' })).toThrow(/y/);
-	});
-});
-
 describe('generate', () => {
-	const output = generate(fixture, templates, '20260820120000', LOCALE_SOURCE);
+	const output = generate(fixture, '20260820120000', LOCALE_SOURCE);
 
 	it('writes the one insert the type needs', () => {
 		const migration = output.creates.find((create) => create.path.endsWith('.sql'));
@@ -264,7 +242,6 @@ describe('generate', () => {
 	it('writes the unit, so a generated type can be daily', () => {
 		const hourly = generate(
 			{ ...fixture, interval: 8, intervalType: 'hours' },
-			templates,
 			'20260820120000',
 			LOCALE_SOURCE
 		);
@@ -290,73 +267,33 @@ describe('generate', () => {
 		expect(markers).toContain('codegen:field-labels');
 		expect(markers).toContain('codegen:summary-words');
 		expect(markers).toContain('codegen:units');
-		expect(markers).toContain('codegen:stats-strings');
 		const units = output.edits.find((edit) => edit.marker === 'codegen:units');
 		expect(units?.insert).toContain('mm: (value: string) =>');
 	});
 
-	it('scaffolds the counts card with every stats.ts insertion', () => {
-		const statsMarkers = output.edits
-			.filter((edit) => edit.path === 'src/lib/server/stats.ts')
-			.map((edit) => edit.marker);
-		expect([...new Set(statsMarkers)].sort()).toEqual([
-			'codegen:stats-queries',
-			'codegen:stats-results',
-			'codegen:stats-return',
-			'codegen:stats-shape'
-		]);
-		// The fixture collects a checkbox and a count, so its tooltip gets a
-		// breakdown as well as its chart — a second insertion at each marker.
-		expect(statsMarkers.filter((marker) => marker === 'codegen:stats-queries')).toHaveLength(2);
-		expect(
-			output.edits.some((edit) => edit.insert.includes("detailDayCounts(db, 'nail_check'"))
-		).toBe(true);
-		// The chart reads the generic bucket view for its own type and day period,
-		// and pairs the rows up through rows.ts like every hand-written card.
-		const chart = output.edits.find(
-			(edit) =>
-				edit.marker === 'codegen:stats-queries' && edit.insert.includes('stats_type_buckets')
+	// A card is configuration now (plan 29): two lines at most, no component,
+	// and nothing in the stats loader or the page.
+	it('lists the card, and gives a trend its timeline, writing no component', () => {
+		expect(output.edits.find((edit) => edit.marker === 'codegen:charted-types')?.insert).toBe(
+			'\tnail_check: true,\n'
 		);
-		expect(chart?.insert).toContain("eq('period', 'day')");
+		expect(output.edits.some((edit) => edit.marker === 'codegen:default-charts')).toBe(false);
+		expect(output.creates.some((create) => create.path.endsWith('.svelte'))).toBe(false);
 		expect(
 			output.edits.some(
-				(edit) => edit.insert.includes('rows.simpleDays(') && edit.insert.includes("'nail_check'")
+				(edit) =>
+					edit.path === 'src/lib/server/stats.ts' || edit.path === 'src/routes/stats/+page.svelte'
 			)
-		).toBe(true);
-		const card = output.creates.find((create) => create.path.endsWith('.svelte'));
-		expect(card?.path).toBe('src/lib/components/stats/NailCheckCard.svelte');
-		// The colour comes from Settings, through the page, not from a constant.
-		expect(card?.content).toContain('colors={[color]}');
-		expect(output.edits.find((edit) => edit.marker === 'codegen:charted-types')?.insert).toBe(
-			"\tnail_check: 'single',\n"
-		);
-		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toContain(
-			'color={data.chartColors.nail_check.main}'
-		);
-		// A snippet named after the type, and its entry in the page's card map, so it
-		// draws in the stored order and joins the end of it (plan 28).
-		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toMatch(
-			/^{#snippet nail_check\(\)}\n[\s\S]*{\/snippet}\n$/
-		);
-		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-card-map')?.insert).toBe(
-			'\t\tnail_check,\n'
-		);
-		expect(card?.content).toContain('locale.stats.nailCheck.heading');
-		expect(card?.content).not.toMatch(/{{[A-Za-z]+}}/);
-	});
+		).toBe(false);
 
-	it('scaffolds a trend card around fieldHistory instead', () => {
 		const trend = generate(
-			{ ...fixture, stats: { kind: 'trend-line', field: 'claw_len', unit: 'mm' } },
-			templates,
+			{ ...fixture, stats: { kind: 'trend-line', field: 'claw_len' } },
 			'20260820120000',
 			LOCALE_SOURCE
 		);
-		const query = trend.edits.find((edit) => edit.marker === 'codegen:stats-queries');
-		expect(query?.insert).toContain("fieldHistory(db, 'nail_check', 'claw_len')");
-		const card = trend.creates.find((create) => create.path.endsWith('.svelte'));
-		expect(card?.content).toContain('unit="mm"');
-		expect(card?.content).not.toMatch(/{{[A-Za-z]+}}/);
+		expect(trend.edits.find((edit) => edit.marker === 'codegen:default-charts')?.insert).toBe(
+			"\tnail_check: { kind: 'timeline', field: 'claw_len' },\n"
+		);
 	});
 
 	// The nested prompt flattens into this, and the flat list is what the parser
@@ -372,7 +309,6 @@ describe('generate', () => {
 					{ name: 'minute', label: 'Minut', input: 'number', unit: 'min', step: '1' }
 				]
 			},
-			templates,
 			'20260820120000',
 			LOCALE_SOURCE
 		);
@@ -417,7 +353,6 @@ describe('generate', () => {
 					{ name: 'bled', label: 'Blödde', input: 'checkbox' }
 				]
 			},
-			templates,
 			'20260820120000',
 			LOCALE_SOURCE
 		);
@@ -442,69 +377,21 @@ describe('generate', () => {
 				stats: { kind: 'none' },
 				fields: [{ name: 'len', label: 'Längd', input: 'number', unit: 'min' }]
 			},
-			templates,
 			'20260820120000',
 			LOCALE_SOURCE
 		);
 		expect(output.edits.some((edit) => edit.marker === 'codegen:units')).toBe(false);
 	});
 
-	// Tiles are chosen in Settings now (plan 29): the generator writes none,
-	// reads no detail windows, and hands the card its configured list.
-	it('leaves the tiles to Settings, and passes the configured ones to the card', () => {
-		const output = generate(fixture, templates, '20260820120000', LOCALE_SOURCE);
-		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_windows'))).toBe(false);
-		const card = output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert ?? '';
-		expect(card).toContain('tiles={data.tiles.nail_check}');
-		const component = output.creates.find((create) => create.path.endsWith('.svelte'))?.content;
-		expect(component).toContain('<TileGrid {tiles} />');
-	});
-
 	it('declares a number field’s unit, so a tile or a trend can write its average', () => {
-		const output = generate(fixture, templates, '20260820120000', LOCALE_SOURCE);
+		const output = generate(fixture, '20260820120000', LOCALE_SOURCE);
 		const fields = output.edits.find((edit) => edit.marker === 'codegen:detail-fields')?.insert;
 		expect(fields).toContain("unit: 'mm'");
-	});
-
-	// The tooltip breakdown is only offered something countable. A weight-shaped
-	// type has one number and nothing to break a bar down by.
-	it('gives a number-only type no tooltip breakdown', () => {
-		const output = generate(
-			{
-				...fixture,
-				fields: [{ name: 'len', label: 'Längd', input: 'number', unit: 'mm' }],
-				stats: { kind: 'counts-per-day' }
-			},
-			templates,
-			'20260820120000',
-			LOCALE_SOURCE
-		);
-		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
-
-		expect(output.edits.some((edit) => edit.insert.includes('detailDayCounts'))).toBe(false);
-		expect(card).not.toContain('counts: detailDays');
-		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
-	});
-
-	it('gives a type that counts something a breakdown, keyed by its own id', () => {
-		const output = generate(
-			{ ...fixture, stats: { kind: 'counts-per-day' } },
-			templates,
-			'20260820120000',
-			LOCALE_SOURCE
-		);
-		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
-
-		expect(card).toContain("{ typeId: 'nail_check', counts: detailDays }");
-		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toContain(
-			'detailDays={data.nailCheckDetailDays}'
-		);
 	});
 
 	it('generates nothing field-related for a bare timestamp type', () => {
 		const bare = generate(
 			{ ...fixture, fields: [], stats: { kind: 'none' } },
-			templates,
 			'20260820120000',
 			LOCALE_SOURCE
 		);

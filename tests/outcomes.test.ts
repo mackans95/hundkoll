@@ -5,7 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import * as locale from '$lib/locale';
-import { aloneBuckets } from '$lib/stats/buckets';
+import { barBuckets, type BarChart } from '$lib/stats/bars';
+import { defaultChart } from '$lib/stats/cardSpec';
 import { longestWhen, outcomeDays } from '$lib/stats/outcomes';
 
 // Stand-ins: the builder draws whatever colours the card hands it.
@@ -76,9 +77,19 @@ describe('longestWhen', () => {
 	});
 });
 
-describe('aloneBuckets tooltip', () => {
+describe('Ensamtid’s chart tooltip', () => {
 	const words = locale.stats.alone;
-	const buckets = aloneBuckets(outcomeDays(rows, SPEC), '2026-09-28', ALONE_COLORS);
+	const buckets = barBuckets({
+		typeId: 'alone',
+		type: { label: 'Ensamtid', icon: locale.stats.symbols.alone },
+		chart: defaultChart('alone') as BarChart,
+		period: 'day',
+		today: '2026-09-28',
+		colors: ALONE_COLORS,
+		buckets: [],
+		details: [],
+		events: rows
+	});
 	const day = buckets[28];
 
 	it('stacks Lugn, Orolig, Vet ej', () => {

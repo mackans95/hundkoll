@@ -5,6 +5,7 @@
 	import { savedToastThen } from '$lib/toast.svelte';
 	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
+	import ChartEditor from '$lib/components/settings/ChartEditor.svelte';
 	import TileEditor from '$lib/components/settings/TileEditor.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -15,6 +16,10 @@
 	let dirty = $state(false);
 	const markDirty = () => (dirty = true);
 	const save = savedToastThen(() => (dirty = false));
+
+	// A split chart draws a second series, which the neutral can't stand beside.
+	let paired = $derived(data.chart.kind === 'bars' && data.chart.split !== 'none');
+	const palette = $derived(paired ? data.palette.filter((entry) => entry.pairs) : data.palette);
 
 	const words = locale.settings.type;
 	// No icon here: it is on the type's row in the list, and pushes the title out of line.
@@ -119,7 +124,7 @@
 				{#if data.palette.length > 0}
 					<p class="px-1 text-sm text-ink-muted">{words.chartColorHelp}</p>
 					<ColorPicker
-						palette={data.palette}
+						{palette}
 						current={data.settings.chartColor}
 						label={words.chartColor}
 					/>
@@ -131,6 +136,16 @@
 			{#if data.tileOptions.length > 0}
 				<section class="flex flex-col gap-2">
 					{@render heading(words.stats)}
+					<p class="px-1 text-sm text-ink-muted">{words.chartHelp}</p>
+					<ChartEditor
+						chart={data.chart}
+						splits={data.splitOptions}
+						fields={data.timelineOptions}
+						onedit={(split) => {
+							paired = split;
+							markDirty();
+						}}
+					/>
 					<p class="px-1 text-sm text-ink-muted">{words.tilesHelp}</p>
 					<TileEditor
 						tiles={data.tiles}

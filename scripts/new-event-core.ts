@@ -23,9 +23,7 @@ export type FieldSpec = {
 };
 
 export type StatsSpec =
-	| { kind: 'none' }
-	| { kind: 'counts-per-day' }
-	| { kind: 'trend-line'; field: string; unit: string };
+	{ kind: 'none' } | { kind: 'counts-per-day' } | { kind: 'trend-line'; field: string };
 
 export type EventSpec = {
 	/** English snake_case id — the event_types primary key. */
@@ -259,22 +257,6 @@ export function nextSortOrder(migrationSources: string[]): number {
 	return max + 10;
 }
 
-/**
- * Fills {{token}} placeholders in a card template, refusing to leave any
- * behind — a leftover means the template and this generator have drifted.
- */
-export function renderTemplate(template: string, tokens: Record<string, string>): string {
-	let output = template;
-	for (const [token, value] of Object.entries(tokens)) {
-		output = output.replaceAll(`{{${token}}}`, value);
-	}
-	const leftover = output.match(/{{[A-Za-z]+}}/);
-	if (leftover) {
-		throw new Error(`template token ${leftover[0]} was not filled`);
-	}
-	return output;
-}
-
 /** The one insert the type needs; everything else is optional on top. */
 function migrationSql(spec: EventSpec): string {
 	const interval = spec.interval === null ? 'null' : String(spec.interval);
@@ -368,7 +350,6 @@ function newUnitSnippets(spec: EventSpec): string[] {
  */
 export function generate(
 	spec: EventSpec,
-	templates: { counts: string; trend: string },
 	stamp: string,
 	/** locale.ts as it stands, so keys already there are reused, not duplicated. */
 	localeSource: string
@@ -473,173 +454,24 @@ export function generate(
 	}
 
 	if (spec.stats.kind !== 'none') {
-		const camelId = camel(spec.id);
-		const pascalId = pascal(spec.id);
-		const heading = `${spec.icon} ${spec.label}`;
-
-		// Listed so Settings offers the type a colour; with no default of its own
-		// it draws in Skiffer until one is picked there.
+		// A card is configuration now (plan 29): listed here, it appears on
+		// Statistik, in Tabeller and on the type's page, drawn by the generic
+		// card. A counts card is the default chart; a trend writes its timeline.
 		edits.push({
 			path: 'src/lib/stats/palette.ts',
 			marker: 'codegen:charted-types',
-			insert: `\t${spec.id}: 'single',\n`
+			insert: `\t${spec.id}: true,\n`
 		});
-		// The page draws cards from this map in the stored order; a new one
-		// joins the end of that order, shown (cardConfig.ts).
-		edits.push({
-			path: 'src/routes/stats/+page.svelte',
-			marker: 'codegen:stats-card-map',
-			insert: `\t\t${spec.id},\n`
-		});
-		notes.push('The chart draws in Skiffer until a colour is picked under Inställningar → Typer.');
-		edits.push({
-			path: 'src/routes/stats/+page.svelte',
-			marker: 'codegen:stats-imports',
-			insert: `\timport ${pascalId}Card from '$lib/components/stats/${pascalId}Card.svelte';\n`
-		});
-
-		if (spec.stats.kind === 'counts-per-day') {
+		if (spec.stats.kind === 'trend-line') {
 			edits.push({
-				path: 'src/lib/locale.ts',
-				marker: 'codegen:stats-strings',
-				insert:
-					`\t${camelId}: {\n` +
-					`\t\theading: '${tsString(heading)}',\n` +
-					`\t\ttooltipLabel: '${tsString(spec.label)}'\n` +
-					`\t},\n`
+				path: 'src/lib/stats/cardSpec.ts',
+				marker: 'codegen:default-charts',
+				insert: `\t${spec.id}: { kind: 'timeline', field: '${spec.stats.field}' },\n`
 			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-shape',
-				insert: `\t${camelId}Days: SimpleDay[];\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-results',
-				insert: `\t\t${camelId}Res,\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-queries',
-				insert:
-					`\t\tdb\n` +
-					`\t\t\t.from('stats_type_buckets')\n` +
-					`\t\t\t.select(TYPE_BUCKET_COLUMNS)\n` +
-					`\t\t\t.eq('type_id', '${spec.id}')\n` +
-					`\t\t\t.eq('period', 'day')\n` +
-					`\t\t\t.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))\n` +
-					`\t\t\t.order('bucket'),\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-return',
-				insert:
-					`\t\t${camelId}Days: rows.simpleDays(` +
-					`present((${camelId}Res.data ?? []).map(toTypeBucket)), '${spec.id}'),\n`
-			});
-
-			// A tooltip can break its bar down by whatever the type counts, which
-			// is every field that is not a number: a checkbox, a count or a
-			// reveal. Captions come from the field labels the card already has,
-			// so this adds no locale strings and asks no questions.
-			const countable = spec.fields.filter((field) => field.input !== 'number');
-			if (countable.length > 0) {
-				edits.push({
-					path: 'src/lib/server/stats.ts',
-					marker: 'codegen:stats-shape',
-					insert: `\t${camelId}DetailDays: DetailDayCount[];\n`
-				});
-				edits.push({
-					path: 'src/lib/server/stats.ts',
-					marker: 'codegen:stats-results',
-					insert: `\t\t${camelId}DetailDays,\n`
-				});
-				edits.push({
-					path: 'src/lib/server/stats.ts',
-					marker: 'codegen:stats-queries',
-					insert: `\t\tdetailDayCounts(db, '${spec.id}', daysAgo(DAILY_WINDOW_DAYS)),\n`
-				});
-				edits.push({
-					path: 'src/lib/server/stats.ts',
-					marker: 'codegen:stats-return',
-					insert: `\t\t${camelId}DetailDays,\n`
-				});
-			}
-
-			edits.push({
-				path: 'src/routes/stats/+page.svelte',
-				marker: 'codegen:stats-cards',
-				insert:
-					`{#snippet ${spec.id}()}\n` +
-					`\t<${pascalId}Card\n` +
-					`\t\tdays={data.${camelId}Days}\n` +
-					`\t\ttoday={data.today}\n` +
-					`\t\ttiles={data.tiles.${spec.id}}\n` +
-					(countable.length > 0 ? `\t\tdetailDays={data.${camelId}DetailDays}\n` : '') +
-					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
-					`\t/>\n` +
-					`{/snippet}\n`
-			});
-			creates.push({
-				path: `src/lib/components/stats/${pascalId}Card.svelte`,
-				content: renderTemplate(templates.counts, {
-					camelId,
-					breakdown: countable.length > 0 ? `, { typeId: '${spec.id}', counts: detailDays }` : ''
-				})
-			});
-		} else {
-			edits.push({
-				path: 'src/lib/locale.ts',
-				marker: 'codegen:stats-strings',
-				insert:
-					`\t${camelId}: {\n` +
-					`\t\theading: '${tsString(heading)}',\n` +
-					`\t\tempty: 'Ingen ${tsString(spec.label.toLowerCase())} loggad ännu.'\n` +
-					`\t},\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-shape',
-				insert: `\t${camelId}Points: FieldPoint[];\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-results',
-				insert: `\t\t${camelId}Points,\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-queries',
-				insert: `\t\tfieldHistory(db, '${spec.id}', '${spec.stats.field}'),\n`
-			});
-			edits.push({
-				path: 'src/lib/server/stats.ts',
-				marker: 'codegen:stats-return',
-				insert: `\t\t${camelId}Points,\n`
-			});
-			edits.push({
-				path: 'src/routes/stats/+page.svelte',
-				marker: 'codegen:stats-cards',
-				insert:
-					`{#snippet ${spec.id}()}\n` +
-					`\t<${pascalId}Card\n` +
-					`\t\tpoints={data.${camelId}Points}\n` +
-					`\t\ttiles={data.tiles.${spec.id}}\n` +
-					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
-					`\t/>\n` +
-					`{/snippet}\n`
-			});
-			creates.push({
-				path: `src/lib/components/stats/${pascalId}Card.svelte`,
-				content: renderTemplate(templates.trend, {
-					camelId,
-					unit: spec.stats.unit
-				})
-			});
-			notes.push(
-				"The trend-line empty-state sentence guesses at Swedish grammar ('Ingen … loggad') — adjust it in locale.ts."
-			);
 		}
+		notes.push(
+			'The card is drawn from configuration: change its chart, tiles and colour under Inställningar → Typer.'
+		);
 	}
 
 	return { creates, edits, notes };

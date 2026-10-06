@@ -71,12 +71,19 @@ const HEADINGS: Record<string, string> = {
 	weight: locale.stats.weight.heading
 };
 
-/** A card's own title, as Statistik shows it: "🍽️ Mat", not the type's "Matning". */
-export function cardHeading(type: string): string {
+/**
+ * A card's own title, as Statistik shows it: "🍽️ Mat", not the type's
+ * "Matning". A type without a locale block of its own is its icon and name.
+ */
+export function cardHeading(
+	type: string,
+	catalogue?: { label: string; icon: string | null }
+): string {
 	const camel = type.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
 	const block = (locale.stats as Record<string, unknown>)[camel] as
 		{ heading?: string } | undefined;
-	return HEADINGS[type] ?? block?.heading ?? type;
+	const fallback = catalogue ? `${catalogue.icon ?? ''} ${catalogue.label}`.trim() : type;
+	return HEADINGS[type] ?? block?.heading ?? fallback;
 }
 
 /** Whether two lists say the same thing, so an untouched form writes nothing. */

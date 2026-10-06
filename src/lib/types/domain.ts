@@ -113,23 +113,6 @@ export type StatSummary = {
 	away_days: number;
 };
 
-/** Per-day counts; the walk and meal charts read different fields. */
-export type WalkDay = {
-	day: string;
-	n: number;
-	pee: number;
-	poop: number;
-	avg_gap_min: number | null;
-	avg_duration_min: number | null;
-};
-export type MealDay = {
-	day: string;
-	n: number;
-	finished_true: number;
-	finished_false: number;
-	avg_gap_min: number | null;
-};
-
 /**
  * One detail field's headline numbers over the last 30 days. `events` counts
  * every event of the type and `answered` only those carrying the field — the
@@ -155,12 +138,6 @@ export type DetailWindowRow = DetailMetric & { type_id: string; share_answered: 
  */
 /** A field's day: a count, or for a number field the events that had it and their sum. */
 export type DetailDayCount = { day: string; field: string; n: number; sum?: number };
-
-/** Accidents binned by day, ISO week or month, split kiss/bajs. */
-export type AccidentBin = { bucket: string; n: number; pee: number; poop: number };
-
-/** A single weighing, flattened out of the event's details. */
-export type WeightPoint = { occurred_at: string; kg: number };
 
 /** One day's count of a type, for generated counts-per-day cards. */
 export type SimpleDay = { day: string; n: number };
