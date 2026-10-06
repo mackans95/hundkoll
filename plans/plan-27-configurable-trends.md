@@ -4,8 +4,18 @@
 > trends — ideally via basic configuration in the settings rather than requiring a new
 > deployment or code change each time."
 
-> **Status: 📝 Planned, questions open** — branch `feature/configurable-trends`. Requires
-> plans 25 and 26 (both merged).
+> **Status: ✅ Built, awaiting merge** — branch `feature/configurable-trends`. Requires plans
+> 25 and 26 (both merged). All four questions answered as recommended. Verified against a
+> production snapshot (`npm run db-pull`) on the local stack:
+>
+> - **before any edit, Trender reads exactly as on master**: the same 18 rows (six per
+>   period) with the same numbers, captured from both builds. The only change is the new
+>   mark on Åt upp and Olyckor;
+> - in headless Chrome: add 🚗 Biltur · Olycka, move it up, set it to "lägre", remove
+>   Promenader, and the tab follows; ticking Promenad · antal on its type page appends it;
+>   removing every row leaves "Inga trender valda"; no exceptions.
+>
+> **Not yet on the phone.** After the merge: `db-push`.
 
 ## The goal
 
@@ -44,15 +54,26 @@ Any type, any metric the views already compute, in any order, with no deploy.
 
 ## The metric kinds
 
-| Kind    | Reads                                         | For                        | Formatted          |
-| ------- | --------------------------------------------- | -------------------------- | ------------------ |
-| `count` | `n`                                           | every type                 | number             |
-| `gap`   | `avg_gap_min`                                 | every type                 | ~minutes           |
-| `avg`   | `avg_number` of a field                       | number fields              | ~minutes, kg, …    |
-| `share` | `share_answered`, or `happened / n` (above)   | checkbox, outcome, reveal, count | percent      |
+| Kind    | Reads                                       | For                              | Formatted       |
+| ------- | ------------------------------------------- | -------------------------------- | --------------- |
+| `count` | `n`                                         | every type                       | number          |
+| `gap`   | `avg_gap_min`                               | every type                       | ~minutes        |
+| `avg`   | `avg_number` of a field                     | number fields                    | ~minutes, kg, … |
+| `share` | `share_answered`, or `happened / n` (above) | checkbox, outcome, reveal, count | percent         |
 
 Today's six are `count walk`, `gap walk`, `avg walk.duration_min`, `gap meal`,
 `share meal.finished`, `count accident`.
+
+## Decided
+
+Asked 2026-10-06, before any code. All four as recommended below.
+
+| Question                  | Answer                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| Where to configure        | **Both**: the ordered list in Settings → Trender, switches per type. |
+| A new type                | **Nothing** until it is added.                                       |
+| Which way is better       | **Per row**, default neither; Olyckor lower, Åt upp higher.          |
+| Good or bad, colour-blind | **Tint plus ✓ / !**, with "bättre"/"sämre" for a screen reader.      |
 
 ## Questions, with my recommendation
 
@@ -95,15 +116,18 @@ moved.
   It is validated in code on save and on read, so a row naming a type or field that has
   since gone away is skipped, not an error.
 - **`label` is optional.** Without one, the row is named from the type and metric
-  ("🛁 Bad: antal", "🚗 Biltur: Snittlängd"). The six defaults carry today's labels.
+  ("🛁 Bad · antal", "🚗 Biltur · Längd"). Only the six defaults carry one, to keep today's
+  names; Settings does not edit labels.
 
 ### Reading
 
 - `loadTrends` reads the config, then the two views for exactly the types and fields it
   names, at the period's two buckets. As before, there is no type filter on the count
   read, so a bucket exists if anything at all was logged.
-- `trendValue(row, buckets)` is a pure lookup per kind. `buildTrendRows` maps the config,
-  so `TrendBucket` and `rows.trendBuckets` go away.
+- `trendValue(row, period)` is a pure lookup per kind. `buildTrendRows` maps the config,
+  so `TrendBucket` and `rows.trendBuckets` are gone.
+- **A failed read of the list fails the page**, like any other read: drawing the defaults
+  instead would show rows someone had removed.
 
 ### The pages
 
