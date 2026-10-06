@@ -182,7 +182,6 @@ export function validateSpec(spec: EventSpec, existingIds: string[]): string[] {
 		}
 	}
 
-
 	return errors;
 }
 

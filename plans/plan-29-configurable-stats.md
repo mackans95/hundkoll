@@ -30,14 +30,14 @@ new kind, not a new card.
 { chart: 'timeline', field: <number field>,                                         tiles: [...] }
 ```
 
-| Card       | Today, as config                                                         |
-| ---------- | ------------------------------------------------------------------------ |
-| Promenader | bars · day · no split · Per dag, Mellan, Snittlängd                      |
-| Mat        | bars · day · split by `finished` · Mellan, Åt upp                        |
-| Olyckor    | bars · **picker** · split by `pee`, `poop` · Per dag, Per vecka, Per månad |
-| Vikt       | timeline of `kg` · no tiles (the latest value in the header)             |
+| Card       | Today, as config                                                             |
+| ---------- | ---------------------------------------------------------------------------- |
+| Promenader | bars · day · no split · Per dag, Mellan, Snittlängd                          |
+| Mat        | bars · day · split by `finished` · Mellan, Åt upp                            |
+| Olyckor    | bars · **picker** · split by `pee`, `poop` · Per dag, Per vecka, Per månad   |
+| Vikt       | timeline of `kg` · no tiles (the latest value in the header)                 |
 | Ensamtid   | bars · day · split by `calm` · Snittlängd, Lugn, Orolig efter, Längsta lugna |
-| Biltur     | bars · day · no split · Snittlängd, Utan olycka                          |
+| Biltur     | bars · day · no split · Snittlängd, Utan olycka                              |
 
 **What a type may pick follows from `DETAIL_FIELDS`:**
 
@@ -48,15 +48,15 @@ new kind, not a new card.
 - **timeline** — only for a type with a number field.
 - **tiles**, all from `stats_type_windows` and `stats_detail_windows`, no new SQL:
 
-  | Tile                          | For                          | Reads                        |
-  | ----------------------------- | ---------------------------- | ---------------------------- |
-  | Per dag / vecka / månad       | every type                   | `per_day`, `per_week`, … (30/84/180-day windows) |
-  | Mellan (average gap)          | every type                   | `avg_gap_min`                |
-  | Snitt (average of a field)    | number fields                | `avg_number`                 |
+  | Tile                          | For                              | Reads                                            |
+  | ----------------------------- | -------------------------------- | ------------------------------------------------ |
+  | Per dag / vecka / månad       | every type                       | `per_day`, `per_week`, … (30/84/180-day windows) |
+  | Mellan (average gap)          | every type                       | `avg_gap_min`                                    |
+  | Snitt (average of a field)    | number fields                    | `avg_number`                                     |
   | Andel (how often)             | checkbox, outcome, reveal, count | `share_answered` or `share_true` (as in plan 27) |
-  | Andel utan                    | checkbox, reveal, count      | `share_not_true`             |
-  | Längsta när … (longest while) | a number field and an outcome | the type's events (Ensamtid's "Längsta lugna") |
-  | Senaste (the latest value)    | number fields                | the type's events (Vikt's header value) |
+  | Andel utan                    | checkbox, reveal, count          | `share_not_true`                                 |
+  | Längsta när … (longest while) | a number field and an outcome    | the type's events (Ensamtid's "Längsta lugna")   |
+  | Senaste (the latest value)    | number fields                    | the type's events (Vikt's header value)          |
 
 ## What the loader becomes
 
@@ -75,12 +75,12 @@ appears in Tabeller and on its type page like any other. The two card templates 
 
 Asked 2026-10-06, before any code.
 
-| Question                         | Answer                                                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Walk's tooltip, Ensamtid's box   | **Generic, with a per-type choice of text or emoji tooltips**, so Promenader keeps its emoji row (29b).        |
-| A new type's tiles               | **"Per dag" plus each number field's average**, at most four.                                                 |
-| The generator                    | **Picks a default**, doesn't ask.                                                                              |
-| One PR or two                    | **Two**: 29a, then 29b.                                                                                         |
+| Question                       | Answer                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Walk's tooltip, Ensamtid's box | **Generic, with a per-type choice of text or emoji tooltips**, so Promenader keeps its emoji row (29b). |
+| A new type's tiles             | **"Per dag" plus each number field's average**, at most four.                                           |
+| The generator                  | **Picks a default**, doesn't ask.                                                                       |
+| One PR or two                  | **Two**: 29a, then 29b.                                                                                 |
 
 The emoji tooltips need a symbol per field: `DETAIL_FIELDS` gains an optional `symbol`
 (💧 for kiss, 💩 for bajs, as `locale.stats.symbols` has them today), and a field without
