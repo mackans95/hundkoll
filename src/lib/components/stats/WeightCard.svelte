@@ -3,10 +3,13 @@
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import * as format from '$lib/format';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import type { ChartColor } from '$lib/stats/palette';
+	import type { Tile } from '$lib/stats/summary';
 	import type { WeightPoint } from '$lib/types/domain';
 
-	let { weights, color }: { weights: WeightPoint[]; color: ChartColor } = $props();
+	let { weights, tiles, color }: { weights: WeightPoint[]; tiles: Tile[]; color: ChartColor } =
+		$props();
 
 	const points = $derived(
 		weights.map((weight) => ({
@@ -35,5 +38,8 @@
 			unit="kg"
 			label={locale.stats.weight.heading}
 		/>
+	{/if}
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
 	{/if}
 </FoldableCard>

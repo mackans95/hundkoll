@@ -567,41 +567,44 @@ to ask the catalogue either way, so `$lib/stats/detailDays.ts` reads the type's 
 and counts them there — a month of one activity, the way `fieldHistory` does for trend
 cards.
 
-#### Metrics — the tiles under a generated chart
+#### Tiles — chosen per type in Settings
 
-A counts card can carry `StatTile`s like the walk card's, and **adding one needs no SQL**:
-every tile is a row of `stats_detail_windows`, one per dog × type × window × detail field.
-So is every hand-written tile — `avg_walk_duration_min` and `meal_finish_rate` used to be
-columns of a wide summary view, and are now the same rows a generated tile reads.
+Every card's tiles are configuration (plan 29): a list per type in
+`type_settings.stats_card`, edited on the type's page under Statistik, read back by
+`src/lib/stats/cardSpec.ts` against what the type's fields allow. Nothing stored means the
+type's default: today's six cards keep exactly their tiles, and any other type starts with
+"Per dag" and the average of each number field, at most four. The generator no longer
+writes tiles or asks for them.
 
-Three kinds, and the generator asks for them when the card is a counts card:
+**Adding one needs no SQL**: every kind reads a row the views already have, per dog × type ×
+window (× field).
 
-| Kind            | Reads                         | Wants                       |
-| --------------- | ----------------------------- | --------------------------- |
-| `avg`           | the average of a number field | a `number` field            |
-| `share`         | how often something happened  | `checkbox`/`count`/`reveal` |
-| `share-without` | how often it did not          | `checkbox`/`count`/`reveal` |
+| Kind                   | Reads                                    | For                                         |
+| ---------------------- | ---------------------------------------- | ------------------------------------------- |
+| per day / week / month | `stats_type_windows`, 30 / 84 / 180 days | every type                                  |
+| gap                    | `stats_type_windows.avg_gap_min`         | every type                                  |
+| avg                    | `stats_detail_windows.avg_number`        | a `number` field                            |
+| share                  | `share_answered`, or `share_true`        | `checkbox` / `outcome` / `reveal` / `count` |
+| share without          | `share_not_true`                         | `checkbox` / `reveal` / `count`             |
+| longest while          | the type's events                        | a number field and an outcome               |
+| latest                 | the type's events                        | a `number` field                            |
 
-"Happened" is `detail_happened`, so a `count` counts as happened when it is above zero:
-`share` on the walk `pee` field is the share of walks she peed on, not the share where the
-value was the boolean `true`.
+A share divides by what was asked: a checkbox or outcome asked every time (Åt upp, Lugn)
+by the events that answered it, so a quick tap is not a "no"; a reveal, a count, or what a
+reveal uncovers by every event, since it stores nothing when nothing happened. That is
+`shareSource`, shared with Trender. "Happened" is `detail_happened`, so a `count` counts as
+happened when it is above zero.
 
-You are not asked how to format it. The unit comes from the field's own declaration, so
-an average of minutes is written in minutes (and switches to hours past 90); a share is
-a percentage. And the `~` follows the kind, per the rule above: an average divides by
-what was measured and says so, a share is measured and does not.
-
-`share-without` is the one worth knowing about. It divides by **every** event of the
-type, not by the events carrying the field — which is what makes it work with a
-`reveal`, where a good day stores nothing at all. "Rides with no accident" is
-`share-without` on the reveal itself.
+The unit comes from the field: a `_min` field is minutes (switching to hours past 90), Vikt
+is kg, and any other number field carries the `unit` the generator declared on it. The `~`
+follows the kind: an average divides by what was measured and says so, a share or a single
+event does not.
 
 Two consequences of a field that has never been logged once, which has no row at all:
 
-- an `avg` shows `–`, because there is genuinely nothing to average;
-- a `share-without` shows **100 %** when the type has events, because never having
-  happened is an answer. That decision is in `shareTile`, not in SQL, since the card
-  holds the event count already.
+- an average shows `–`, because there is genuinely nothing to average;
+- a share without shows **100 %** when the type has events, because never having happened
+  is an answer. That decision is in `shareTile`, not in SQL.
 
 ## Auth
 

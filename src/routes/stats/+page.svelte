@@ -46,7 +46,7 @@
 {#snippet walk()}
 	<WalkCard
 		days={data.walkDays}
-		summary={data.summary}
+		tiles={data.tiles.walk}
 		today={data.today}
 		color={data.chartColors.walk}
 	/>
@@ -55,7 +55,7 @@
 {#snippet meal()}
 	<MealCard
 		days={data.mealDays}
-		summary={data.summary}
+		tiles={data.tiles.meal}
 		today={data.today}
 		color={data.chartColors.meal}
 	/>
@@ -65,7 +65,7 @@
 	<AccidentCard
 		bins={data.accidentBins}
 		period={data.period}
-		summary={data.summary}
+		tiles={data.tiles.accident}
 		{tracked}
 		today={data.today}
 		{tabs}
@@ -77,6 +77,7 @@
 {#snippet weight()}
 	<WeightCard
 		weights={data.weights}
+		tiles={data.tiles.weight}
 		color={data.chartColors.weight}
 	/>
 {/snippet}
@@ -86,8 +87,7 @@
 	<AloneCard
 		outcomes={data.aloneOutcomes}
 		today={data.today}
-		metrics={data.aloneMetrics}
-		longestCalm={data.aloneLongestCalm}
+		tiles={data.tiles.alone}
 		color={data.chartColors.alone}
 	/>
 {/snippet}
@@ -95,7 +95,7 @@
 	<CarRideCard
 		days={data.carRideDays}
 		today={data.today}
-		metrics={data.carRideMetrics}
+		tiles={data.tiles.car_ride}
 		detailDays={data.carRideDetailDays}
 		color={data.chartColors.car_ride.main}
 	/>

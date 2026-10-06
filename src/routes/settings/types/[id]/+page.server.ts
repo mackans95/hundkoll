@@ -16,6 +16,7 @@ import {
 import type { Db } from '$lib/server/db';
 import { readCardConfig, saveCardConfig } from '$lib/server/statsSettings';
 import { sameCards, setCardShown } from '$lib/stats/cardConfig';
+import { tileKey, tileLabel, tilesFor } from '$lib/stats/cardSpec';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, setHeaders, locals: { supabase } }) => {
@@ -43,6 +44,18 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals: { supab
 		statusOption: type?.category !== 'absence',
 		// Only a type with a card on Statistik has one to show or hide.
 		statsOption: params.id in CHARTED_TYPES,
+		// The card's tiles as captions, and every tile the type's fields allow.
+		tiles: typeSettings(params.id, settings?.get(params.id)).tiles.map((tile) => ({
+			key: tileKey(tile),
+			label: tileLabel(params.id, tile)
+		})),
+		tileOptions:
+			params.id in CHARTED_TYPES
+				? tilesFor(params.id).map((tile) => ({
+						key: tileKey(tile),
+						label: tileLabel(params.id, tile)
+					}))
+				: [],
 		showOnStats: (cards ?? []).find((card) => card.type === params.id)?.shown ?? true,
 		trends: trendsFor(params.id).map((row) => ({
 			key: trendKey(row),

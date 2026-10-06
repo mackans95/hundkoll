@@ -18,7 +18,10 @@ const DASH = locale.units.missing;
  * go through the same "~ or dash" decision.
  * (5.66, swedishNumber) → "~5,7", (null, …) → "–"
  */
-function approximately(value: number | null | undefined, write: (value: number) => string): string {
+export function approximately(
+	value: number | null | undefined,
+	write: (value: number) => string
+): string {
 	return value === null || value === undefined ? DASH : locale.units.approximately(write(value));
 }
 
@@ -55,20 +58,6 @@ export function periodReady(period: Period, tracked: number): boolean {
 }
 
 /**
- * A generated card's average-of-a-field tile. Marked as an estimate like every
- * other average here, and written in the field's own unit — the generator picks
- * the writer from the field declaration, so minutes stay minutes.
- * ("Snittlängd", row with avg_number 33.8, minutesText) → "~34 min"
- */
-export function avgTile(
-	label: string,
-	metric: DetailMetric | null,
-	write: (value: number) => string
-): Tile {
-	return { label, value: approximately(metric?.avg_number, write) };
-}
-
-/**
  * A generated card's share-of-events tile. No "~": a share is measured, not
  * extrapolated, the same reason the meal finish rate carries none.
  *
@@ -94,76 +83,7 @@ export function shareTile(
 	};
 }
 
-/**
- * Builds the walk tiles, per day first — it is the number worth reading —
- * then the two averages that explain the shape of the day.
- */
-export function walkTiles(summary: StatSummary | null): Tile[] {
-	return [
-		{
-			label: locale.stats.walks.perDay,
-			value: approximately(summary?.walks_per_day, format.swedishNumber)
-		},
-		{
-			label: locale.stats.walks.betweenWalks,
-			value: approximately(summary?.avg_walk_gap_min, format.minutesText)
-		},
-		{
-			label: locale.stats.walks.averageLength,
-			value: approximately(summary?.avg_walk_duration_min, format.minutesText)
-		}
-	];
-}
-
-/**
- * Builds the meal tiles. The finish rate is a measured share of meals rather
- * than an average over days, so it carries no "~".
- */
-export function mealTiles(summary: StatSummary | null): Tile[] {
-	return [
-		{
-			label: locale.stats.meals.betweenMeals,
-			value: approximately(summary?.avg_meal_gap_min, format.minutesText)
-		},
-		{
-			label: locale.stats.meals.finishRate,
-			value:
-				summary?.meal_finish_rate == null ? DASH : format.percentageText(summary.meal_finish_rate)
-		}
-	];
-}
-
-/**
- * Builds the accident tiles for all three periods at once. The week and month
- * figures stay blank until enough has been tracked to mean them.
- */
-export function accidentTiles(summary: StatSummary | null, tracked: number): Tile[] {
-	return [
-		{
-			label: locale.stats.accidents.perDay,
-			value: approximately(summary?.accidents_per_day, format.swedishNumber)
-		},
-		{
-			label: locale.stats.accidents.perWeek,
-			value: periodReady('week', tracked)
-				? approximately(summary?.accidents_per_week, format.swedishNumber)
-				: DASH
-		},
-		{
-			label: locale.stats.accidents.perMonth,
-			value: periodReady('month', tracked)
-				? approximately(summary?.accidents_per_month, format.swedishNumber)
-				: DASH
-		}
-	];
-}
-
 /** A share that may not exist yet, written as a percentage or a dash. No "~": it is counted. */
 export function shareValueTile(label: string, share: number | null): Tile {
 	return { label, value: share === null ? DASH : format.percentageText(share) };
-}
-
-/** A measured extreme, in minutes. No "~" either: it is one real event, not an average. */
-export function minutesTile(label: string, minutes: number | null): Tile {
-	return { label, value: minutes === null ? DASH : format.minutesText(minutes) };
 }

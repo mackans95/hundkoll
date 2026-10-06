@@ -2,22 +2,24 @@
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-{{metricImports}}	import { simpleCountBuckets } from '$lib/stats/buckets';
-	import type { DetailDayCount, DetailMetric, SimpleDay } from '$lib/types/domain';
+	import TileGrid from '$lib/components/TileGrid.svelte';
+	import { simpleCountBuckets } from '$lib/stats/buckets';
+	import type { Tile } from '$lib/stats/summary';
+	import type { DetailDayCount, SimpleDay } from '$lib/types/domain';
 
-	// metrics and detailDays are optional so a card can gain tiles or a tooltip
-	// breakdown later without the page having to pass anything until it does —
-	// see the metric kinds in scripts/new-event-core.ts.
+	// detailDays is optional so a card can gain a tooltip breakdown later
+	// without the page having to pass anything until it does. The tiles are
+	// chosen on the type's Settings page (plan 29).
 	let {
 		days,
 		today,
-		metrics = [],
+		tiles = [],
 		detailDays = [],
 		color
 	}: {
 		days: SimpleDay[];
 		today: string;
-		metrics?: DetailMetric[];
+		tiles?: Tile[];
 		detailDays?: DetailDayCount[];
 		/** The type's main colour, as Settings chose it. */
 		color: string;
@@ -26,7 +28,7 @@
 	const buckets = $derived(
 		simpleCountBuckets(days, today, locale.stats.{{camelId}}.tooltipLabel, color{{breakdown}})
 	);
-{{metricTiles}}</script>
+</script>
 
 <FoldableCard title={locale.stats.{{camelId}}.heading}>
 	<StackedColumns
@@ -34,4 +36,7 @@
 		colors={[color]}
 		label={locale.stats.{{camelId}}.heading}
 	/>
-{{metricBlock}}</FoldableCard>
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
+	{/if}
+</FoldableCard>

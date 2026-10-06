@@ -6,6 +6,7 @@ import * as format from '$lib/format';
 import * as time from '$lib/time';
 import { fieldsFor } from '$lib/events/fields';
 import { isDaily } from '$lib/status/schedule';
+import { numberWriter } from './cardSpec';
 import type { DetailBucketRow, EventType, Period, TypeBucketRow } from '$lib/types/domain';
 import { shareSource, trendKey, trendLabel, type Better, type TrendConfigRow } from './trendConfig';
 
@@ -147,21 +148,12 @@ export function trendValue(row: TrendConfigRow, period: TrendPeriod): number | n
 	return n > 0 ? (detail?.happened ?? 0) / n : null;
 }
 
-/** How a row's value reads: minutes for gaps and _min fields, a unit where the field has one. */
+/** How a row's value reads: counts as numbers, shares as percent, the rest in their field's unit. */
 function trendFormat(row: TrendConfigRow): (value: number) => string {
-	const approx = (text: string) => locale.units.approximately(text);
 	if (row.kind === 'count') return format.swedishNumber;
 	if (row.kind === 'share') return format.percentageText;
-	if (row.kind === 'gap' || row.field?.endsWith('_min')) {
-		return (value) => approx(format.minutesText(value));
-	}
-	if (row.field === 'kg' || row.field?.endsWith('_kg')) {
-		return (value) => approx(locale.units.kilograms(format.swedishNumber(value)));
-	}
-	if (row.field?.endsWith('_g')) {
-		return (value) => approx(locale.units.grams(format.swedishNumber(Math.round(value))));
-	}
-	return (value) => approx(format.swedishNumber(value));
+	const write = row.kind === 'gap' ? format.minutesText : numberWriter(row.type, row.field);
+	return (value) => locale.units.approximately(write(value));
 }
 
 /**

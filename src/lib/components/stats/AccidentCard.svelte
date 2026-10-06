@@ -7,13 +7,13 @@
 	import TabBar, { type Tab } from '$lib/components/TabBar.svelte';
 	import { accidentBuckets } from '$lib/stats/buckets';
 	import { accidentColors, type ChartColor } from '$lib/stats/palette';
-	import { accidentTiles, periodReady } from '$lib/stats/summary';
-	import type { AccidentBin, Period, StatSummary } from '$lib/types/domain';
+	import { periodReady, type Tile } from '$lib/stats/summary';
+	import type { AccidentBin, Period } from '$lib/types/domain';
 
 	let {
 		bins,
 		period,
-		summary,
+		tiles,
 		tracked,
 		today,
 		tabs,
@@ -22,7 +22,8 @@
 	}: {
 		bins: AccidentBin[];
 		period: Period;
-		summary: StatSummary | null;
+		tiles: Tile[];
+		/** Days tracked: the week and month charts wait for a full one. */
 		tracked: number;
 		today: string;
 		tabs: Tab<Period>[];
@@ -33,7 +34,6 @@
 	const colors = $derived(accidentColors(color));
 
 	const buckets = $derived(accidentBuckets(bins, period, today));
-	const tiles = $derived(accidentTiles(summary, tracked));
 	const ready = $derived(periodReady(period, tracked));
 
 	const hasUnspecified = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
@@ -69,5 +69,7 @@
 		</p>
 	{/if}
 
-	<TileGrid {tiles} />
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
+	{/if}
 </FoldableCard>

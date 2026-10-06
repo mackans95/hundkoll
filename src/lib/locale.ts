@@ -245,7 +245,9 @@ export const settings = {
 		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
 		stats: 'Statistik',
 		showOnStats: 'På Statistik',
-		statsStub: 'Här kommer du att kunna välja hur typens kort i Statistik ser ut.',
+		tilesHelp: 'Rutorna under typens diagram i Statistik, i den här ordningen.',
+		noTiles: 'Inga rutor.',
+		addTile: 'Lägg till ruta',
 		trends: 'Trender',
 		trendsHelp:
 			'Bocka i det som ska visas i Trender. Ordningen väljer du under Inställningar → Trender.',
@@ -449,6 +451,16 @@ export const stats = {
 	periodPickerLabel: 'Periodval',
 	/** Over a chart whose 30 days hold nothing, the way Vikt says it has no weighing. */
 	emptyChart: 'Inget loggat de senaste 30 dagarna.',
+	/** Built captions for a tile chosen in Settings: "Utan olycka", "Längsta lugn". */
+	tiles: {
+		perDay: 'Per dag',
+		perWeek: 'Per vecka',
+		perMonth: 'Per månad',
+		gap: 'Tid mellan',
+		without: (field: string) => `Utan ${field.toLowerCase()}` as const,
+		longest: (outcome: string) => `Längsta ${outcome.toLowerCase()}` as const,
+		latest: (field: string) => `Senaste ${field.toLowerCase()}` as const
+	},
 	noCards: 'Alla kort är dolda. Visa dem under',
 	noCardsLink: 'Inställningar → Tabeller.',
 	trendPickerLabel: 'Trendperiod',

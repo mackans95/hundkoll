@@ -5,18 +5,17 @@
 	import TileGrid from '$lib/components/TileGrid.svelte';
 	import { walkBuckets } from '$lib/stats/buckets';
 	import type { ChartColor } from '$lib/stats/palette';
-	import { walkTiles } from '$lib/stats/summary';
-	import type { StatSummary, WalkDay } from '$lib/types/domain';
+	import type { Tile } from '$lib/stats/summary';
+	import type { WalkDay } from '$lib/types/domain';
 
 	let {
 		days,
-		summary,
+		tiles,
 		today,
 		color
-	}: { days: WalkDay[]; summary: StatSummary | null; today: string; color: ChartColor } = $props();
+	}: { days: WalkDay[]; tiles: Tile[]; today: string; color: ChartColor } = $props();
 
 	const buckets = $derived(walkBuckets(days, today, color.main));
-	const tiles = $derived(walkTiles(summary));
 </script>
 
 <FoldableCard title={locale.stats.walks.heading}>
@@ -25,5 +24,7 @@
 		colors={[color.main]}
 		label={locale.stats.walks.heading}
 	/>
-	<TileGrid {tiles} />
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
+	{/if}
 </FoldableCard>
