@@ -1,12 +1,14 @@
 <script lang="ts">
-	import type { Tab } from '$lib/components/TabBar.svelte';
-	import TrendCard from '$lib/components/stats/TrendCard.svelte';
+	import TabBar, { type Tab } from '$lib/components/TabBar.svelte';
+	import TrendTile from '$lib/components/stats/TrendTile.svelte';
 	import * as locale from '$lib/locale';
+	import { trendCaption, trendPending } from '$lib/stats/trends';
 	import type { Period } from '$lib/types/domain';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
+	const words = locale.stats.trends;
 	const tabs: Tab<Period>[] = [
 		{ value: 'day', label: locale.stats.periods.day },
 		{ value: 'week', label: locale.stats.periods.week },
@@ -18,7 +20,7 @@
 
 <svelte:head><title>{locale.app.pageTitle(locale.trends.title)}</title></svelte:head>
 
-<main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
+<main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4">
 	<header class="px-1">
 		<h1 class="text-3xl font-bold">{locale.trends.title}</h1>
 	</header>
@@ -27,13 +29,25 @@
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
 	{/if}
 
-	<TrendCard
-		period={data.period}
-		rows={data.rows}
-		complete={data.complete}
-		prevBucket={data.prevBucket}
-		latestBucket={data.latestBucket}
+	<TabBar
 		{tabs}
-		{tabHref}
+		current={data.period}
+		href={tabHref}
+		label={locale.stats.trendPickerLabel}
 	/>
+	<p class="px-1 text-sm text-ink-muted">
+		{trendCaption(data.period, data.prevBucket, data.latestBucket)}
+	</p>
+
+	{#if data.rows.length === 0}
+		<p class="py-6 text-center text-sm text-ink-muted">{words.empty}</p>
+	{:else if !data.complete}
+		<p class="py-6 text-center text-sm text-ink-muted">{trendPending(data.period)}</p>
+	{:else}
+		<ul class="flex flex-col gap-2">
+			{#each data.rows as row (row.key)}
+				<TrendTile {row} />
+			{/each}
+		</ul>
+	{/if}
 </main>

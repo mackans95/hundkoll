@@ -15,7 +15,18 @@
 >   Promenader, and the tab follows; ticking Promenad · antal on its type page appends it;
 >   removing every row leaves "Inga trender valda"; no exceptions.
 >
-> **Not yet on the phone.** After the merge: `db-push`.
+> **On the phone** (test APK against the local preview), Marcus's first round, all made:
+>
+> - **▲ ▼ ✕ and Lägg till edit the list on screen; only Spara sends it.** Without JS each
+>   still posts its own edit, so the page works either way.
+> - **A save toasts "Sparat!" for three seconds** and keeps the page where it was, instead
+>   of reloading onto a banner. The type page does the same.
+> - **The add picker drops the icon** ("Promenad · Kiss"), since the group heading has it.
+>   So do the type page's switches, which show the metric alone ("antal", "Kiss").
+> - **Trender drops the foldable card** for one card per trend, chosen from three mockups:
+>   the name, this period's value large, the last period's under it, the badge on the right.
+>
+> After the merge: `db-push`.
 
 ## The goal
 

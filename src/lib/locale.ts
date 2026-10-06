@@ -488,7 +488,6 @@ export const stats = {
 	},
 
 	trends: {
-		heading: '📈 Trender',
 		comparison: (latest: string, previous: string) => `${latest} jämfört med ${previous}` as const,
 		pending: (period: Period) => {
 			const noun = period === 'day' ? 'dagar' : period === 'week' ? 'veckor' : 'månader';
@@ -507,6 +506,8 @@ export const stats = {
 		/** Said to a screen reader in place of the mark. */
 		toneName: { better: 'bättre', worse: 'sämre' },
 		empty: 'Inga trender valda. Lägg till under Inställningar → Trender.',
+		/** Under a trend's value: what it was the period before. */
+		from: (value: string) => `från ${value}` as const,
 		metrics: {
 			walks: '🚶 Promenader',
 			walkGap: '⏳ Mellan promenader',
