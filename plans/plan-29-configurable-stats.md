@@ -4,8 +4,28 @@
 > (with/without day/week/month selection) / timeline (Weight))", and "which additional boxes
 > to include and track (e.g. '🚶 per dag' for Walks)".
 
-> **Status: 🚧 29a in progress** — branch `feature/configurable-stats`. Requires plans 26
-> and 28 (both merged). **Two PRs**: 29a (config, loader, tiles), then 29b (chart kinds).
+> **Status: ✅ 29a built, awaiting merge; 29b next** — branch `feature/configurable-stats`.
+> Requires plans 26 and 28 (both merged). **Two PRs**: 29a (config, loader, tiles), then 29b
+> (chart kinds). 29a verified on the local stack with a production snapshot:
+>
+> - **Statistik reads exactly as on master** before any edit: every tile of all six cards,
+>   in all three periods, captured from both builds and identical. (The snapshot has no
+>   Ensamtid session in the last 30 days, so its tiles are dashes on both; unit tests cover
+>   its share and longest stretch.)
+> - In headless Chrome, on Promenad's page: add "Kiss", ▼ and ✕ change the screen without
+>   posting; Enter in the interval field saves rather than pressing a tile button; Statistik
+>   then shows Mellan promenader, Per dag, Kiss. Every tile removed leaves the chart alone.
+>   Bad has no tile editor. Without JS, Lägg till posts and adds. No exceptions.
+> - The generator, run for real: its card type-checks, gets "Per dag" plus the number
+>   field's average, written in the unit it declared ("~1,3 mm"), then reverted.
+>
+> **What 29a changed beyond the plan:** `npm run new-event` no longer writes tiles, asks
+> for them (`--metric` is gone), or reads detail windows, and `DETAIL_FIELDS` gains an
+> optional `unit` the generator fills, so any average can be written in its unit. The six
+> hand-written tile builders, `metrics.ts` and `answeredShare` are gone; Trender's number
+> formatting now shares `numberWriter` with the tiles.
+>
+> **Not yet on the phone.** After the merge: `db-push`.
 
 ## Why the README's decision changes
 
@@ -122,7 +142,7 @@ where it can be seen.
 ## Design notes for both
 
 - **Storage**: a `stats_card jsonb` column on `type_settings` (plan 26), nullable, null
-  meaning the type's default config. Validated against `DETAIL_FIELDS` on read, like the
+  meaning the type's default config. 29a stores `{ tiles }`; 29b adds its keys beside it. Validated against `DETAIL_FIELDS` on read, like the
   Trender list, so a removed field drops out.
 - **The type page's Statistik section** replaces its placeholder: the chart choices, then
   the tiles as a list with ▲ ▼ (MoveButtons) and add or remove, saved with the page's
