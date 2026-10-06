@@ -26,6 +26,18 @@
 > - **Trender drops the foldable card** for one card per trend, chosen from three mockups:
 >   the name, this period's value large, the last period's under it, the badge on the right.
 >
+> Second round:
+>
+> - **"från …" sits beside the value**, after a separator, so each card is a line shorter.
+> - **Time away is taken into account.** 5/10 compared 3 walks to 11 and said ↓ 73 %, but
+>   she was with the sitter 07:16–18:13. A count now compares the rate per time at home, the
+>   way Statistik's averages already divide by days at home: 3 in 13 hours against 11 in
+>   24 is ↓ 50 %. The numbers shown stay what was logged; the card says "jämfört per tid
+>   hemma", and a line under the caption names the absence and its length. Below 20 % of a
+>   period at home, the count shows – instead. Gaps already skip the time away, and
+>   averages and shares are per event, so only counts change. No new SQL: the absences are
+>   read as events and clipped to each period in `trends.ts`.
+>
 > After the merge: `db-push`.
 
 ## The goal

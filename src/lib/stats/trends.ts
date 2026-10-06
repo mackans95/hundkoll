@@ -33,15 +33,65 @@ export function trendBucketKeys(today: string, period: Period): { prev: string; 
  * ("week", …) → "v.33 jämfört med v.32"
  */
 export function trendCaption(period: Period, prev: string, latest: string): string {
-	const bucketLabel: Record<Period, (iso: string) => string> = {
+	return locale.stats.trends.comparison(bucketLabel(period, latest), bucketLabel(period, prev));
+}
+
+/** A bucket as the card names it. ("week", "2026-09-28") → "v.40" */
+export function bucketLabel(period: Period, iso: string): string {
+	const labels: Record<Period, (iso: string) => string> = {
 		day: format.dayLabel,
 		week: format.weekLabel,
 		month: format.monthLabel
 	};
-
-	const label = bucketLabel[period];
-	return locale.stats.trends.comparison(label(latest), label(prev));
+	return labels[period](iso);
 }
+
+/** Where a bucket starts and ends, as instants: Stockholm midnights. */
+export function bucketSpan(period: Period, bucket: string): { from: Date; to: Date } {
+	const next =
+		period === 'day'
+			? time.addDays(bucket, 1)
+			: period === 'week'
+				? time.addDays(bucket, 7)
+				: time.addMonths(bucket, 1);
+	return {
+		from: time.stockholmInputToUtc(`${bucket}T00:00`)!,
+		to: time.stockholmInputToUtc(`${next}T00:00`)!
+	};
+}
+
+/** An absence: from the hand-over to the return, or to now while still away. */
+export type AwaySpan = { from: Date; to: Date | null; label: string };
+
+/** How many minutes of a span she was away, absences that overlap each other counted once. */
+export function awayMinutes(
+	spans: AwaySpan[],
+	within: { from: Date; to: Date },
+	now: Date
+): number {
+	const clipped = spans
+		.map((span) => ({
+			from: Math.max(span.from.getTime(), within.from.getTime()),
+			to: Math.min((span.to ?? now).getTime(), within.to.getTime())
+		}))
+		.filter((span) => span.to > span.from)
+		.sort((a, b) => a.from - b.from);
+
+	let total = 0;
+	let reach = -Infinity;
+	for (const span of clipped) {
+		const from = Math.max(span.from, reach);
+		if (span.to > from) total += span.to - from;
+		reach = Math.max(reach, span.to);
+	}
+	return total / 60_000;
+}
+
+/**
+ * Below this share of a period at home, a count says too little to compare:
+ * a day with an hour at home would read as a doubling or a collapse.
+ */
+export const MIN_HOME_SHARE = 0.2;
 
 /**
  * Explains why the card is empty, which it is until two complete periods
@@ -61,10 +111,19 @@ export type TrendRow = {
 	to: string;
 	badge: string;
 	tone: TrendTone;
+	/**
+	 * Set on a count when either period had time away: 'home' when the change
+	 * compares the rate per time at home, 'short' when one period had too
+	 * little of it to compare at all.
+	 */
+	away: 'home' | 'short' | null;
 };
 
-/** One period's rows from the two views, for the types and fields the list names. */
-export type TrendPeriod = { types: TypeBucketRow[]; details: DetailBucketRow[] };
+/**
+ * One period's rows from the two views, for the types and fields the list
+ * names, and how much of it she was at home: 1 for a period with no absence.
+ */
+export type TrendPeriod = { types: TypeBucketRow[]; details: DetailBucketRow[]; homeShare: number };
 
 /**
  * One row's number in one period, or null when there is nothing to say. A
@@ -147,6 +206,27 @@ export function buildTrendRows(
 		const to = latest ? trendValue(row, latest) : null;
 		const show = trendFormat(row);
 
+		// Only a count depends on how long she was home; gaps already skip the
+		// time away, and averages and shares are per event. The number shown
+		// stays what was logged; the change compares the rate per time at home.
+		const homes = [prev?.homeShare ?? 1, latest?.homeShare ?? 1];
+		const away =
+			row.kind !== 'count' || homes.every((home) => home === 1)
+				? null
+				: homes.some((home) => home < MIN_HOME_SHARE)
+					? 'short'
+					: 'home';
+		const change =
+			away === 'short'
+				? { badge: locale.units.missing, tone: 'neutral' as const }
+				: away === 'home'
+					? changeBadge(
+							from === null ? null : from / homes[0],
+							to === null ? null : to / homes[1],
+							row.better
+						)
+					: changeBadge(from, to, row.better);
+
 		return {
 			key: trendKey(row),
 			label: trendLabel(
@@ -155,7 +235,8 @@ export function buildTrendRows(
 			),
 			from: from === null ? locale.units.missing : show(from),
 			to: to === null ? locale.units.missing : show(to),
-			...changeBadge(from, to, row.better)
+			...change,
+			away
 		};
 	});
 }

@@ -2,7 +2,14 @@
 // read out of the generic views, and the badge saying whether it improved.
 
 import { describe, expect, it } from 'vitest';
-import { buildTrendRows, trendBucketKeys, trendValue, type TrendPeriod } from '$lib/stats/trends';
+import {
+	awayMinutes,
+	bucketSpan,
+	buildTrendRows,
+	trendBucketKeys,
+	trendValue,
+	type TrendPeriod
+} from '$lib/stats/trends';
 import { DEFAULT_TRENDS, type TrendConfigRow } from '$lib/stats/trendConfig';
 import * as locale from '$lib/locale';
 import type { DetailBucketRow, TypeBucketRow } from '$lib/types/domain';
@@ -32,10 +39,11 @@ const detail = (
 	...values
 });
 
-const period = (types: TypeBucketRow[], details: DetailBucketRow[] = []): TrendPeriod => ({
-	types,
-	details
-});
+const period = (
+	types: TypeBucketRow[],
+	details: DetailBucketRow[] = [],
+	homeShare = 1
+): TrendPeriod => ({ types, details, homeShare });
 
 const TYPES = [
 	{ id: 'walk', label: 'Promenad', icon: '🚶' },
@@ -148,5 +156,53 @@ describe('buildTrendRows', () => {
 			null
 		);
 		expect(rows.map((row) => row.label)).toEqual(['🚗 Biltur · antal', '🚗 Biltur · Längd']);
+	});
+});
+
+describe('time away', () => {
+	const at = (iso: string) => new Date(iso);
+	const day = bucketSpan('day', '2026-10-05');
+
+	it('spans a Stockholm day, and a DST night is 25 hours', () => {
+		expect(day.from.toISOString()).toBe('2026-10-04T22:00:00.000Z');
+		const autumn = bucketSpan('day', '2026-10-25');
+		expect((autumn.to.getTime() - autumn.from.getTime()) / 3_600_000).toBe(25);
+	});
+
+	it('clips an absence to the period, counts overlaps once, and runs an open one to now', () => {
+		const spans = [
+			{ from: at('2026-10-05T05:00:00Z'), to: at('2026-10-05T16:00:00Z'), label: 'Hundvakt' },
+			{ from: at('2026-10-05T15:00:00Z'), to: at('2026-10-05T17:00:00Z'), label: 'Hundvakt' },
+			{ from: at('2026-10-04T20:00:00Z'), to: at('2026-10-04T23:00:00Z'), label: 'Hundvakt' }
+		];
+		// 05–17 is twelve hours, 22–23 the day's first hour.
+		expect(awayMinutes(spans, day, at('2026-10-06T12:00:00Z'))).toBe(13 * 60);
+		const open = [{ from: at('2026-10-05T20:00:00Z'), to: null, label: 'Hundvakt' }];
+		expect(awayMinutes(open, day, at('2026-10-05T21:00:00Z'))).toBe(60);
+	});
+
+	it('compares a count per time at home, and says so', () => {
+		// 5/10: away 07–18, eleven of 24 hours; 3 walks in 13 hours ≈ 5,5 a day.
+		const [walks] = buildTrendRows(
+			[{ type: 'walk', kind: 'count', better: null }],
+			TYPES,
+			period([type('walk', 11)]),
+			period([type('walk', 3)], [], 13 / 24)
+		);
+		expect(walks).toMatchObject({ from: '11', to: '3', badge: '↓ 50 %', away: 'home' });
+	});
+
+	it('does not compare a count with too little time at home, nor touch other kinds', () => {
+		const [count, length] = buildTrendRows(
+			[
+				{ type: 'walk', kind: 'count', better: null },
+				{ type: 'walk', kind: 'avg', field: 'duration_min', better: null }
+			],
+			TYPES,
+			period([type('walk', 11)], [detail('walk', 'duration_min', { avg_number: 13 })]),
+			period([type('walk', 1)], [detail('walk', 'duration_min', { avg_number: 9 })], 0.1)
+		);
+		expect(count).toMatchObject({ badge: '–', tone: 'neutral', away: 'short' });
+		expect(length).toMatchObject({ badge: '↓ 31 %', away: null });
 	});
 });

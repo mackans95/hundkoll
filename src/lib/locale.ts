@@ -508,6 +508,12 @@ export const stats = {
 		empty: 'Inga trender valda. Lägg till under Inställningar → Trender.',
 		/** Under a trend's value: what it was the period before. */
 		from: (value: string) => `från ${value}` as const,
+		/** Under the caption, per compared period she spent part of away. */
+		awayLine: (bucket: string, duration: string, label: string) =>
+			`🧳 ${bucket}: borta ${duration} (${label})` as const,
+		/** On a count compared per time at home rather than as logged. */
+		awayHome: '🧳 jämfört per tid hemma',
+		awayShort: '🧳 för lite tid hemma för att jämföra',
 		metrics: {
 			walks: '🚶 Promenader',
 			walkGap: '⏳ Mellan promenader',
