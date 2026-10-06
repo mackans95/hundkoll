@@ -29,6 +29,12 @@ export type EventType = Omit<Tables<'event_types'>, 'category' | 'interval_type'
 	interval_type: IntervalType;
 };
 
+/** One household's choices for one type; null columns mean the default. */
+export type TypeSettingsRow = Pick<
+	Tables<'type_settings'>,
+	'type_id' | 'chart_color' | 'show_on_status'
+>;
+
 /** `details` is jsonb; each type's keys are described by DETAIL_FIELDS. */
 export type EventDetails = Record<string, unknown>;
 

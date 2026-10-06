@@ -3,6 +3,8 @@ import type { EventCategory, EventType, StatusRow, ViewRow, IntervalType } from 
 import type { Db } from './db';
 import { isAbsence } from '$lib/events/absence';
 import { isDaily, isScheduled, planIntervalChanges } from '$lib/status/schedule';
+import { typeSettings } from '$lib/typeSettings';
+import { listTypeSettings } from './typeSettings';
 
 /**
  * Lists the activity catalogue in display order — the rows that drive the log
@@ -64,7 +66,10 @@ function toStatusRow(row: ViewRow<'dog_care_status'>): StatusRow | null {
 export async function careStatus(
 	db: Db
 ): Promise<{ daily: StatusRow[]; timed: StatusRow[]; untimed: StatusRow[] } | null> {
-	const { data, error } = await db.from('dog_care_status').select('*').order('sort_order');
+	const [{ data, error }, settings] = await Promise.all([
+		db.from('dog_care_status').select('*').order('sort_order'),
+		listTypeSettings(db)
+	]);
 
 	// Null for a failed read, as everywhere else: a dog with nothing tracked and
 	// an unreachable database are different things to be shown.
@@ -77,7 +82,10 @@ export async function careStatus(
 		.map(toStatusRow)
 		// The absence type has no status of its own on this screen: while it is
 		// open it is the banner, and the daily cards pause.
-		.filter((row): row is StatusRow => row !== null && !isAbsence(row.category));
+		.filter((row): row is StatusRow => row !== null && !isAbsence(row.category))
+		// Hidden in Settings. A failed settings read shows everything rather than
+		// failing the page: an extra card is the safer mistake.
+		.filter((row) => typeSettings(row.type_id, settings?.get(row.type_id)).showOnStatus);
 
 	return {
 		daily: rows.filter((row) => isScheduled(row) && isDaily(row)),
@@ -87,11 +95,15 @@ export async function careStatus(
 }
 
 /**
- * Saves whichever intervals the settings form changed, leaving the rest
- * untouched. Returns a Swedish error message, or null when all of them stuck.
+ * Saves one type's interval from its settings page, if the form changed it.
+ * Scoped to the type because a field the form lacks reads as cleared.
+ * Returns a Swedish error message, or null when it stuck.
  */
-export async function saveIntervals(db: Db, form: FormData): Promise<string | null> {
-	const { data: types } = await db.from('event_types').select('id, interval, interval_type');
+export async function saveInterval(db: Db, typeId: string, form: FormData): Promise<string | null> {
+	const { data: types } = await db
+		.from('event_types')
+		.select('id, interval, interval_type')
+		.eq('id', typeId);
 
 	const plan = planIntervalChanges(
 		(types ?? []).map((row) => ({

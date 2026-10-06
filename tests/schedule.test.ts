@@ -3,7 +3,7 @@
 // comes into it, and it is passed in rather than read.
 
 import { describe, expect, it } from 'vitest';
-import { intervalText } from '$lib/format';
+import { intervalSetting, intervalText } from '$lib/format';
 import * as locale from '$lib/locale';
 import {
 	awaitingNewDay,
@@ -229,5 +229,18 @@ describe('planIntervalChanges', () => {
 	it('keeps the stored mode when the form did not send one', () => {
 		const { mode_walk: _, ...withoutMode } = untouched;
 		expect(planIntervalChanges(stored, submit(withoutMode))).toEqual({ changes: [] });
+	});
+});
+
+describe('intervalSetting', () => {
+	it('names what the interval is set to, without computing the average', () => {
+		expect(intervalSetting({ interval: 6, interval_type: 'hours' })).toBe('var 6:e timme');
+		expect(intervalSetting({ interval: 42, interval_type: 'days' })).toBe('var 42:e dag');
+		expect(intervalSetting({ interval: null, interval_type: 'average' })).toBe(
+			locale.settings.type.followsAverage
+		);
+		expect(intervalSetting({ interval: null, interval_type: 'days' })).toBe(
+			locale.settings.type.noInterval
+		);
 	});
 });

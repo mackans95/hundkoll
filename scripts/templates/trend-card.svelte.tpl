@@ -3,10 +3,9 @@
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import * as format from '$lib/format';
-	import { {{COLOR_CONST}} } from '$lib/stats/palette';
 	import type { FieldPoint } from '$lib/types/domain';
 
-	let { points }: { points: FieldPoint[] } = $props();
+	let { points, color }: { points: FieldPoint[]; color: string } = $props();
 
 	const chartPoints = $derived(
 		points.map((point) => ({
@@ -23,7 +22,7 @@
 	{:else}
 		<TrendLine
 			points={chartPoints}
-			color={{{COLOR_CONST}}}
+			{color}
 			unit="{{unit}}"
 			label={locale.stats.{{camelId}}.heading}
 		/>

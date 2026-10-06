@@ -558,23 +558,16 @@ export function generate(
 	if (spec.stats.kind !== 'none') {
 		const camelId = camel(spec.id);
 		const pascalId = pascal(spec.id);
-		const colorConst = `${spec.id.toUpperCase()}_COLOR`;
-		const kebabId = spec.id.replace(/_/g, '-');
 		const heading = `${spec.icon} ${spec.label}`;
 
+		// Listed so Settings offers the type a colour; with no default of its own
+		// it draws in Skiffer until one is picked there.
 		edits.push({
 			path: 'src/lib/stats/palette.ts',
-			marker: 'codegen:chart-colors',
-			insert: `export const ${colorConst} = 'var(--chart-${kebabId})';\n`
+			marker: 'codegen:charted-types',
+			insert: `\t${spec.id}: 'single',\n`
 		});
-		edits.push({
-			path: 'src/routes/layout.css',
-			marker: 'codegen:chart-values',
-			insert: `\t--chart-${kebabId}: light-dark(#475569, #94a3b8);\n`
-		});
-		notes.push(
-			'The chart color pair defaults to slate — pick a better pair in layout.css if the card deserves one.'
-		);
+		notes.push('The chart draws in Skiffer until a colour is picked under Inställningar → Typer.');
 		edits.push({
 			path: 'src/routes/stats/+page.svelte',
 			marker: 'codegen:stats-imports',
@@ -692,13 +685,13 @@ export function generate(
 					`\t\ttoday={data.today}\n` +
 					(metrics.length > 0 ? `\t\tmetrics={data.${camelId}Metrics}\n` : '') +
 					(countable.length > 0 ? `\t\tdetailDays={data.${camelId}DetailDays}\n` : '') +
+					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
 					`\t/>\n`
 			});
 			creates.push({
 				path: `src/lib/components/stats/${pascalId}Card.svelte`,
 				content: renderTemplate(templates.counts, {
 					camelId,
-					COLOR_CONST: colorConst,
 					breakdown: countable.length > 0 ? `, { typeId: '${spec.id}', counts: detailDays }` : '',
 					// Empty when no metrics were asked for, which leaves the card
 					// exactly the chart it has always been.
@@ -763,13 +756,16 @@ export function generate(
 			edits.push({
 				path: 'src/routes/stats/+page.svelte',
 				marker: 'codegen:stats-cards',
-				insert: `\t<${pascalId}Card points={data.${camelId}Points} />\n`
+				insert:
+					`\t<${pascalId}Card\n` +
+					`\t\tpoints={data.${camelId}Points}\n` +
+					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
+					`\t/>\n`
 			});
 			creates.push({
 				path: `src/lib/components/stats/${pascalId}Card.svelte`,
 				content: renderTemplate(templates.trend, {
 					camelId,
-					COLOR_CONST: colorConst,
 					unit: spec.stats.unit
 				})
 			});

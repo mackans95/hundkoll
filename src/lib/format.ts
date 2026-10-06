@@ -174,6 +174,23 @@ export function swedishDuration(ms: number): string {
 }
 
 /**
+ * What a type's interval is set to, for the settings list. Unlike
+ * intervalText it names the average rather than computing it.
+ * 6 hours → "var 6:e timme", average → "följer snittet"
+ */
+export function intervalSetting(type: Pick<StatusRow, 'interval' | 'interval_type'>): string {
+	if (type.interval_type === 'average') {
+		return locale.settings.type.followsAverage;
+	}
+	if (type.interval === null) {
+		return locale.settings.type.noInterval;
+	}
+	return type.interval_type === 'hours'
+		? locale.status.everyNthHour(type.interval)
+		: locale.status.everyNthDay(type.interval);
+}
+
+/**
  * Formats based on the interval of the row, average is the complex one where extra checks takes place.
  */
 export function intervalText(row: StatusRow) {

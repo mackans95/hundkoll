@@ -80,19 +80,22 @@
    contrast, not hue, is what keeps the charts readable for color-blind
    eyes. */
 :root {
-	/* codegen:chart-values — npm run new-event inserts card color pairs here */
-	--chart-car-ride: light-dark(#475569, #94a3b8);
-	--chart-walk: light-dark(#059669, #34d399);
-	--chart-weight: light-dark(#0284c7, #38bdf8);
-	--chart-accident-1: light-dark(#d97706, #fbbf24);
-	--chart-accident-2: light-dark(#92400e, #b45309);
-	--chart-accident-3: light-dark(#9ca3af, #6b7280);
-	--chart-alone-1: light-dark(#059669, #34d399);
-	--chart-alone-2: light-dark(#9ca3af, #6b7280);
-	--chart-alone-3: light-dark(#2563eb, #60a5fa);
-	--chart-meal-1: light-dark(#059669, #34d399);
-	--chart-meal-2: light-dark(#9ca3af, #6b7280);
-	--chart-meal-3: light-dark(#d1d5db, #4b5563);
+	/* The palette a type picks from in Settings (palette.ts). Validated as a
+	   set with the greys below, so re-step one only by re-running the check. */
+	--palette-green: light-dark(#047857, #6ee7b7);
+	--palette-green-alt: light-dark(#022c22, #10b981);
+	--palette-blue: light-dark(#3b82f6, #60a5fa);
+	--palette-blue-alt: light-dark(#1e40af, #bfdbfe);
+	--palette-amber: light-dark(#d97706, #f59e0b);
+	--palette-amber-alt: light-dark(#92400e, #fde68a);
+	--palette-violet: light-dark(#5b21b6, #7c3aed);
+	--palette-violet-alt: light-dark(#8b5cf6, #ddd6fe);
+	--palette-pink: light-dark(#db2777, #f472b6);
+	--palette-pink-alt: light-dark(#831843, #fbcfe8);
+	--palette-slate: light-dark(#475569, #94a3b8);
+	--palette-slate-alt: light-dark(#1e293b, #e2e8f0);
+	--chart-neutral: light-dark(#9ca3af, #6b7280);
+	--chart-neutral-soft: light-dark(#d1d5db, #4b5563);
 	--chart-grid: light-dark(#f3f4f6, #1f2937);
 	--chart-baseline: light-dark(#e5e7eb, #374151);
 	--chart-outline: light-dark(#111827, #f9fafb);

@@ -6,7 +6,7 @@
 	import StatTile from '$lib/components/StatTile.svelte';
 	import TabBar, { type Tab } from '$lib/components/TabBar.svelte';
 	import { accidentBuckets } from '$lib/stats/buckets';
-	import { ACCIDENT_COLORS } from '$lib/stats/palette';
+	import { accidentColors, type ChartColor } from '$lib/stats/palette';
 	import { accidentTiles, periodReady } from '$lib/stats/summary';
 	import type { AccidentBin, Period, StatSummary } from '$lib/types/domain';
 
@@ -17,7 +17,8 @@
 		tracked,
 		today,
 		tabs,
-		tabHref
+		tabHref,
+		color
 	}: {
 		bins: AccidentBin[];
 		period: Period;
@@ -26,7 +27,10 @@
 		today: string;
 		tabs: Tab<Period>[];
 		tabHref: (value: Period) => string;
+		color: ChartColor;
 	} = $props();
+
+	const colors = $derived(accidentColors(color));
 
 	const buckets = $derived(accidentBuckets(bins, period, today));
 	const tiles = $derived(accidentTiles(summary, tracked));
@@ -34,10 +38,10 @@
 
 	const hasUnspecified = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
 	const legend = $derived<LegendItem[]>([
-		{ color: ACCIDENT_COLORS[0], label: locale.stats.accidents.legendPee },
-		{ color: ACCIDENT_COLORS[1], label: locale.stats.accidents.legendPoop },
+		{ color: colors[0], label: locale.stats.accidents.legendPee },
+		{ color: colors[1], label: locale.stats.accidents.legendPoop },
 		...(hasUnspecified
-			? [{ color: ACCIDENT_COLORS[2], label: locale.stats.accidents.legendUnspecified }]
+			? [{ color: colors[2], label: locale.stats.accidents.legendUnspecified }]
 			: [])
 	]);
 </script>
@@ -53,7 +57,7 @@
 	{#if ready}
 		<StackedColumns
 			{buckets}
-			colors={ACCIDENT_COLORS}
+			{colors}
 			label={locale.stats.accidents.heading}
 		/>
 		<ChartLegend items={legend} />

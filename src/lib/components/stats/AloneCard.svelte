@@ -8,7 +8,7 @@
 	import { aloneBuckets } from '$lib/stats/buckets';
 	import { metricFor } from '$lib/stats/metrics';
 	import { answeredShare, type OutcomeDay } from '$lib/stats/outcomes';
-	import { ALONE_COLORS } from '$lib/stats/palette';
+	import { aloneColors, type ChartColor } from '$lib/stats/palette';
 	import { avgTile, minutesTile, shareValueTile } from '$lib/stats/summary';
 	import type { DetailMetric } from '$lib/types/domain';
 
@@ -16,23 +16,26 @@
 		outcomes,
 		today,
 		metrics,
-		longestCalm
+		longestCalm,
+		color
 	}: {
 		outcomes: OutcomeDay[];
 		today: string;
 		metrics: DetailMetric[];
 		longestCalm: number | null;
+		color: ChartColor;
 	} = $props();
 
 	const words = locale.stats.alone;
-	const buckets = $derived(aloneBuckets(outcomes, today));
+	const colors = $derived(aloneColors(color));
+	const buckets = $derived(aloneBuckets(outcomes, today, colors));
 
 	// Vet ej only earns a legend entry once one exists, as the meal card's unknown does.
 	const hasUnknown = $derived(buckets.some((bucket) => bucket.segments[2] > 0));
 	const legend = $derived<LegendItem[]>([
-		{ color: ALONE_COLORS[0], label: words.legendCalm },
-		{ color: ALONE_COLORS[1], label: words.legendAnxious },
-		...(hasUnknown ? [{ color: ALONE_COLORS[2], label: words.legendUnknown }] : [])
+		{ color: colors[0], label: words.legendCalm },
+		{ color: colors[1], label: words.legendAnxious },
+		...(hasUnknown ? [{ color: colors[2], label: words.legendUnknown }] : [])
 	]);
 
 	const tiles = $derived([
@@ -46,7 +49,7 @@
 <FoldableCard title={words.heading}>
 	<StackedColumns
 		{buckets}
-		colors={ALONE_COLORS}
+		{colors}
 		label={words.heading}
 	/>
 	<ChartLegend items={legend} />

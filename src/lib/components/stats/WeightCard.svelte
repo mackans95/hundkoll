@@ -3,10 +3,10 @@
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import * as format from '$lib/format';
-	import { WEIGHT_COLOR } from '$lib/stats/palette';
+	import type { ChartColor } from '$lib/stats/palette';
 	import type { WeightPoint } from '$lib/types/domain';
 
-	let { weights }: { weights: WeightPoint[] } = $props();
+	let { weights, color }: { weights: WeightPoint[]; color: ChartColor } = $props();
 
 	const points = $derived(
 		weights.map((weight) => ({
@@ -30,7 +30,7 @@
 	{:else}
 		<TrendLine
 			{points}
-			color={WEIGHT_COLOR}
+			color={color.main}
 			unit="kg"
 			label={locale.stats.weight.heading}
 		/>
