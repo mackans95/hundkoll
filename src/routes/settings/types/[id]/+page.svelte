@@ -10,13 +10,12 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const words = locale.settings.type;
-	const title = $derived(
-		data.type ? `${data.type.icon ?? ''} ${data.type.label}`.trim() : locale.settings.pages.types
-	);
+	// No icon here: it is on the type's row in the list, and pushes the title out of line.
+	const title = $derived(data.type?.label ?? locale.settings.pages.types);
 </script>
 
 {#snippet heading(text: string)}
-	<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">{text}</h2>
+	<h3 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">{text}</h3>
 {/snippet}
 
 <SettingsPage {title}>

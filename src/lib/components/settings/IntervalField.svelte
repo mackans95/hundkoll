@@ -25,6 +25,10 @@
 				selected={type.interval_type === 'average'}>{locale.settings.modeAverage}</option
 			>
 		</select>
+	{:else}
+		<span class="min-w-0 flex-1 text-sm font-medium text-ink-label"
+			>{locale.settings.type.intervalDays}</span
+		>
 	{/if}
 	<input
 		type="number"
@@ -33,7 +37,7 @@
 		value={type.interval ?? ''}
 		min="1"
 		inputmode="numeric"
-		class="{daily ? 'w-16' : 'ml-auto w-20'} rounded-lg border-edge-strong text-right"
+		class="w-20 rounded-lg border-edge-strong text-right"
 	/>
 	<span class="text-sm text-ink-muted">{daily ? locale.settings.hours : locale.settings.days}</span>
 </div>

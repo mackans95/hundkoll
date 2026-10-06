@@ -212,6 +212,8 @@ export const settings = {
 	/** The type page's sections, and what each type's row in the list says. */
 	type: {
 		interval: 'Intervall',
+		/** Labels the number for a type counted in days, which has no mode to pick. */
+		intervalDays: 'Antal dagar för intervall:',
 		noInterval: 'inget intervall',
 		followsAverage: 'följer snittet',
 		shownOn: 'Visas',

@@ -12,9 +12,9 @@
 
 <SettingsPage title={locale.settings.pages.appearance}>
 	<section class="flex flex-col gap-2">
-		<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
+		<h3 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
 			{locale.settings.theme.heading}
-		</h2>
+		</h3>
 		<!-- Buttons, not links: the choice is device-local (localStorage), so
 		     there is nothing for the server to render. Looks like TabBar. -->
 		<div

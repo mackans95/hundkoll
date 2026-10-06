@@ -25,9 +25,9 @@
 
 	{#each groups as group (group.heading)}
 		<section class="flex flex-col gap-2">
-			<h2 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
+			<h3 class="px-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">
 				{group.heading}
-			</h2>
+			</h3>
 			{#each group.types as type (type.id)}
 				<a
 					href={resolve('/settings/types/[id]', { id: type.id })}
