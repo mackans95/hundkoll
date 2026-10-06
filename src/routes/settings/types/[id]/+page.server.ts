@@ -1,5 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { resolve } from '$app/paths';
+import { error, fail } from '@sveltejs/kit';
 import * as locale from '$lib/locale';
 import { listEventTypes, saveInterval } from '$lib/server/care';
 import { readsFailed } from '$lib/server/reads';
@@ -7,11 +6,17 @@ import { listTypeSettings, saveTypeSettings } from '$lib/server/typeSettings';
 import { CHARTED_TYPES, paletteFor } from '$lib/stats/palette';
 import { typeSettings } from '$lib/typeSettings';
 import { readTrendConfig, saveTrendConfig } from '$lib/server/trendSettings';
-import { sameTrends, setTypeTrends, trendKey, trendLabel, trendsFor } from '$lib/stats/trendConfig';
+import {
+	sameTrends,
+	setTypeTrends,
+	trendKey,
+	trendMetricLabel,
+	trendsFor
+} from '$lib/stats/trendConfig';
 import type { Db } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, url, setHeaders, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ params, setHeaders, locals: { supabase } }) => {
 	const [types, settings] = await Promise.all([
 		listEventTypes(supabase),
 		listTypeSettings(supabase)
@@ -33,12 +38,11 @@ export const load: PageServerLoad = async ({ params, url, setHeaders, locals: { 
 		statusOption: type?.category !== 'absence',
 		trends: trendsFor(params.id).map((row) => ({
 			key: trendKey(row),
-			label: trendLabel(row, type),
+			label: trendMetricLabel(row),
 			on: (trends ?? []).some((listed) => trendKey(listed) === trendKey(row))
 		})),
 		// A form over defaults it could not read would save over the real choice.
-		failed: types === null || settings === null || trends === null,
-		saved: url.searchParams.has('saved')
+		failed: types === null || settings === null || trends === null
 	};
 };
 
@@ -66,6 +70,7 @@ export const actions: Actions = {
 		if (message) {
 			return fail(400, { message });
 		}
-		redirect(303, resolve('/settings/types/[id]', { id: params.id }) + '?saved');
+		// No redirect: the page stays where it was and toasts.
+		return { saved: true };
 	}
 };

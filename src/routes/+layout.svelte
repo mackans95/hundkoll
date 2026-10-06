@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import AppMenu from '$lib/components/AppMenu.svelte';
+	import Toaster from '$lib/components/Toaster.svelte';
 	import * as locale from '$lib/locale';
 	import {
 		isNativeApp,
@@ -63,6 +64,7 @@
 		</div>
 		{@render children()}
 	</div>
+	<Toaster />
 	<!-- The safe-area padding lives inside each tab, not on the nav, so a
 	     tab's own fill — the selected tint above all — reaches the physical
 	     bottom edge instead of leaving a nav-colored band under the tabs. -->

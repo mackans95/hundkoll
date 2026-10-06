@@ -218,7 +218,8 @@ export const settings = {
 		remove: 'Ta bort',
 		add: 'Lägg till trend',
 		addButton: 'Lägg till',
-		allAdded: 'Alla trender som finns är redan tillagda.'
+		allAdded: 'Alla trender som finns är redan tillagda.',
+		unsaved: 'Osparade ändringar.'
 	},
 	notificationsAppOnly: 'Aviseringar finns bara i Android-appen.',
 	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra dem.',

@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import * as locale from '$lib/locale';
+	import { savedToast } from '$lib/toast.svelte';
 	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
@@ -24,10 +25,13 @@
 		class="-mt-4 px-1 text-sm text-ink-muted underline">‹ {words.back}</a
 	>
 
-	{#if data.saved}
-		<p class="rounded-lg bg-success-surface p-4 text-success-ink">{locale.settings.saved}</p>
-	{/if}
-	{#if form?.message}
+	<!-- With JS the save is a toast; without it, the page reloads onto this. -->
+	<noscript>
+		{#if form && 'saved' in form}
+			<p class="rounded-lg bg-success-surface p-4 text-success-ink">{locale.settings.saved}</p>
+		{/if}
+	</noscript>
+	{#if form && 'message' in form && form.message}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
 
@@ -37,7 +41,7 @@
 		<form
 			method="POST"
 			action="?/save"
-			use:enhance
+			use:enhance={savedToast}
 			class="flex flex-col gap-6"
 		>
 			<section class="flex flex-col gap-2">

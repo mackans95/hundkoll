@@ -113,27 +113,40 @@ export function parseTrendRows(raw: unknown, knownTypes: ReadonlySet<string>): T
 	return rows;
 }
 
-/** A row's name: its own label, or one built from the type and metric. */
+/**
+ * A row's name: its own label, or one built from the type and metric. The
+ * add picker leaves the icon off, since its group heading already has it.
+ */
 export function trendLabel(
 	row: TrendConfigRow,
-	type: Pick<EventType, 'label' | 'icon'> | undefined
+	type: Pick<EventType, 'label' | 'icon'> | undefined,
+	{ icon = true }: { icon?: boolean } = {}
 ): string {
 	if (row.label) {
 		return row.label;
 	}
 
-	const name = `${type?.icon ?? ''} ${type?.label ?? row.type}`.trim();
+	const name = `${icon ? (type?.icon ?? '') : ''} ${type?.label ?? row.type}`.trim();
+	return `${name} · ${trendMetricLabel(row)}`;
+}
+
+/** The metric alone, for a list already headed by its type: "antal", "Kiss", "Lugn". */
+export function trendMetricLabel(row: TrendConfigRow): string {
 	const words = locale.stats.trends.kinds;
-	if (row.kind === 'count') return `${name} · ${words.count}`;
-	if (row.kind === 'gap') return `${name} · ${words.gap}`;
+	if (row.kind === 'count') return words.count;
+	if (row.kind === 'gap') return words.gap;
 
 	const field = fieldsFor(row.type).find((candidate) => candidate.name === row.field);
 	// An outcome names its "yes", which is what the share counts: "Lugn", not "Lugn?".
-	const fieldName = field?.outcome?.yes ?? shortFieldLabel(field?.label ?? row.field ?? '');
-	return `${name} · ${fieldName}`;
+	return field?.outcome?.yes ?? shortFieldLabel(field?.label ?? row.field ?? '');
 }
 
-/** The list in the order the settings form posted it, with each row's direction and one edit. */
+/**
+ * The list in the order the settings form posted it, with each row's
+ * direction, then the one edit its button asked for. Reordering and adding
+ * happen on the page and arrive here only on Spara; without JS, each ▲ ▼ ✕
+ * and Lägg till posts the list with its own edit.
+ */
 export function planTrendList(
 	current: TrendConfigRow[],
 	form: FormData
@@ -147,15 +160,18 @@ export function planTrendList(
 	const byKey = new Map(current.map((row) => [trendKey(row), row]));
 	const rows: TrendConfigRow[] = [];
 	keys.forEach((key, i) => {
-		const row = byKey.get(key);
-		// Gone from the stored list since the page was drawn: another phone removed it.
-		if (!row) return;
+		// Stored rows keep their label; one added on the page is built afresh.
+		const row = byKey.get(key) ?? addTrend([], key)[0];
+		if (!row || rows.some((existing) => trendKey(existing) === key)) return;
 		const better = betters[i];
 		rows.push({ ...row, better: better === 'up' || better === 'down' ? better : null });
 	});
 
 	const [op, at] = String(form.get('op') ?? '').split(':');
 	const i = Number(at);
+	if (op === 'add') {
+		return { rows: addTrend(rows, String(form.get('add') ?? '')) };
+	}
 	if (op === 'remove' && rows[i]) {
 		rows.splice(i, 1);
 	} else if ((op === 'up' || op === 'down') && rows[i]) {
