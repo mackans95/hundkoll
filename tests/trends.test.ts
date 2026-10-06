@@ -46,8 +46,9 @@ const period = (
 ): TrendPeriod => ({ types, details, homeShare });
 
 const TYPES = [
-	{ id: 'walk', label: 'Promenad', icon: '🚶' },
-	{ id: 'car_ride', label: 'Biltur', icon: '🚗' }
+	{ id: 'walk', label: 'Promenad', icon: '🚶', interval: null, interval_type: 'average' as const },
+	{ id: 'accident', label: 'Olycka', icon: '⚠️', interval: null, interval_type: 'days' as const },
+	{ id: 'car_ride', label: 'Biltur', icon: '🚗', interval: null, interval_type: 'days' as const }
 ];
 
 describe('trendBucketKeys', () => {
@@ -190,6 +191,16 @@ describe('time away', () => {
 			period([type('walk', 3)], [], 13 / 24)
 		);
 		expect(walks).toMatchObject({ from: '11', to: '3', badge: '↓ 50 %', away: 'home' });
+	});
+
+	it('leaves an incident’s count alone: one accident in a short day is still one', () => {
+		const [accidents] = buildTrendRows(
+			[{ type: 'accident', kind: 'count', better: 'down' }],
+			TYPES,
+			period([type('accident', 1)]),
+			period([type('accident', 1)], [], 13 / 24)
+		);
+		expect(accidents).toMatchObject({ badge: '±0 %', tone: 'neutral', away: null });
 	});
 
 	it('does not compare a count with too little time at home, nor touch other kinds', () => {

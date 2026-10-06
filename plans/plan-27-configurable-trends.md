@@ -37,6 +37,10 @@
 >   period at home, the count shows – instead. Gaps already skip the time away, and
 >   averages and shares are per event, so only counts change. No new SQL: the absences are
 >   read as events and clipped to each period in `trends.ts`.
+> - **Only for daily types** (Dagligen on Status: walks, meals), whose events come at a
+>   rate while she is home. An incident does not: adjusted, one accident on 5/10 against
+>   one on 4/10 read ↑ 84 %, which was rightly called wrong. Olyckor, Biltur and the like
+>   keep the plain count.
 >
 > After the merge: `db-push`.
 

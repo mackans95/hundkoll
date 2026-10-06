@@ -5,6 +5,7 @@ import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
 import { fieldsFor } from '$lib/events/fields';
+import { isDaily } from '$lib/status/schedule';
 import type { DetailBucketRow, EventType, Period, TypeBucketRow } from '$lib/types/domain';
 import { shareSource, trendKey, trendLabel, type Better, type TrendConfigRow } from './trendConfig';
 
@@ -191,13 +192,28 @@ function changeBadge(
 }
 
 /**
+ * Whether a row's change should be compared per time at home. Only a count
+ * depends on how long she was home, and only for a type with a daily rhythm
+ * (Dagligen on Status): walks and meals happen at a rate while she is there,
+ * whereas one accident in a short day is still one accident, not a jump.
+ * Gaps already skip the time away; averages and shares are per event.
+ */
+function adjusts(
+	row: TrendConfigRow,
+	types: Pick<EventType, 'id' | 'interval' | 'interval_type'>[]
+): boolean {
+	const type = types.find((candidate) => candidate.id === row.type);
+	return row.kind === 'count' && type !== undefined && isDaily(type);
+}
+
+/**
  * One row per configured metric comparing the two periods, each already
  * formatted. A metric with no data on either side still gets a row, so the
  * list does not change height as history accumulates.
  */
 export function buildTrendRows(
 	config: TrendConfigRow[],
-	types: Pick<EventType, 'id' | 'label' | 'icon'>[],
+	types: Pick<EventType, 'id' | 'label' | 'icon' | 'interval' | 'interval_type'>[],
 	prev: TrendPeriod | null,
 	latest: TrendPeriod | null
 ): TrendRow[] {
@@ -206,12 +222,11 @@ export function buildTrendRows(
 		const to = latest ? trendValue(row, latest) : null;
 		const show = trendFormat(row);
 
-		// Only a count depends on how long she was home; gaps already skip the
-		// time away, and averages and shares are per event. The number shown
-		// stays what was logged; the change compares the rate per time at home.
+		// The numbers shown stay what was logged; an adjusted change compares
+		// the rate per time at home.
 		const homes = [prev?.homeShare ?? 1, latest?.homeShare ?? 1];
 		const away =
-			row.kind !== 'count' || homes.every((home) => home === 1)
+			!adjusts(row, types) || homes.every((home) => home === 1)
 				? null
 				: homes.some((home) => home < MIN_HOME_SHARE)
 					? 'short'
