@@ -1,0 +1,4004 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the generic chart draws today’s cards exactly > Biltur: the count, the length, and each field that happened 1`] = `
+[
+  {
+    "label": "7/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "7/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "8/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "8/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "9/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "9/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "10/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "10/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "11/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "11/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "12/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "12/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "13/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "13/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "14/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "14/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "15/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "15/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "16/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "16/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "17/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "17/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "18/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "18/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "19/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "19/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "20/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "20/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "21/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "21/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "22/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "22/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "23/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "23/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "24/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "24/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "25/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "25/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "26/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "26/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "27/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "27/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "28/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "28/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "29/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "29/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "30/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "30/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "1/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "1/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "2/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "2/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "3/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "3/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "4/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "4/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "5/10",
+    "segments": [
+      2,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "5/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "2",
+          },
+          {
+            "label": "Längd",
+            "value": "~25 min",
+          },
+        ],
+        [
+          {
+            "label": "Olycka:",
+            "value": "1",
+          },
+        ],
+        {
+          "nested": [
+            [
+              {
+                "label": "Spydde",
+                "value": "1",
+              },
+            ],
+          ],
+        },
+      ],
+    },
+  },
+  {
+    "label": "6/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "6/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Biltur",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Ensamtid: a row per outcome, Orolig’s signs boxed under it 1`] = `
+[
+  {
+    "label": "7/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "7/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "8/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "8/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "9/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "9/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "10/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "10/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "11/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "11/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "12/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "12/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "13/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "13/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "14/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "14/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "15/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "15/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "16/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "16/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "17/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "17/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "18/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "18/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "19/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "19/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "20/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "20/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "21/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "21/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "22/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "22/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "23/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "23/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "24/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "24/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "25/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "25/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "26/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "26/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "27/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "27/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "28/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "28/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "29/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "29/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "30/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "30/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "1/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "1/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "2/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "2/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "3/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "3/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "4/10",
+    "segments": [
+      0,
+      0,
+      1,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "4/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🏠",
+            "value": "1",
+          },
+          {
+            "label": "Längd",
+            "value": "20 min",
+          },
+        ],
+        [
+          {
+            "color": "var(--palette-green-alt)",
+            "label": "Vet ej:",
+            "value": "1",
+          },
+          {
+            "value": "20 min",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "5/10",
+    "segments": [
+      1,
+      1,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "5/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🏠",
+            "value": "2",
+          },
+          {
+            "label": "Längd",
+            "value": "~65 min",
+          },
+        ],
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Lugn:",
+            "value": "1",
+          },
+          {
+            "value": "40 min",
+          },
+        ],
+        [
+          {
+            "color": "var(--chart-neutral)",
+            "label": "Orolig:",
+            "value": "1",
+          },
+          {
+            "value": "1,5 tim",
+          },
+        ],
+        {
+          "nested": [
+            [
+              {
+                "label": "Orolig efter",
+                "value": "30 min",
+              },
+            ],
+            [
+              {
+                "label": "Ylade",
+                "value": "1",
+              },
+            ],
+          ],
+        },
+      ],
+    },
+  },
+  {
+    "label": "6/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "6/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Ensamtid",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Mat: finished or not, the share and the gap 1`] = `
+[
+  {
+    "label": "7/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "7/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "8/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "8/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "9/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "9/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "10/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "10/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "11/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "11/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "12/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "12/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "13/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "13/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "14/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "14/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "15/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "15/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "16/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "16/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "17/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "17/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "18/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "18/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "19/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "19/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "20/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "20/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "21/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "21/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "22/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "22/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "23/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "23/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "24/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "24/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "25/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "25/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "26/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "26/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "27/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "27/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "28/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "28/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "29/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "29/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "30/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "30/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "1/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "1/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "2/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "2/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "3/10",
+    "segments": [
+      2,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "3/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "✅",
+            "value": "2",
+          },
+          {
+            "big": true,
+            "label": "❌",
+            "value": "0",
+          },
+        ],
+        [
+          {
+            "label": "Andel",
+            "value": "100 %",
+          },
+          {
+            "label": "Tid mellan",
+            "value": "–",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "4/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "4/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "5/10",
+    "segments": [
+      1,
+      1,
+      1,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "5/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "✅",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "❌",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "❔",
+            "value": "1",
+          },
+        ],
+        [
+          {
+            "label": "Andel",
+            "value": "50 %",
+          },
+          {
+            "label": "Tid mellan",
+            "value": "~5 tim",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "6/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "6/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Mål",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Olyckor by day: kiss, bajs and the rest 1`] = `
+[
+  {
+    "label": "7/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "7/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "8/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "8/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "9/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "9/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "10/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "10/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "11/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "11/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "12/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "12/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "13/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "13/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "14/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "14/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "15/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "15/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "16/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "16/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "17/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "17/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "18/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "18/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "19/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "19/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "20/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "20/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "21/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "21/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "22/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "22/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "23/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "23/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "24/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "24/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "25/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "25/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "26/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "26/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "27/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "27/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "28/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "28/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "29/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "29/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "30/9",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "30/9",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "1/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "1/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "2/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "2/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "3/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "3/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "4/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "4/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "5/10",
+    "segments": [
+      2,
+      1,
+      1,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "5/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "2",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "❔",
+            "value": "1",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "6/10",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "6/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Olyckor by month: kiss, bajs and the rest 1`] = `
+[
+  {
+    "label": "nov.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "nov.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "dec.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "dec.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "jan.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "jan.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "feb.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "feb.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "mars",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "mars",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "apr.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "apr.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "maj",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "maj",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "juni",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "juni",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "juli",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "juli",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "aug.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "aug.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "sep.",
+    "segments": [
+      2,
+      1,
+      1,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "sep.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "2",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "❔",
+            "value": "1",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "okt.",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "okt.",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Olyckor by week: kiss, bajs and the rest 1`] = `
+[
+  {
+    "label": "v.30",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "Vecka 30",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.31",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 31",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.32",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 32",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.33",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "Vecka 33",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.34",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 34",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.35",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 35",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.36",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "Vecka 36",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.37",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 37",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.38",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 38",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.39",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "Vecka 39",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.40",
+    "segments": [
+      2,
+      1,
+      1,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 40",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "2",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "❔",
+            "value": "1",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "v.41",
+    "segments": [
+      0,
+      0,
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "Vecka 41",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;
+
+exports[`the generic chart draws today’s cards exactly > Promenader: emoji counts, the gap and the length 1`] = `
+[
+  {
+    "label": "7/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "7/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "8/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "8/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "9/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "9/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "10/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "10/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "11/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "11/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "12/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "12/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "13/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "13/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "14/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "14/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "15/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "15/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "16/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "16/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "17/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "17/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "18/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "18/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "19/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "19/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "20/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "20/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "21/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "21/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "22/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "22/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "23/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "23/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "24/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "24/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "25/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "25/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "26/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "26/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "27/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "27/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "28/9",
+    "segments": [
+      0,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "28/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "29/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "29/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "30/9",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "30/9",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "1/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "1/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "2/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "2/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "3/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "3/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "4/10",
+    "segments": [
+      1,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "4/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🚶",
+            "value": "1",
+          },
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "0",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "0",
+          },
+        ],
+        [
+          {
+            "label": "Tid mellan",
+            "value": "–",
+          },
+          {
+            "label": "Längd",
+            "value": "–",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "5/10",
+    "segments": [
+      7,
+    ],
+    "tick": true,
+    "tooltip": {
+      "heading": "5/10",
+      "rows": [
+        [
+          {
+            "big": true,
+            "label": "🚶",
+            "value": "7",
+          },
+          {
+            "big": true,
+            "label": "🟡",
+            "value": "5",
+          },
+          {
+            "big": true,
+            "label": "💩",
+            "value": "2",
+          },
+        ],
+        [
+          {
+            "label": "Tid mellan",
+            "value": "~2,3 tim",
+          },
+          {
+            "label": "Längd",
+            "value": "~12 min",
+          },
+        ],
+      ],
+    },
+  },
+  {
+    "label": "6/10",
+    "segments": [
+      0,
+    ],
+    "tick": false,
+    "tooltip": {
+      "heading": "6/10",
+      "rows": [
+        [
+          {
+            "color": "var(--palette-green)",
+            "label": "Promenader",
+            "value": "0",
+          },
+        ],
+      ],
+    },
+  },
+]
+`;

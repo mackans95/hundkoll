@@ -321,3 +321,153 @@ export function planTiles(typeId: string, current: TileSpec[], form: FormData): 
 export function sameTiles(a: TileSpec[], b: TileSpec[]): boolean {
 	return JSON.stringify(a.map(tileKey)) === JSON.stringify(b.map(tileKey));
 }
+
+/**
+ * How a bar chart divides each column (plan 29b):
+ *   none     one bar per period
+ *   answer   by a checkbox or outcome: yes / no / unknown (Mat, Ensamtid)
+ *   counts   by up to two count fields, and what's left (Olyckor's kiss, bajs)
+ */
+export type BarSplit =
+	{ by: 'none' } | { by: 'answer'; field: string } | { by: 'counts'; fields: string[] };
+
+export type ChartSpec =
+	| {
+			kind: 'bars';
+			/** Day / week / month tabs over the chart, like Olyckor's; else the last 30 days. */
+			picker: boolean;
+			split: BarSplit;
+			/** Whether the tooltip counts by emoji (🚶 7 · 🟡 5) or by name (Kiss: 5). */
+			tooltip: 'text' | 'emoji';
+	  }
+	| { kind: 'timeline'; field: string };
+
+/** More than two would need colours the palette doesn't validate side by side. */
+export const MAX_COUNT_SPLIT = 2;
+
+const bars = (split: BarSplit, tooltip: 'text' | 'emoji', picker = false): ChartSpec => ({
+	kind: 'bars',
+	picker,
+	split,
+	tooltip
+});
+
+/** Today's charts, until someone edits them; a generated type's is written here too. */
+const DEFAULT_CHARTS: Record<string, ChartSpec> = {
+	// codegen:default-charts — npm run new-event inserts generated charts here
+	walk: bars({ by: 'none' }, 'emoji'),
+	meal: bars({ by: 'answer', field: 'finished' }, 'emoji'),
+	accident: bars({ by: 'counts', fields: ['pee', 'poop'] }, 'emoji', true),
+	weight: { kind: 'timeline', field: 'kg' },
+	alone: bars({ by: 'answer', field: 'calm' }, 'emoji'),
+	car_ride: bars({ by: 'none' }, 'text')
+};
+
+/** A type's chart before anyone edits it: one bar a day, named in words. */
+export function defaultChart(typeId: string): ChartSpec {
+	return DEFAULT_CHARTS[typeId] ?? bars({ by: 'none' }, 'text');
+}
+
+/** Every way the type's fields let a bar be split, in the order its page offers them. */
+export function splitsFor(typeId: string): BarSplit[] {
+	const fields = fieldsFor(typeId).filter((field) => !field.revealedBy);
+	const counted = fields.filter((field) => field.input === 'count').slice(0, MAX_COUNT_SPLIT);
+	return [
+		{ by: 'none' },
+		...fields
+			.filter((field) => field.input === 'checkbox' || field.input === 'outcome')
+			.map((field): BarSplit => ({ by: 'answer', field: field.name })),
+		...(counted.length > 0
+			? [{ by: 'counts', fields: counted.map((field) => field.name) } as BarSplit]
+			: [])
+	];
+}
+
+/** The number fields a timeline may plot. */
+export function timelineFieldsFor(typeId: string): string[] {
+	return fieldsFor(typeId)
+		.filter((field) => field.input === 'number')
+		.map((field) => field.name);
+}
+
+/** Identifies a split for a form's select. "answer:finished", "counts:pee,poop" */
+export function splitKey(split: BarSplit): string {
+	if (split.by === 'answer') return `answer:${split.field}`;
+	if (split.by === 'counts') return `counts:${split.fields.join(',')}`;
+	return 'none';
+}
+
+/** How a split reads on the type page. */
+export function splitLabel(typeId: string, split: BarSplit): string {
+	const t = words.chart;
+	if (split.by === 'answer') return t.byAnswer(fieldWord(typeId, split.field));
+	if (split.by === 'counts') {
+		return t.byCounts(split.fields.map((name) => fieldWord(typeId, name)).join(` ${t.and} `));
+	}
+	return t.noSplit;
+}
+
+/**
+ * Reads a stored chart back, falling back to the type's default for anything
+ * its fields no longer allow: a split by a removed field, a timeline of a
+ * field that is gone.
+ */
+export function parseChart(typeId: string, raw: unknown): ChartSpec {
+	const chart = (raw as { chart?: Record<string, unknown> } | null)?.chart;
+	if (!chart || typeof chart !== 'object') {
+		return defaultChart(typeId);
+	}
+	if (chart.kind === 'timeline') {
+		return typeof chart.field === 'string' && timelineFieldsFor(typeId).includes(chart.field)
+			? { kind: 'timeline', field: chart.field }
+			: defaultChart(typeId);
+	}
+	if (chart.kind !== 'bars') {
+		return defaultChart(typeId);
+	}
+	const posted = chart.split as BarSplit | undefined;
+	const split = splitsFor(typeId).find(
+		(candidate) => posted !== undefined && splitKey(candidate) === splitKey(posted)
+	);
+	return bars(
+		split ?? { by: 'none' },
+		chart.tooltip === 'emoji' ? 'emoji' : 'text',
+		chart.picker === true
+	);
+}
+
+/** Whether a chart draws a second series, which rules out the neutral colour. */
+export function chartPaired(chart: ChartSpec): boolean {
+	return chart.kind === 'bars' && chart.split.by !== 'none';
+}
+
+/**
+ * The chart the type page posted, or the current one when it posted no chart
+ * fields. A choice the fields don't allow falls back rather than failing the save.
+ */
+export function planChart(typeId: string, current: ChartSpec, form: FormData): ChartSpec {
+	if (!form.has('chart_present')) {
+		return current;
+	}
+	if (form.get('chart_kind') === 'timeline') {
+		const field = String(form.get('chart_field') ?? '');
+		const fields = timelineFieldsFor(typeId);
+		return fields.length > 0
+			? { kind: 'timeline', field: fields.includes(field) ? field : fields[0] }
+			: current;
+	}
+	const key = String(form.get('chart_split') ?? 'none');
+	const split = splitsFor(typeId).find((candidate) => splitKey(candidate) === key) ?? {
+		by: 'none'
+	};
+	return bars(
+		split,
+		form.get('chart_tooltip') === 'emoji' ? 'emoji' : 'text',
+		form.getAll('chart_picker').includes('true')
+	);
+}
+
+/** Whether two charts say the same thing, so an untouched form writes nothing. */
+export function sameChart(a: ChartSpec, b: ChartSpec): boolean {
+	return JSON.stringify(a) === JSON.stringify(b);
+}

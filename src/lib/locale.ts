@@ -451,6 +451,17 @@ export const stats = {
 	periodPickerLabel: 'Periodval',
 	/** Over a chart whose 30 days hold nothing, the way Vikt says it has no weighing. */
 	emptyChart: 'Inget loggat de senaste 30 dagarna.',
+	/** The chart's settings on a type's page (plan 29b). */
+	chart: {
+		noSplit: 'Ingen uppdelning',
+		byAnswer: (field: string) => `Efter ${field.toLowerCase()}` as const,
+		byCounts: (fields: string) => `Efter ${fields.toLowerCase()}` as const,
+		and: 'och',
+		/** A checkbox's "no", when the field declares no answers of its own. */
+		notAnswer: (field: string) => `Inte ${field.toLowerCase()}` as const,
+		/** An event that didn't answer the field a chart is split by. */
+		unknown: 'Okänt'
+	},
 	/** Built captions for a tile chosen in Settings: "Utan olycka", "Längsta lugn". */
 	tiles: {
 		perDay: 'Per dag',
