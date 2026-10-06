@@ -5,7 +5,7 @@
 > appear under Statistics; if a new type is added, users can choose via settings whether it
 > should be included at all."
 
-> **Status: ✅ Built, awaiting merge** — branch `feature/stats-layout`. Requires plans 25
+> **Status: ✅ Built, verified on the phone, awaiting merge** — branch `feature/stats-layout`. Requires plans 25
 > and 26 (both merged). Plan 29 adds per-type chart kinds and tiles; this plan doesn't
 > change what a card draws. All four questions answered as recommended. Verified on the
 > local stack with a production snapshot:
