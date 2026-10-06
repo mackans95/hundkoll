@@ -4,7 +4,16 @@
 
 	type Option = { key: string; label: string };
 
-	let { tiles, options }: { tiles: Option[]; options: Option[] } = $props();
+	let {
+		tiles,
+		options,
+		onedit
+	}: {
+		tiles: Option[];
+		options: Option[];
+		/** Told of each change on screen, which posts nothing until Spara. */
+		onedit?: () => void;
+	} = $props();
 
 	const words = locale.settings.type;
 
@@ -19,6 +28,7 @@
 		const next = [...rows];
 		[next[from], next[to]] = [next[to], next[from]];
 		rows = next;
+		onedit?.();
 	}
 
 	// ✕ and Lägg till post the page by themselves without JS; with it, they
@@ -26,12 +36,15 @@
 	function remove(event: MouseEvent, at: number) {
 		event.preventDefault();
 		rows = rows.filter((_, i) => i !== at);
+		onedit?.();
 	}
 
 	function add(event: MouseEvent) {
 		event.preventDefault();
 		const option = available.find((candidate) => candidate.key === adding);
-		if (option) rows = [...rows, option];
+		if (!option) return;
+		rows = [...rows, option];
+		onedit?.();
 	}
 </script>
 

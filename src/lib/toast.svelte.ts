@@ -21,11 +21,15 @@ export function showToast(message: string): void {
  * toasts "Sparat!" and refreshes the data without moving the page. The form
  * keeps what was typed, since it now matches what was stored.
  */
-export const savedToast: SubmitFunction = () => {
-	return async ({ result, update }) => {
-		await update({ reset: false });
-		if (result.type === 'success' && result.data?.saved) {
-			showToast(locale.settings.saved);
-		}
-	};
-};
+export function savedToastThen(onSaved?: () => void): SubmitFunction {
+	return () =>
+		async ({ result, update }) => {
+			await update({ reset: false });
+			if (result.type === 'success' && result.data?.saved) {
+				showToast(locale.settings.saved);
+				onSaved?.();
+			}
+		};
+}
+
+export const savedToast = savedToastThen();

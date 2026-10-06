@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import * as locale from '$lib/locale';
-	import { savedToast } from '$lib/toast.svelte';
+	import { savedToastThen } from '$lib/toast.svelte';
 	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
 	import TileEditor from '$lib/components/settings/TileEditor.svelte';
@@ -10,6 +10,11 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// Any field touched, or the tile list edited on screen, until a save succeeds.
+	let dirty = $state(false);
+	const markDirty = () => (dirty = true);
+	const save = savedToastThen(() => (dirty = false));
 
 	const words = locale.settings.type;
 	// No icon here: it is on the type's row in the list, and pushes the title out of line.
@@ -42,7 +47,9 @@
 		<form
 			method="POST"
 			action="?/save"
-			use:enhance={savedToast}
+			use:enhance={save}
+			oninput={markDirty}
+			onchange={markDirty}
 			class="flex flex-col gap-6"
 		>
 			<!-- First, so Enter in the interval field saves the page rather than
@@ -128,6 +135,7 @@
 					<TileEditor
 						tiles={data.tiles}
 						options={data.tileOptions}
+						onedit={markDirty}
 					/>
 				</section>
 			{/if}
@@ -158,10 +166,15 @@
 				</div>
 			</section>
 
-			<button
-				type="submit"
-				class="btn btn-primary">{locale.settings.save}</button
-			>
+			<div class="flex flex-col gap-1">
+				<button
+					type="submit"
+					class="btn btn-primary">{locale.settings.save}</button
+				>
+				{#if dirty}
+					<p class="px-1 text-center text-sm text-ink-muted">{locale.settings.trends.unsaved}</p>
+				{/if}
+			</div>
 		</form>
 	{/if}
 </SettingsPage>
