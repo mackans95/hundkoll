@@ -204,7 +204,11 @@ export const settings = {
 		tables: 'Tabeller',
 		trends: 'Trender'
 	},
-	tablesStub: 'Här kommer du att kunna välja vad Statistik visar.',
+	/** Settings → Tabeller (plan 28). */
+	tables: {
+		help: 'Statistik visar korten i den här ordningen. Bocka ur ett kort för att dölja det.',
+		show: 'Visa'
+	},
 	/** Settings → Trender (plan 27). */
 	trends: {
 		help: 'Det här visar Trender, i den här ordningen. Bättre om säger vilket håll som är en förbättring.',
@@ -240,7 +244,8 @@ export const settings = {
 		chartColorHelp: 'Färgen på typens diagram i Statistik.',
 		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
 		stats: 'Statistik',
-		statsStub: 'Här kommer du att kunna välja vad Statistik visar för typen.',
+		showOnStats: 'På Statistik',
+		statsStub: 'Här kommer du att kunna välja hur typens kort i Statistik ser ut.',
 		trends: 'Trender',
 		trendsHelp:
 			'Bocka i det som ska visas i Trender. Ordningen väljer du under Inställningar → Trender.',
@@ -442,14 +447,18 @@ export const stats = {
 	// Period has no label.
 	periods: { day: 'Dag', week: 'Vecka', month: 'Månad' } as const satisfies Record<Period, string>,
 	periodPickerLabel: 'Periodval',
+	/** Over a chart whose 30 days hold nothing, the way Vikt says it has no weighing. */
+	emptyChart: 'Inget loggat de senaste 30 dagarna.',
+	noCards: 'Alla kort är dolda. Visa dem under',
+	noCardsLink: 'Inställningar → Tabeller.',
 	trendPickerLabel: 'Trendperiod',
 	symbols,
 
 	walks: {
 		heading: '🚶 Promenader',
-		perDay: '🚶 per dag',
-		betweenWalks: '⏳ mellan promenader',
-		averageLength: '⏱️ snittlängd',
+		perDay: 'Per dag',
+		betweenWalks: 'Mellan promenader',
+		averageLength: 'Snittlängd',
 		/** Tooltip for a day with no walks, where the emoji row would be all zeroes. */
 		emptyTooltip: 'Promenader',
 		between: 'Tid mellan',
@@ -458,8 +467,8 @@ export const stats = {
 
 	meals: {
 		heading: '🍽️ Mat',
-		betweenMeals: '⏳ mellan mål',
-		finishRate: '✅ åt upp',
+		betweenMeals: 'Mellan mål',
+		finishRate: 'Åt upp',
 		legendFinished: 'Åt upp',
 		legendNotFinished: 'Åt inte upp',
 		legendUnknown: 'Okänt',
@@ -472,9 +481,11 @@ export const stats = {
 		legendPee: 'Kiss',
 		legendPoop: 'Bajs',
 		legendUnspecified: 'Ospecificerat',
-		perDay: 'per dag',
-		perWeek: 'per vecka',
-		perMonth: 'per månad',
+		perDay: 'Per dag',
+		perWeek: 'Per vecka',
+		perMonth: 'Per månad',
+		/** The chart's whole window had none, at whichever period. */
+		empty: 'Inga olyckor i perioden.',
 		/** Why the chart is blank: the selected period has not finished once yet. */
 		pending: (period: Period) =>
 			period === 'week'

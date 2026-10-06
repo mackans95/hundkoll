@@ -386,6 +386,14 @@ describe('generate', () => {
 		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toContain(
 			'color={data.chartColors.nail_check.main}'
 		);
+		// A snippet named after the type, and its entry in the page's card map, so it
+		// draws in the stored order and joins the end of it (plan 28).
+		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-cards')?.insert).toMatch(
+			/^{#snippet nail_check\(\)}\n[\s\S]*{\/snippet}\n$/
+		);
+		expect(output.edits.find((edit) => edit.marker === 'codegen:stats-card-map')?.insert).toBe(
+			'\t\tnail_check,\n'
+		);
 		expect(card?.content).toContain('locale.stats.nailCheck.heading');
 		expect(card?.content).not.toMatch(/{{[A-Za-z]+}}/);
 	});
@@ -524,7 +532,7 @@ describe('generate', () => {
 		expect(card).toContain(
 			"shareTile(locale.stats.nailCheck.withoutBled, metricFor(metrics, 'bled'), totalEvents(days), true)"
 		);
-		expect(card).toContain('<StatTile {tile} />');
+		expect(card).toContain('<TileGrid {tiles} />');
 		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
 
 		const captions =
@@ -576,7 +584,7 @@ describe('generate', () => {
 			LOCALE_SOURCE
 		);
 		const card = output.creates.find((create) => create.path.endsWith('.svelte'))?.content ?? '';
-		expect(card).not.toContain('StatTile');
+		expect(card).not.toContain('TileGrid');
 		expect(card).not.toContain('const tiles = $derived(');
 		expect(card).not.toMatch(/{{[A-Za-z]+}}/);
 		expect(output.edits.some((edit) => edit.insert.includes('stats_detail_windows'))).toBe(false);

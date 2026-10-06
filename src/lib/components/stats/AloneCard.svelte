@@ -2,7 +2,7 @@
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
 	import ChartLegend, { type LegendItem } from '$lib/components/ChartLegend.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import StatTile from '$lib/components/StatTile.svelte';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
 	import { aloneBuckets } from '$lib/stats/buckets';
@@ -53,9 +53,5 @@
 		label={words.heading}
 	/>
 	<ChartLegend items={legend} />
-	<div class="grid grid-cols-2 gap-2">
-		{#each tiles as tile (tile.label)}
-			<StatTile {tile} />
-		{/each}
-	</div>
+	<TileGrid {tiles} />
 </FoldableCard>

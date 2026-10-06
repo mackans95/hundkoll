@@ -21,7 +21,8 @@
 <FoldableCard title={locale.stats.weight.heading}>
 	{#snippet aside()}
 		{#if latest}
-			<span class="text-lg font-bold">{format.swedishNumber(latest.kg)} kg</span>
+			<!-- The header's own size, so Vikt's header is as tall as every other card's. -->
+			<span class="font-bold">{format.swedishNumber(latest.kg)} kg</span>
 		{/if}
 	{/snippet}
 

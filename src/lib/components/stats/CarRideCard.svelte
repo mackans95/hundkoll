@@ -2,7 +2,7 @@
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import StatTile from '$lib/components/StatTile.svelte';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import * as format from '$lib/format';
 	import { metricFor, totalEvents } from '$lib/stats/metrics';
 	import { avgTile, shareTile } from '$lib/stats/summary';
@@ -55,9 +55,5 @@
 		colors={[color]}
 		label={locale.stats.carRide.heading}
 	/>
-	<div class="grid grid-cols-2 gap-2">
-		{#each tiles as tile (tile.label)}
-			<StatTile {tile} />
-		{/each}
-	</div>
+	<TileGrid {tiles} />
 </FoldableCard>
