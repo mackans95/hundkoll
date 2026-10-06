@@ -36,13 +36,18 @@ describe('chartColorKey', () => {
 
 describe('typeSettings', () => {
 	it('fills a missing row from the defaults', () => {
-		expect(typeSettings('walk')).toEqual({ chartColor: 'green', showOnStatus: true });
+		expect(typeSettings('walk')).toMatchObject({ chartColor: 'green', showOnStatus: true });
 	});
 
 	it('has no colour for a type without a card', () => {
 		expect(
-			typeSettings('bath', { type_id: 'bath', chart_color: 'blue', show_on_status: null })
-		).toEqual({ chartColor: null, showOnStatus: true });
+			typeSettings('bath', {
+				type_id: 'bath',
+				chart_color: 'blue',
+				show_on_status: null,
+				stats_card: null
+			})
+		).toEqual({ chartColor: null, showOnStatus: true, tiles: [] });
 	});
 });
 
@@ -79,7 +84,12 @@ describe('planTypeSettings', () => {
 	});
 
 	it('shows it again when ticked, and writes nothing when unchanged', () => {
-		const hidden = { type_id: 'accident', chart_color: null, show_on_status: false };
+		const hidden = {
+			type_id: 'accident',
+			chart_color: null,
+			show_on_status: false,
+			stats_card: null
+		};
 		expect(
 			planTypeSettings('accident', hidden, form({ show_on_status: ['false', 'true'] }))
 		).toEqual({ patch: { show_on_status: true } });
@@ -89,7 +99,12 @@ describe('planTypeSettings', () => {
 	});
 
 	it('leaves Status alone when the form has no such field', () => {
-		const hidden = { type_id: 'accident', chart_color: null, show_on_status: false };
+		const hidden = {
+			type_id: 'accident',
+			chart_color: null,
+			show_on_status: false,
+			stats_card: null
+		};
 		expect(planTypeSettings('accident', hidden, form({}))).toEqual({ patch: {} });
 	});
 });

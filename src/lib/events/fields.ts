@@ -26,6 +26,11 @@ export type DetailField = {
 	 * know stores nothing, so a share over the field counts only the known ones.
 	 */
 	outcome?: { yes: string; no: string; unknown: string };
+	/**
+	 * A number field's unit, for a tile or a trend averaging it (plan 29). A
+	 * _min field is minutes and needs none; the generator writes it for others.
+	 */
+	unit?: string;
 	/** Another number field this one cannot exceed: anxious after 50 of 40 minutes. */
 	atMost?: string;
 	/** How the value reads in the events list; null hides it. */

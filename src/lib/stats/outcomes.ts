@@ -87,17 +87,6 @@ export function outcomeDays(rows: DetailRow[], spec: OutcomeSpec): OutcomeDay[] 
 }
 
 /**
- * The share answered yes among the answered ones, or null with none answered.
- * "Vet ej" neither helps nor hurts, the way the meal finish rate skips meals
- * nobody recorded.
- */
-export function answeredShare(days: OutcomeDay[]): number | null {
-	const yes = days.reduce((sum, day) => sum + day.yes.count, 0);
-	const answered = days.reduce((sum, day) => sum + day.yes.count + day.no.count, 0);
-	return answered === 0 ? null : yes / answered;
-}
-
-/**
  * The largest `value` among the events whose `when` is true: the longest alone
  * time she was calm through. Null when none qualifies.
  */

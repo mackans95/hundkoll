@@ -3,9 +3,15 @@
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import * as format from '$lib/format';
+	import TileGrid from '$lib/components/TileGrid.svelte';
+	import type { Tile } from '$lib/stats/summary';
 	import type { FieldPoint } from '$lib/types/domain';
 
-	let { points, color }: { points: FieldPoint[]; color: string } = $props();
+	let {
+		points,
+		tiles = [],
+		color
+	}: { points: FieldPoint[]; tiles?: Tile[]; color: string } = $props();
 
 	const chartPoints = $derived(
 		points.map((point) => ({
@@ -26,5 +32,8 @@
 			unit="{{unit}}"
 			label={locale.stats.{{camelId}}.heading}
 		/>
+	{/if}
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
 	{/if}
 </FoldableCard>

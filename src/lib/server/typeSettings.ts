@@ -3,7 +3,7 @@ import { planTypeSettings } from '$lib/typeSettings';
 import type { TypeSettingsRow } from '$lib/types/domain';
 import type { Db } from './db';
 
-const COLUMNS = 'type_id, chart_color, show_on_status';
+const COLUMNS = 'type_id, chart_color, show_on_status, stats_card';
 
 /**
  * Every stored row, by type. RLS limits them to the household's own. Null

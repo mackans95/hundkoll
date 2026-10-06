@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import * as locale from '$lib/locale';
 import { aloneBuckets } from '$lib/stats/buckets';
-import { answeredShare, longestWhen, outcomeDays } from '$lib/stats/outcomes';
+import { longestWhen, outcomeDays } from '$lib/stats/outcomes';
 
 // Stand-ins: the builder draws whatever colours the card hands it.
 const ALONE_COLORS = ['calm', 'anxious', 'unknown'];
@@ -63,17 +63,6 @@ describe('outcomeDays', () => {
 		expect(day.no.numbers.anxious_after_min).toEqual({ sum: 28, n: 2 });
 		expect(day.no.counts).toEqual({ howled: 2, restless: 1 });
 		expect(day.yes.counts).toEqual({});
-	});
-});
-
-describe('answeredShare', () => {
-	// Two calm of four answered; the Vet ej one neither helps nor hurts.
-	it('divides by the answered ones only', () => {
-		expect(answeredShare(outcomeDays(rows, SPEC))).toBeCloseTo(2 / 4);
-	});
-
-	it('is null with nothing answered', () => {
-		expect(answeredShare(outcomeDays([rows[3]], SPEC))).toBeNull();
 	});
 });
 

@@ -5,6 +5,7 @@
 	import { savedToast } from '$lib/toast.svelte';
 	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
+	import TileEditor from '$lib/components/settings/TileEditor.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -44,6 +45,14 @@
 			use:enhance={savedToast}
 			class="flex flex-col gap-6"
 		>
+			<!-- First, so Enter in the interval field saves the page rather than
+			     pressing the first ▲ ▼ of the tile list below. -->
+			<button
+				type="submit"
+				class="sr-only"
+				tabindex="-1"
+				aria-hidden="true">{locale.settings.save}</button
+			>
 			<section class="flex flex-col gap-2">
 				{@render heading(words.interval)}
 				<p class="px-1 text-sm text-ink-muted">{locale.settings.intervalsHelp}</p>
@@ -112,11 +121,16 @@
 				{/if}
 			</section>
 
-			<!-- A stub until plans 28–29 add these choices. -->
-			<section class="flex flex-col gap-2">
-				{@render heading(words.stats)}
-				<p class="px-1 text-sm text-ink-muted">{words.statsStub}</p>
-			</section>
+			{#if data.tileOptions.length > 0}
+				<section class="flex flex-col gap-2">
+					{@render heading(words.stats)}
+					<p class="px-1 text-sm text-ink-muted">{words.tilesHelp}</p>
+					<TileEditor
+						tiles={data.tiles}
+						options={data.tileOptions}
+					/>
+				</section>
+			{/if}
 			<section class="flex flex-col gap-2">
 				{@render heading(words.trends)}
 				<p class="px-1 text-sm text-ink-muted">{words.trendsHelp}</p>

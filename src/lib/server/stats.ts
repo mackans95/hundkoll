@@ -35,9 +35,12 @@ import type {
 } from '$lib/types/domain';
 import type { WalkDay } from '$lib/types/domain';
 import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
-import { longestWhen, outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
+import { outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
 import { detailDayCounts, weightHistory } from './events';
 import { listTypeSettings } from './typeSettings';
+import { typeSettings } from '$lib/typeSettings';
+import { tileReadsEvents, tileValues } from '$lib/stats/cardSpec';
+import type { Tile } from '$lib/stats/summary';
 import { readTrendConfig } from './trendSettings';
 import { readCardConfig } from './statsSettings';
 import { defaultCards, type CardRow } from '$lib/stats/cardConfig';
@@ -47,19 +50,18 @@ import type { Db } from './db';
 
 export type Stats = {
 	// codegen:stats-shape — npm run new-event inserts card data fields here
-	aloneMetrics: DetailMetric[];
 	/** Lugn / Orolig / Vet ej per day: the card is stacked by outcome (plan 22). */
 	aloneOutcomes: OutcomeDay[];
 	/** The longest alone time she stayed calm through, in the 30 days. */
-	aloneLongestCalm: number | null;
 	carRideDetailDays: DetailDayCount[];
-	carRideMetrics: DetailMetric[];
 	carRideDays: SimpleDay[];
 	period: Period;
 	/** The Stockholm day the query windows were cut from, for the charts to
 	 * zero-fill the same window. */
 	today: string;
 	summary: StatSummary | null;
+	/** Each charted type's tiles, as its Settings page chose them (plan 29). */
+	tiles: Record<string, Tile[]>;
 	walkDays: WalkDay[];
 	mealDays: MealDay[];
 	accidentBins: AccidentBin[];
@@ -229,16 +231,20 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 	const DAILY_TYPES = ['walk', 'meal'];
 	const DAILY_FIELDS = ['pee', 'poop', 'finished', 'duration_min'];
 
+	// Read first: the tiles decide which types' own events the reads below need.
+	// A failed read draws the defaults, which is no reason to call the page failed.
+	const settings = await listTypeSettings(db);
+	const charted = Object.keys(CHARTED_TYPES);
+	const tileSpecs = Object.fromEntries(
+		charted.map((type) => [type, typeSettings(type, settings?.get(type)).tiles])
+	);
+	const eventTypes = charted.filter((type) => tileSpecs[type].some(tileReadsEvents));
+
 	// Kept as an array as well as destructured, so the failure check below sees
 	// every read — including the ones npm run new-event adds, which would
 	// otherwise need listing a second time and eventually would not be.
 	const results = await Promise.all([
 		// codegen:stats-queries — npm run new-event inserts card queries here
-		db
-			.from('stats_detail_windows')
-			.select(METRIC_COLUMNS)
-			.eq('type_id', 'alone')
-			.eq('window_days', 30),
 		// The type's own events: the outcome split with its signs and lengths, and
 		// the longest calm stretch, all come from these; no view can name the fields.
 		db
@@ -247,11 +253,6 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 			.eq('type_id', 'alone')
 			.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS)),
 		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
-		db
-			.from('stats_detail_windows')
-			.select(METRIC_COLUMNS)
-			.eq('type_id', 'car_ride')
-			.eq('window_days', 30),
 		db
 			.from('stats_type_buckets')
 			.select(TYPE_BUCKET_COLUMNS)
@@ -273,16 +274,22 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 			.in('field', DAILY_FIELDS)
 			.eq('period', 'day')
 			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS)),
-		db
-			.from('stats_type_windows')
-			.select(TYPE_WINDOW_COLUMNS)
-			.in('type_id', ['walk', 'meal', 'accident']),
+		// Every card's tiles come out of these two, by type and field (plan 29).
+		db.from('stats_type_windows').select(TYPE_WINDOW_COLUMNS).in('type_id', charted),
 		db
 			.from('stats_detail_windows')
 			.select(DETAIL_WINDOW_COLUMNS)
-			.in('type_id', ['walk', 'meal'])
-			.in('field', ['duration_min', 'finished'])
+			.in('type_id', charted)
 			.eq('window_days', 30),
+		// Only for a tile no view can answer: a longest, a latest.
+		eventTypes.length > 0
+			? db
+					.from('events')
+					.select('type_id, occurred_at, details')
+					.in('type_id', eventTypes)
+					.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS))
+					.order('occurred_at')
+			: { data: [], error: null },
 		db
 			.from('stats_type_buckets')
 			.select(TYPE_BUCKET_COLUMNS)
@@ -298,26 +305,22 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 			.eq('period', period)
 			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period])),
 		weightHistory(db),
-		// A failed read draws the defaults, which is no reason to call the page failed.
-		listTypeSettings(db),
 		readCardConfig(db)
 	]);
 
 	const [
 		// codegen:stats-results — one name here per query above, same order
-		aloneMetricsRes,
 		aloneEventsRes,
 		carRideDetailDays,
-		carRideMetricsRes,
 		carRideRes,
 		dailyRes,
 		dailyDetailRes,
 		windowsRes,
 		windowDetailRes,
+		tileEventsRes,
 		binsRes,
 		binDetailRes,
 		weights,
-		settings,
 		cards
 	] = results;
 
@@ -334,27 +337,43 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 		details: (row.details ?? {}) as EventDetails
 	}));
 
+	const windows = present((windowsRes.data ?? []).map(toTypeWindow));
+	const windowDetails = present((windowDetailRes.data ?? []).map(toDetailWindow));
+	const summary = rows.statSummary(windows, windowDetails);
+	const tileEvents = tileEventsRes.data ?? [];
+	const tiles = Object.fromEntries(
+		charted.map((type) => [
+			type,
+			tileValues(type, tileSpecs[type], {
+				windows: windows.filter((row) => row.type_id === type),
+				metrics: windowDetails.filter((row) => row.type_id === type),
+				events: tileEvents
+					.filter((row) => row.type_id === type)
+					.map((row) => ({
+						occurred_at: row.occurred_at,
+						details: (row.details ?? {}) as EventDetails
+					})),
+				tracked: summary?.days_counted ?? 0
+			})
+		])
+	);
+
 	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
 	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
 
 	return {
 		// codegen:stats-return — npm run new-event inserts narrowed results here
-		aloneMetrics: present((aloneMetricsRes.data ?? []).map(toDetailMetric)),
 		aloneOutcomes: outcomeDays(aloneEvents, {
 			outcome: 'calm',
 			measure: 'duration_min',
 			revealed: fieldsRevealedBy(fieldsFor('alone'), 'calm')
 		}),
-		aloneLongestCalm: longestWhen(aloneEvents, 'duration_min', 'calm'),
 		carRideDetailDays,
-		carRideMetrics: present((carRideMetricsRes.data ?? []).map(toDetailMetric)),
 		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),
 		period,
 		today,
-		summary: rows.statSummary(
-			present((windowsRes.data ?? []).map(toTypeWindow)),
-			present((windowDetailRes.data ?? []).map(toDetailWindow))
-		),
+		summary,
+		tiles,
 		walkDays: rows.walkDays(dailyBuckets, dailyDetails),
 		mealDays: rows.mealDays(dailyBuckets, dailyDetails),
 		accidentBins: rows.accidentBins(

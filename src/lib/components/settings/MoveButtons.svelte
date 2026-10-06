@@ -5,7 +5,8 @@
 		index,
 		count,
 		label,
-		onmove
+		onmove,
+		name = 'op'
 	}: {
 		index: number;
 		count: number;
@@ -13,6 +14,8 @@
 		label: string;
 		/** Swaps the row with its neighbour on screen; Spara sends the order. */
 		onmove: (from: number, to: number) => void;
+		/** The field the move posts as, for a form that holds more than one list. */
+		name?: string;
 	} = $props();
 
 	const words = locale.settings.trends;
@@ -29,7 +32,7 @@
 
 <button
 	type="submit"
-	name="op"
+	{name}
 	value="up:{index}"
 	class={BUTTON}
 	disabled={index === 0}
@@ -38,7 +41,7 @@
 >
 <button
 	type="submit"
-	name="op"
+	{name}
 	value="down:{index}"
 	class={BUTTON}
 	disabled={index === count - 1}

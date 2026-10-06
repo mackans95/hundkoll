@@ -3,25 +3,23 @@
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
 	import TileGrid from '$lib/components/TileGrid.svelte';
-	import * as format from '$lib/format';
-	import { metricFor, totalEvents } from '$lib/stats/metrics';
-	import { avgTile, shareTile } from '$lib/stats/summary';
+	import type { Tile } from '$lib/stats/summary';
 	import { simpleCountBuckets } from '$lib/stats/buckets';
-	import type { DetailDayCount, DetailMetric, SimpleDay } from '$lib/types/domain';
+	import type { DetailDayCount, SimpleDay } from '$lib/types/domain';
 
-	// metrics and detailDays are optional so a card can gain tiles or a tooltip
+	// tiles and detailDays are optional so a card can gain tiles or a tooltip
 	// breakdown later without the page having to pass anything until it does —
 	// see the metric kinds in scripts/new-event-core.ts.
 	let {
 		days,
 		today,
-		metrics = [],
+		tiles = [],
 		detailDays = [],
 		color
 	}: {
 		days: SimpleDay[];
 		today: string;
-		metrics?: DetailMetric[];
+		tiles?: Tile[];
 		detailDays?: DetailDayCount[];
 		/** The type's main colour, as Settings chose it. */
 		color: string;
@@ -33,20 +31,6 @@
 			counts: detailDays
 		})
 	);
-
-	const tiles = $derived([
-		avgTile(
-			locale.stats.carRide.avgDurationMin,
-			metricFor(metrics, 'duration_min'),
-			format.minutesText
-		),
-		shareTile(
-			locale.stats.carRide.withoutAccident,
-			metricFor(metrics, 'accident'),
-			totalEvents(days),
-			true
-		)
-	]);
 </script>
 
 <FoldableCard title={locale.stats.carRide.heading}>
@@ -55,5 +39,7 @@
 		colors={[color]}
 		label={locale.stats.carRide.heading}
 	/>
-	<TileGrid {tiles} />
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
+	{/if}
 </FoldableCard>

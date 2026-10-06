@@ -6,20 +6,19 @@
 	import TileGrid from '$lib/components/TileGrid.svelte';
 	import { mealBuckets } from '$lib/stats/buckets';
 	import { mealColors, type ChartColor } from '$lib/stats/palette';
-	import { mealTiles } from '$lib/stats/summary';
-	import type { MealDay, StatSummary } from '$lib/types/domain';
+	import type { Tile } from '$lib/stats/summary';
+	import type { MealDay } from '$lib/types/domain';
 
 	let {
 		days,
-		summary,
+		tiles,
 		today,
 		color
-	}: { days: MealDay[]; summary: StatSummary | null; today: string; color: ChartColor } = $props();
+	}: { days: MealDay[]; tiles: Tile[]; today: string; color: ChartColor } = $props();
 
 	const colors = $derived(mealColors(color));
 
 	const buckets = $derived(mealBuckets(days, today, color.main));
-	const tiles = $derived(mealTiles(summary));
 
 	// Meals logged by a quick tap say nothing about finishing, so the third
 	// colour only earns a legend entry once one exists.
@@ -38,5 +37,7 @@
 		label={locale.stats.meals.heading}
 	/>
 	<ChartLegend items={legend} />
-	<TileGrid {tiles} />
+	{#if tiles.length > 0}
+		<TileGrid {tiles} />
+	{/if}
 </FoldableCard>
