@@ -4,7 +4,7 @@
 > you to access each type and choose how to handle it — such as configuring intervals and
 > statistics, deciding whether to include it in Trends, selecting chart colors, etc."
 
-> **Status: ✅ Built, awaiting merge** — branch `feature/type-settings`. Requires plan 25
+> **Status: ✅ Built, verified on the phone, awaiting merge** — branch `feature/type-settings`. Requires plan 25
 > (merged in #57). This plan builds the model and the page; the statistics and Trender
 > choices are plans 27–29, which add their own fields to the same model. All four questions
 > answered as recommended. Verified on the local stack:
@@ -22,8 +22,16 @@
 > Logga and comes back when ticked; Hundvakt has no switch; a `?dry` run of `remind` skips
 > a hidden type that is due.
 >
-> **Not yet on the phone.** After the merge: `db-push`, then `functions-deploy` for the
-> reminder change.
+> **On the phone**, a test APK against the local preview, then back to production
+> (2026-10-06). Marcus's notes from it, all made:
+>
+> - **Inställningar is the h1** of every settings page, level with ☰ like every other
+>   page's title, with a separator under it; the sub-page's name is one size below.
+> - **A type's page drops the icon** from its title; the list keeps it.
+> - **An interval counted in days is labelled** ("Antal dagar för intervall:") instead of a
+>   lone right-aligned box.
+>
+> After the merge: `db-push`, then `functions-deploy` for the reminder change.
 
 ## The goal
 
