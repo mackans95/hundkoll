@@ -204,7 +204,11 @@ export const settings = {
 		tables: 'Tabeller',
 		trends: 'Trender'
 	},
-	tablesStub: 'Här kommer du att kunna välja vad Statistik visar.',
+	/** Settings → Tabeller (plan 28). */
+	tables: {
+		help: 'Statistik visar korten i den här ordningen. Bocka ur ett kort för att dölja det.',
+		show: 'Visa'
+	},
 	/** Settings → Trender (plan 27). */
 	trends: {
 		help: 'Det här visar Trender, i den här ordningen. Bättre om säger vilket håll som är en förbättring.',
@@ -240,7 +244,8 @@ export const settings = {
 		chartColorHelp: 'Färgen på typens diagram i Statistik.',
 		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
 		stats: 'Statistik',
-		statsStub: 'Här kommer du att kunna välja vad Statistik visar för typen.',
+		showOnStats: 'På Statistik',
+		statsStub: 'Här kommer du att kunna välja hur typens kort i Statistik ser ut.',
 		trends: 'Trender',
 		trendsHelp:
 			'Bocka i det som ska visas i Trender. Ordningen väljer du under Inställningar → Trender.',

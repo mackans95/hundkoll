@@ -14,7 +14,7 @@ Four screens, as a bottom tab bar, and a ☰ menu for the settings:
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Logga** (`/`)         | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. While the dog is with someone else, a card on top says so, with one button for coming home. |
 | **Status**              | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average; paused while she is away.          |
-| **Statistik**           | Per-topic cards for walks, food, accidents, weight, alone time and car rides.                                                                                                                                           |
+| **Statistik**           | Per-topic cards for walks, food, accidents, weight, alone time and car rides, in the order and selection set in Settings → Tabeller.                                                                                    |
 | **Trender** (`/trends`) | The last two complete days, weeks or months side by side, one row per trend chosen in Settings; a ✓ or ! marks a row that got better or worse.                                                                          |
 
 **☰**, top right on every screen, is a `<details>` dropdown of the **Inställningar** sub-pages
@@ -25,7 +25,7 @@ chart colour on Statistik, and which of its trends Trender shows; plan 26), Utse
 theme), Aviseringar (in the app only), Trender (the ordered list of trends, each a type and a
 metric the stats views already compute: count, gap, the average of a number field, or the
 share of a checkbox, outcome, reveal or count; each says whether higher or lower is better;
-plan 27), and Tabeller, a stub for now. Logga ut is at
+plan 27), and Tabeller (Statistik's cards in order, each shown or hidden; plan 28). Logga ut is at
 its foot. Opening it is a shallow history entry, so the Back gesture closes it (plan 25).
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
@@ -528,10 +528,13 @@ Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
 3. **Buckets** in `src/lib/stats/buckets.ts` — pure rows-in, zero-filled-columns-out;
    `simpleCountBuckets` already covers the plain counts case.
 4. **The card** in `src/lib/components/stats/`, wired into
-   `src/routes/stats/+page.svelte`, taking its colour from `data.chartColors`. List the
-   type in `CHARTED_TYPES` in `palette.ts` so Settings offers it a colour; the palette is
-   a fixed set of light/dark pairs validated together for red-green colour-blind eyes, so
-   a card picks from it rather than adding its own.
+   `src/routes/stats/+page.svelte` as a snippet named after the type and an entry in the
+   page's `CARDS` map, taking its colour from `data.chartColors`. List the type in
+   `CHARTED_TYPES` in `palette.ts`: that offers it a colour in Settings, and makes it a card
+   Settings → Tabeller can order and hide; one the stored order doesn't name yet joins its
+   end, shown. The palette is a fixed set of light/dark pairs validated together for
+   red-green colour-blind eyes, so a card picks from it rather than adding its own. Tiles
+   go in a `TileGrid`: two columns, an odd first one spanning both.
 
 `npm run new-event` scaffolds the two common shapes — counts-per-day
 (`StackedColumns`, like walks) and trend-line (`TrendLine`, like weight) — as ordinary

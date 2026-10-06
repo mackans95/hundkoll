@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import * as locale from '$lib/locale';
 	import { savedToast } from '$lib/toast.svelte';
+	import MoveButtons from '$lib/components/settings/MoveButtons.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -13,9 +14,9 @@
 		{ value: 'up', label: words.betterUp },
 		{ value: 'down', label: words.betterDown }
 	];
-	// Small square buttons: their names are for a screen reader, the glyphs for the eye.
+	// The ✕ matches MoveButtons beside it.
 	const ICON_BUTTON =
-		'flex size-9 items-center justify-center rounded-lg border border-edge text-ink-label hover:bg-surface-hover disabled:opacity-30';
+		'flex size-9 items-center justify-center rounded-lg border border-edge text-ink-label hover:bg-surface-hover';
 
 	// Edited here and sent only by Spara. Re-read from the server after a save,
 	// which is what makes it equal again.
@@ -34,10 +35,9 @@
 	// on by itself once that one is added.
 	let adding = $derived(available[0]?.options[0]?.key ?? '');
 
-	// Each edit button also posts by itself, so the page works without JS;
-	// with it, the button only changes the list on screen.
-	function move(event: MouseEvent, from: number, to: number) {
-		event.preventDefault();
+	// ✕ and Lägg till, like MoveButtons, also post by themselves without JS;
+	// with it, they only change the list on screen.
+	function move(from: number, to: number) {
 		const next = [...rows];
 		[next[from], next[to]] = [next[to], next[from]];
 		rows = next;
@@ -90,24 +90,12 @@
 						/>
 						<div class="flex items-center gap-2">
 							<span class="min-w-0 flex-1 font-medium">{row.label}</span>
-							<button
-								type="submit"
-								name="op"
-								value="up:{i}"
-								class={ICON_BUTTON}
-								disabled={i === 0}
-								onclick={(event) => move(event, i, i - 1)}
-								aria-label={`${words.up}: ${row.label}`}>▲</button
-							>
-							<button
-								type="submit"
-								name="op"
-								value="down:{i}"
-								class={ICON_BUTTON}
-								disabled={i === rows.length - 1}
-								onclick={(event) => move(event, i, i + 1)}
-								aria-label={`${words.down}: ${row.label}`}>▼</button
-							>
+							<MoveButtons
+								index={i}
+								count={rows.length}
+								label={row.label}
+								onmove={move}
+							/>
 							<button
 								type="submit"
 								name="op"

@@ -50,28 +50,51 @@
 				<IntervalField type={data.type} />
 			</section>
 
-			{#if data.statusOption}
+			{#if data.statusOption || data.statsOption}
 				<section class="flex flex-col gap-2">
 					{@render heading(words.shownOn)}
-					<label
-						class="flex items-center justify-between gap-3 rounded-2xl border border-edge bg-surface-raised px-4 py-3"
+					<!-- An unticked box posts nothing; each hidden "false" says its field was there. -->
+					<div
+						class="flex flex-col divide-y divide-edge-soft rounded-2xl border border-edge bg-surface-raised"
 					>
-						<span class="font-medium">{words.showOnStatus}</span>
-						<!-- An unticked box posts nothing; the hidden "false" says the field was there. -->
-						<input
-							type="hidden"
-							name="show_on_status"
-							value="false"
-						/>
-						<input
-							type="checkbox"
-							name="show_on_status"
-							value="true"
-							checked={data.settings.showOnStatus}
-							class="size-6 rounded border-edge-strong text-emerald-600"
-						/>
-					</label>
-					<p class="px-1 text-sm text-ink-muted">{words.showOnStatusHelp}</p>
+						{#if data.statusOption}
+							<label class="flex items-center justify-between gap-3 px-4 py-3">
+								<span class="font-medium">{words.showOnStatus}</span>
+								<input
+									type="hidden"
+									name="show_on_status"
+									value="false"
+								/>
+								<input
+									type="checkbox"
+									name="show_on_status"
+									value="true"
+									checked={data.settings.showOnStatus}
+									class="size-6 rounded border-edge-strong text-emerald-600"
+								/>
+							</label>
+						{/if}
+						{#if data.statsOption}
+							<label class="flex items-center justify-between gap-3 px-4 py-3">
+								<span class="font-medium">{words.showOnStats}</span>
+								<input
+									type="hidden"
+									name="show_on_stats"
+									value="false"
+								/>
+								<input
+									type="checkbox"
+									name="show_on_stats"
+									value="true"
+									checked={data.showOnStats}
+									class="size-6 rounded border-edge-strong text-emerald-600"
+								/>
+							</label>
+						{/if}
+					</div>
+					{#if data.statusOption}
+						<p class="px-1 text-sm text-ink-muted">{words.showOnStatusHelp}</p>
+					{/if}
 				</section>
 			{/if}
 

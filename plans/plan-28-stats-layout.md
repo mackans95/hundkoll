@@ -5,9 +5,23 @@
 > appear under Statistics; if a new type is added, users can choose via settings whether it
 > should be included at all."
 
-> **Status: 📝 Planned, questions open** — branch `feature/stats-layout`. Requires plans
-> 25 and 26 (both merged). Plan 29 adds per-type chart kinds and tiles; this plan doesn't
-> change what a card draws.
+> **Status: ✅ Built, awaiting merge** — branch `feature/stats-layout`. Requires plans 25
+> and 26 (both merged). Plan 29 adds per-type chart kinds and tiles; this plan doesn't
+> change what a card draws. All four questions answered as recommended. Verified on the
+> local stack with a production snapshot:
+>
+> - **after the visual pass**, every header is 49 px (Vikt was 53), every card's tiles share
+>   one grid, tile labels lose their icons, and Ensamtid's empty chart says so;
+> - in headless Chrome: ▼ and a switch in Tabeller change the screen without posting, Spara
+>   posts once and toasts, and Statistik follows (Mat first, Vikt hidden). Unticking På
+>   Statistik on Olycka's page hides its card; Bad has no switch; all hidden says so; ▲
+>   posts its move without JS; Settings → Trender still passes its probe on the shared ▲ ▼;
+>   no exceptions;
+> - **the generator**, run for real with a throwaway type: its snippet, map entry and
+>   `CHARTED_TYPES` line type-check, then reverted;
+> - grants: `anon` gets permission denied, and another household's row is refused by RLS.
+>
+> **Not yet on the phone.** After the merge: `db-push`.
 
 ## What is already there, and constrains the design
 
@@ -19,22 +33,34 @@
   `codegen:stats-cards`. `loadStats` reads everything in one `Promise.all`.
 - **Measured before** (headless Chrome, 412 px wide, production snapshot):
 
-  | Card       | Header | Chart | Tile grid                            | Legend |
-  | ---------- | ------ | ----- | ------------------------------------ | ------ |
-  | Promenader | 49 px  | 140   | 1 wide + 2                           | none   |
-  | Mat        | 49     | 140   | 2                                    | yes    |
-  | Olyckor    | 49     | 140   | 3 in a row, under its own period tabs | yes   |
-  | Vikt       | **53** | 140   | none; the value sits in the header   | none   |
-  | Ensamtid   | 49     | 140   | 2 × 2                                | yes    |
-  | Biltur     | 49     | 140   | 2                                    | none   |
+  | Card       | Header | Chart | Tile grid                             | Legend |
+  | ---------- | ------ | ----- | ------------------------------------- | ------ |
+  | Promenader | 49 px  | 140   | 1 wide + 2                            | none   |
+  | Mat        | 49     | 140   | 2                                     | yes    |
+  | Olyckor    | 49     | 140   | 3 in a row, under its own period tabs | yes    |
+  | Vikt       | **53** | 140   | none; the value sits in the header    | none   |
+  | Ensamtid   | 49     | 140   | 2 × 2                                 | yes    |
+  | Biltur     | 49     | 140   | 2                                     | none   |
 
   Charts already share a height. What breaks the rhythm is the **tile grids** (four
   layouts), **tile labels** (Promenader and Mat carry icons and lower case, the others
   don't), **Vikt's taller header**, and **Ensamtid's empty chart** with no "nothing logged"
   line, unlike Vikt's.
+
 - **Plan 27's Settings → Trender** set the pattern for an ordered list: ▲ ▼ edit on screen,
   Spara saves, a toast confirms, and each button still posts without JS.
 - **The type page** (plan 26) has a Visas section ("På Status") and a Statistik placeholder.
+
+## Decided
+
+Asked 2026-10-06, before any code. All four as recommended below.
+
+| Question              | Answer                                  |
+| --------------------- | --------------------------------------- |
+| Where the order lives | **Household-wide**, stored like Trender |
+| Reorder               | **▲ ▼**, as in Settings → Trender       |
+| A hidden card's data  | **Still loads**                         |
+| A new type's card     | **Shown, at the end**                   |
 
 ## Questions, with my recommendation
 
@@ -86,6 +112,8 @@ choice to have one. If you'd rather not see it, it's one switch to hide.
   rest.
 - **Tile labels**: no icons (the card header has the type's), sentence case: "Per dag",
   "Mellan promenader", "Snittlängd".
+- **Saving the two settings lists** shares one helper, `householdSettings.ts`, and the ▲ ▼
+  pair is one component, `MoveButtons`, used by Trender and Tabeller alike.
 - **One header height**: Vikt's value drops to the header's text size, so every header is
   the same height.
 - **One order inside a card**: period tabs (Olyckor only), chart, legend, tiles.

@@ -2,6 +2,7 @@
 // { type, shown }, stored per household as jsonb in stats_settings. A card is
 // its type's, and CHARTED_TYPES is the list of cards that exist.
 
+import * as locale from '$lib/locale';
 import { CHARTED_TYPES } from './palette';
 
 export type CardRow = { type: string; shown: boolean };
@@ -60,6 +61,22 @@ export function planCardList(form: FormData): CardRow[] {
 /** One card switched on or off from its type's page, the order untouched. */
 export function setCardShown(current: CardRow[], type: string, shown: boolean): CardRow[] {
 	return current.map((row) => (row.type === type ? { ...row, shown } : row));
+}
+
+/** Cards whose locale block isn't named after the type, as generated ones are. */
+const HEADINGS: Record<string, string> = {
+	walk: locale.stats.walks.heading,
+	meal: locale.stats.meals.heading,
+	accident: locale.stats.accidents.heading,
+	weight: locale.stats.weight.heading
+};
+
+/** A card's own title, as Statistik shows it: "🍽️ Mat", not the type's "Matning". */
+export function cardHeading(type: string): string {
+	const camel = type.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
+	const block = (locale.stats as Record<string, unknown>)[camel] as
+		{ heading?: string } | undefined;
+	return HEADINGS[type] ?? block?.heading ?? type;
 }
 
 /** Whether two lists say the same thing, so an untouched form writes nothing. */
