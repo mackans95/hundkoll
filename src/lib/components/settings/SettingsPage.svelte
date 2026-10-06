@@ -11,8 +11,8 @@
 	<!-- Inställningar is the page's h1, level with ☰ as every other page's
 	     title is; the sub-page's name sits one step below it. -->
 	<header class="px-1">
-		<h1 class="text-3xl font-bold">{locale.settings.title}</h1>
-		<h2 class="mt-1 text-2xl font-bold">{title}</h2>
+		<h1 class="border-b border-edge pb-2 text-3xl font-bold">{locale.settings.title}</h1>
+		<h2 class="mt-3 text-2xl font-bold">{title}</h2>
 	</header>
 
 	{@render children()}
