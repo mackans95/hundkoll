@@ -3,7 +3,7 @@
 // "nothing happened", not "no row".
 
 import type { ColumnBucket, TooltipCell } from '$lib/types/charts';
-import { fieldsFor, fieldsRevealedBy, type DetailField } from '$lib/events/fields';
+import { fieldsFor, fieldsRevealedBy, shortFieldLabel, type DetailField } from '$lib/events/fields';
 import { dayBreakdown, dayMeans } from './detailDays';
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
@@ -33,15 +33,6 @@ function optionalMinutes(value: number | null): string {
 	return value === null
 		? locale.units.missing
 		: locale.units.approximately(format.minutesText(value));
-}
-
-/**
- * A field label made short enough for a tooltip: no unit in parentheses, which
- * the value already carries, and no question mark, which asks the dialog's
- * question rather than naming an answer. "Längd (minuter)" → "Längd".
- */
-function tooltipLabel(label: string): string {
-	return label.replace(/\s*\([^)]*\)$/, '').replace(/\?$/, '');
 }
 
 /**
@@ -109,11 +100,11 @@ export function simpleCountBuckets(
 					tooltipRow(
 						cell(label, String(n), color),
 						...means.map(({ field, sum, n: answered }) =>
-							cell(tooltipLabel(field.label), meanText(field, sum, answered))
+							cell(shortFieldLabel(field.label), meanText(field, sum, answered))
 						)
 					),
 					...groups.flatMap((group) => [
-						tooltipRow(cell(`${tooltipLabel(group.label)}:`, String(group.n))),
+						tooltipRow(cell(`${shortFieldLabel(group.label)}:`, String(group.n))),
 						...(group.children.length > 0
 							? [
 									{

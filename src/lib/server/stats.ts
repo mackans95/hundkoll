@@ -7,7 +7,12 @@
 // meal consists of is decided on this side.
 
 import * as rows from '$lib/stats/rows';
-import { trendBucketKeys } from '$lib/stats/trends';
+import {
+	buildTrendRows,
+	trendBucketKeys,
+	type TrendPeriod,
+	type TrendRow
+} from '$lib/stats/trends';
 import * as time from '$lib/time';
 import type {
 	AccidentBin,
@@ -20,7 +25,6 @@ import type {
 	Period,
 	SimpleDay,
 	StatSummary,
-	TrendBucket,
 	TypeBucketRow,
 	TypeWindowRow,
 	ViewRow,
@@ -31,6 +35,8 @@ import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
 import { longestWhen, outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
 import { detailDayCounts, weightHistory } from './events';
 import { listTypeSettings } from './typeSettings';
+import { readTrendConfig } from './trendSettings';
+import { listEventTypes } from './care';
 import { CHARTED_TYPES, chartColor, chartColorKey, type ChartColor } from '$lib/stats/palette';
 import type { Db } from './db';
 
@@ -359,46 +365,63 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 
 export type Trends = {
 	period: Period;
-	prev: TrendBucket | null;
-	latest: TrendBucket | null;
+	rows: TrendRow[];
+	/** Both buckets exist: anything at all was logged in each. */
+	complete: boolean;
 	prevBucket: string;
 	latestBucket: string;
 	failed: boolean;
 };
 
-/** The last two complete buckets of one period, for the trends screen. */
+/** The last two complete buckets of one period, one row per configured trend. */
 export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const today = time.stockholmNowForInput().slice(0, 10);
 	const { prev: prevBucket, latest: latestBucket } = trendBucketKeys(today, period);
 
+	const types = await listEventTypes(db);
+	const config = await readTrendConfig(db, new Set((types ?? []).map((type) => type.id)));
+	const rows = config ?? [];
+	const typeIds = [...new Set(rows.map((row) => row.type))];
+	const fields = [...new Set(rows.flatMap((row) => (row.field ? [row.field] : [])))];
+
 	const [typeRes, detailRes] = await Promise.all([
-		// No type filter: a bucket the wide view produced exists if *anything*
-		// was logged in it, so a week of only car rides still compares.
+		// No type filter: a bucket the view produced exists if *anything* was
+		// logged in it, so a week of only car rides still compares.
 		db
 			.from('stats_type_buckets')
 			.select(TYPE_BUCKET_COLUMNS)
 			.eq('period', period)
 			.in('bucket', [prevBucket, latestBucket]),
-		db
-			.from('stats_detail_buckets')
-			.select(DETAIL_BUCKET_COLUMNS)
-			.in('type_id', ['walk', 'meal'])
-			.in('field', ['duration_min', 'finished'])
-			.eq('period', period)
-			.in('bucket', [prevBucket, latestBucket])
+		// Skipped when no row names a field: there is nothing to filter on.
+		fields.length > 0
+			? db
+					.from('stats_detail_buckets')
+					.select(DETAIL_BUCKET_COLUMNS)
+					.in('type_id', typeIds)
+					.in('field', fields)
+					.eq('period', period)
+					.in('bucket', [prevBucket, latestBucket])
+			: { data: [], error: null }
 	]);
 
-	const buckets = rows.trendBuckets(
-		present((typeRes.data ?? []).map(toTypeBucket)),
-		present((detailRes.data ?? []).map(toDetailBucket))
-	);
+	const typeBuckets = present((typeRes.data ?? []).map(toTypeBucket));
+	const detailBuckets = present((detailRes.data ?? []).map(toDetailBucket));
+	const at = (bucket: string): TrendPeriod | null =>
+		typeBuckets.some((row) => row.bucket === bucket)
+			? {
+					types: typeBuckets.filter((row) => row.bucket === bucket),
+					details: detailBuckets.filter((row) => row.bucket === bucket)
+				}
+			: null;
+	const prev = at(prevBucket);
+	const latest = at(latestBucket);
 
 	return {
 		period,
-		prev: buckets.find((row) => row.bucket === prevBucket) ?? null,
-		latest: buckets.find((row) => row.bucket === latestBucket) ?? null,
+		rows: buildTrendRows(rows, types ?? [], prev, latest),
+		complete: prev !== null && latest !== null,
 		prevBucket,
 		latestBucket,
-		failed: Boolean(typeRes.error || detailRes.error)
+		failed: Boolean(types === null || config === null || typeRes.error || detailRes.error)
 	};
 }

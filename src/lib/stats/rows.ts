@@ -16,7 +16,6 @@ import type {
 	MealDay,
 	SimpleDay,
 	StatSummary,
-	TrendBucket,
 	TypeBucketRow,
 	TypeWindowRow,
 	WalkDay
@@ -92,30 +91,6 @@ export function simpleDays(buckets: TypeBucketRow[], typeId: string): SimpleDay[
 	return buckets
 		.filter((bucket) => bucket.type_id === typeId)
 		.map((bucket) => ({ day: bucket.bucket, n: bucket.n }));
-}
-
-/**
- * The Trender buckets. One per bucket that saw *any* activity, which is what
- * the wide view produced — a week with only a car ride in it still compares as
- * zero walks rather than going missing and reading as "not tracked yet".
- */
-export function trendBuckets(buckets: TypeBucketRow[], details: DetailBucketRow[]): TrendBucket[] {
-	const at = (typeId: string, bucket: string) =>
-		buckets.find((row) => row.type_id === typeId && row.bucket === bucket) ?? null;
-
-	return [...new Set(buckets.map((bucket) => bucket.bucket))].sort().map((bucket) => {
-		const walk = at('walk', bucket);
-		const meal = at('meal', bucket);
-		return {
-			bucket,
-			walks: walk?.n ?? 0,
-			walk_gap_min: walk?.avg_gap_min ?? null,
-			walk_duration_min: detailAt(details, 'walk', bucket, 'duration_min')?.avg_number ?? null,
-			meal_gap_min: meal?.avg_gap_min ?? null,
-			meal_finish_rate: detailAt(details, 'meal', bucket, 'finished')?.share_answered ?? null,
-			accidents: at('accident', bucket)?.n ?? 0
-		};
-	});
 }
 
 /**

@@ -29,8 +29,8 @@
 
 	<TrendCard
 		period={data.period}
-		prev={data.prev}
-		latest={data.latest}
+		rows={data.rows}
+		complete={data.complete}
 		prevBucket={data.prevBucket}
 		latestBucket={data.latestBucket}
 		{tabs}

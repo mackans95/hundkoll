@@ -1,9 +1,12 @@
-// The Trender card: the last two complete periods, compared.
+// The Trender card: the last two complete periods, compared, one row per
+// metric the household chose (trendConfig.ts).
 
 import * as locale from '$lib/locale';
 import * as format from '$lib/format';
 import * as time from '$lib/time';
-import type { Period, TrendBucket } from '$lib/types/domain';
+import { fieldsFor } from '$lib/events/fields';
+import type { DetailBucketRow, EventType, Period, TypeBucketRow } from '$lib/types/domain';
+import { shareSource, trendKey, trendLabel, type Better, type TrendConfigRow } from './trendConfig';
 
 /**
  * Names the last two complete buckets for a period. Today never takes part —
@@ -49,77 +52,110 @@ export function trendPending(period: Period): string {
 	return locale.stats.trends.pending(period);
 }
 
-type TrendMetric = {
+export type TrendTone = 'better' | 'worse' | 'neutral';
+
+export type TrendRow = {
+	key: string;
 	label: string;
-	get: (bucket: TrendBucket) => number | null;
-	format: (value: number) => string;
+	from: string;
+	to: string;
+	badge: string;
+	tone: TrendTone;
 };
 
-export type TrendRow = { label: string; from: string; to: string; badge: string };
+/** One period's rows from the two views, for the types and fields the list names. */
+export type TrendPeriod = { types: TypeBucketRow[]; details: DetailBucketRow[] };
 
 /**
- * Writes the change between two values as a neutral percentage — whether more
- * is better depends on the metric. An en dash when there is nothing to
- * compare, including a zero base, where every change is infinite.
- * (4, 5) → "↑ 25 %"
+ * One row's number in one period, or null when there is nothing to say. A
+ * count with no row is zero; everything else with no row is unknown.
  */
-function changeBadge(from: number | null, to: number | null): string {
+export function trendValue(row: TrendConfigRow, period: TrendPeriod): number | null {
+	const type = period.types.find((bucket) => bucket.type_id === row.type);
+	if (row.kind === 'count') return type?.n ?? 0;
+	if (row.kind === 'gap') return type?.avg_gap_min ?? null;
+
+	const detail = period.details.find(
+		(bucket) => bucket.type_id === row.type && bucket.field === row.field
+	);
+	if (row.kind === 'avg') return detail?.avg_number ?? null;
+
+	const field = fieldsFor(row.type).find((candidate) => candidate.name === row.field);
+	if (!field) return null;
+	if (shareSource(field) === 'answered') return detail?.share_answered ?? null;
+	const n = type?.n ?? 0;
+	return n > 0 ? (detail?.happened ?? 0) / n : null;
+}
+
+/** How a row's value reads: minutes for gaps and _min fields, a unit where the field has one. */
+function trendFormat(row: TrendConfigRow): (value: number) => string {
+	const approx = (text: string) => locale.units.approximately(text);
+	if (row.kind === 'count') return format.swedishNumber;
+	if (row.kind === 'share') return format.percentageText;
+	if (row.kind === 'gap' || row.field?.endsWith('_min')) {
+		return (value) => approx(format.minutesText(value));
+	}
+	if (row.field === 'kg' || row.field?.endsWith('_kg')) {
+		return (value) => approx(locale.units.kilograms(format.swedishNumber(value)));
+	}
+	if (row.field?.endsWith('_g')) {
+		return (value) => approx(locale.units.grams(format.swedishNumber(Math.round(value))));
+	}
+	return (value) => approx(format.swedishNumber(value));
+}
+
+/**
+ * The change between two values as a percentage, and whether it is an
+ * improvement by the row's own measure. An en dash when there is nothing to
+ * compare, including a zero base, where every change is infinite.
+ * (4, 5, 'down') → { badge: "↑ 25 %", tone: 'worse' }
+ */
+function changeBadge(
+	from: number | null,
+	to: number | null,
+	better: Better
+): { badge: string; tone: TrendTone } {
 	if (from === null || to === null || from === 0) {
-		return locale.units.missing;
+		return { badge: locale.units.missing, tone: 'neutral' };
 	}
 
 	const percent = Math.round(((to - from) / Math.abs(from)) * 100);
 	if (percent === 0) {
-		return locale.stats.trends.unchanged;
+		return { badge: locale.stats.trends.unchanged, tone: 'neutral' };
 	}
 
-	return locale.stats.trends.change(percent > 0 ? 'up' : 'down', Math.abs(percent));
+	const direction = percent > 0 ? 'up' : 'down';
+	return {
+		badge: locale.stats.trends.change(direction, Math.abs(percent)),
+		tone: better === null ? 'neutral' : better === direction ? 'better' : 'worse'
+	};
 }
 
 /**
- * Builds one row per metric comparing the two periods, each already
- * formatted for display. A metric with no data on either side still gets a
- * row, so the list does not change height as history accumulates.
+ * One row per configured metric comparing the two periods, each already
+ * formatted. A metric with no data on either side still gets a row, so the
+ * list does not change height as history accumulates.
  */
-export function buildTrendRows(prev: TrendBucket | null, latest: TrendBucket | null): TrendRow[] {
-	const metrics: TrendMetric[] = [
-		{ label: locale.stats.trends.metrics.walks, get: (b) => b.walks, format: format.swedishNumber },
-		{
-			label: locale.stats.trends.metrics.walkGap,
-			get: (b) => b.walk_gap_min,
-			format: (v) => locale.units.approximately(format.minutesText(v))
-		},
-		{
-			label: locale.stats.trends.metrics.walkDuration,
-			get: (b) => b.walk_duration_min,
-			format: (v) => locale.units.approximately(format.minutesText(v))
-		},
-		{
-			label: locale.stats.trends.metrics.mealGap,
-			get: (b) => b.meal_gap_min,
-			format: (v) => locale.units.approximately(format.minutesText(v))
-		},
-		{
-			label: locale.stats.trends.metrics.mealFinishRate,
-			get: (b) => b.meal_finish_rate,
-			format: format.percentageText
-		},
-		{
-			label: locale.stats.trends.metrics.accidents,
-			get: (b) => b.accidents,
-			format: format.swedishNumber
-		}
-	];
-
-	return metrics.map((metric) => {
-		const from = prev ? metric.get(prev) : null;
-		const to = latest ? metric.get(latest) : null;
+export function buildTrendRows(
+	config: TrendConfigRow[],
+	types: Pick<EventType, 'id' | 'label' | 'icon'>[],
+	prev: TrendPeriod | null,
+	latest: TrendPeriod | null
+): TrendRow[] {
+	return config.map((row) => {
+		const from = prev ? trendValue(row, prev) : null;
+		const to = latest ? trendValue(row, latest) : null;
+		const show = trendFormat(row);
 
 		return {
-			label: metric.label,
-			from: from === null ? locale.units.missing : metric.format(from),
-			to: to === null ? locale.units.missing : metric.format(to),
-			badge: changeBadge(from, to)
+			key: trendKey(row),
+			label: trendLabel(
+				row,
+				types.find((type) => type.id === row.type)
+			),
+			from: from === null ? locale.units.missing : show(from),
+			to: to === null ? locale.units.missing : show(to),
+			...changeBadge(from, to, row.better)
 		};
 	});
 }

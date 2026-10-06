@@ -309,6 +309,29 @@ export type Database = {
 					}
 				];
 			};
+			trend_settings: {
+				Row: {
+					household_id: string;
+					rows: Json;
+				};
+				Insert: {
+					household_id: string;
+					rows: Json;
+				};
+				Update: {
+					household_id?: string;
+					rows?: Json;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'trend_settings_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: true;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			type_settings: {
 				Row: {
 					chart_color: string | null;
