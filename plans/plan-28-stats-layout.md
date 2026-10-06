@@ -21,7 +21,13 @@
 >   `CHARTED_TYPES` line type-check, then reverted;
 > - grants: `anon` gets permission denied, and another household's row is refused by RLS.
 >
-> **Not yet on the phone.** After the merge: `db-push`.
+> **On the phone** (test APK against the local preview): Tabeller, Statistik following it,
+> the type-page switch and the visual pass all as above. One change from it: **the cards
+> are joined into one block**, which is what "a cohesive element" meant: no space between
+> them, one line where they meet, and only the first card's top and the last card's
+> bottom rounded. Tried on the phone side by side with the separate cards; joined won.
+>
+> After the merge: `db-push`.
 
 ## What is already there, and constrains the design
 
@@ -116,6 +122,8 @@ choice to have one. If you'd rather not see it, it's one switch to hide.
   pair is one component, `MoveButtons`, used by Trender and Tabeller alike.
 - **One header height**: Vikt's value drops to the header's text size, so every header is
   the same height.
+- **One block**: the shown cards meet with no gap and a single line between them; only
+  the first's top and the last's bottom are rounded.
 - **One order inside a card**: period tabs (Olyckor only), chart, legend, tiles.
 - **An empty line for every chart**, like Vikt's: "Inget loggat de senaste 30 dagarna."
 - Before/after screenshots in both themes; the plan records both.

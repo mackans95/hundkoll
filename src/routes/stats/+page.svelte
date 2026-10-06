@@ -113,8 +113,16 @@
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
 	{/if}
 
-	{#each shown as card (card.type)}
-		{@render CARDS[card.type]()}
+	{#if shown.length > 0}
+		<!-- One block rather than a stack of cards: they meet on a single line,
+		     and only the first and last keep their rounded corners. -->
+		<div
+			class="flex flex-col [&>details]:rounded-none [&>details+details]:border-t-0 [&>details:first-child]:rounded-t-2xl [&>details:last-child]:rounded-b-2xl"
+		>
+			{#each shown as card (card.type)}
+				{@render CARDS[card.type]()}
+			{/each}
+		</div>
 	{:else}
 		<p class="py-6 text-center text-sm text-ink-muted">
 			{locale.stats.noCards}
@@ -123,5 +131,5 @@
 				class="underline">{locale.stats.noCardsLink}</a
 			>
 		</p>
-	{/each}
+	{/if}
 </main>
