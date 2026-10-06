@@ -53,6 +53,12 @@
 			.join('')
 	);
 	const last = $derived(points[points.length - 1]);
+	// The latest value's label: right of its point, or right-aligned to the
+	// edge when the point sits in the right margin, so "50 min" isn't clipped.
+	const atEdge = $derived(last ? x(last.t) > W - PAD.right - 8 : false);
+	const lastLabel = $derived(
+		last ? `${format.swedishNumber(last.value)}${unit ? ` ${unit}` : ''}` : ''
+	);
 </script>
 
 <svg
@@ -98,7 +104,8 @@
 		/>
 	{/if}
 
-	{#each points as p (p.t)}
+	<!-- Keyed by position too: two events logged at the same instant share a time. -->
+	{#each points as p, i (`${p.t}:${i}`)}
 		<circle
 			cx={x(p.t)}
 			cy={y(p.value)}
@@ -113,13 +120,14 @@
 	{#if last}
 		<!-- selective direct label: the latest value only -->
 		<text
-			x={Math.min(x(last.t) + 8, W - 2)}
-			y={y(last.value) + 3}
+			x={atEdge ? W - 2 : x(last.t) + 8}
+			y={y(last.value) + (atEdge ? -8 : 3)}
+			text-anchor={atEdge ? 'end' : 'start'}
 			font-size="10"
 			font-weight="600"
 			class="fill-ink-label"
 		>
-			{format.swedishNumber(last.value)}{unit ? ` ${unit}` : ''}
+			{lastLabel}
 		</text>
 		<text
 			x={PAD.left}

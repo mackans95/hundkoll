@@ -504,7 +504,7 @@ merge-then-`db-push` path. Doing it by hand is three steps, of which two are opt
    one ("Orolig efter" can't exceed the length), checked in `parseDetails`. The generator
    knows neither yet; Ensamtid's were added by hand after it ran.
 
-3. **Stats** — only if the type deserves a chart: see the next section.
+3. **Stats** — only if the type deserves a chart: one line, see the next section.
 
 The files the generator edits carry `codegen:` marker comments at its insertion points.
 Those markers are a contract — the generator refuses to run (before writing anything)
@@ -513,39 +513,39 @@ if one is missing, so do not delete them. The generator's pure core is covered b
 
 ### Adding a stats card
 
-There is deliberately no generic config-driven chart component. The building blocks —
-`FoldableCard`, `StackedColumns`, `TrendLine`, `StatTile`, `ChartLegend`, `TabBar` —
-are the generic layer, and a card is 30–60 lines composing them; a config object
-expressive enough to cover the real cards would be a worse programming language than
-Svelte. `WalkCard` is the reference implementation. The chain, top to bottom:
+A card is **configuration**, not code (plan 29). List the type in `CHARTED_TYPES` in
+`src/lib/stats/palette.ts` and it has one: on Statistik, in Settings → Tabeller to order
+and hide, and on the type's page to choose its chart, colour and tiles. Nothing is stored
+until someone changes it; `src/lib/stats/cardSpec.ts` holds the defaults, which for the
+six cards that predate this are exactly what they drew before.
 
-1. **SQL** — nothing is needed for either shape: the four views are per type and per
-   detail field already, so a new type is rows of views that exist. A genuinely new
-   _shape_ — not a new type — is what means a new migration.
-2. **Query + narrowing** in `src/lib/server/stats.ts` — select exactly the columns the
-   card reads and narrow the nullable view columns once, so pages never handle
-   `number | null`.
-3. **Buckets** in `src/lib/stats/buckets.ts` — pure rows-in, zero-filled-columns-out;
-   `simpleCountBuckets` already covers the plain counts case.
-4. **The card** in `src/lib/components/stats/`, wired into
-   `src/routes/stats/+page.svelte` as a snippet named after the type and an entry in the
-   page's `CARDS` map, taking its colour from `data.chartColors`. List the type in
-   `CHARTED_TYPES` in `palette.ts`: that offers it a colour in Settings, and makes it a card
-   Settings → Tabeller can order and hide; one the stored order doesn't name yet joins its
-   end, shown. The palette is a fixed set of light/dark pairs validated together for
-   red-green colour-blind eyes, so a card picks from it rather than adding its own. Tiles
-   go in a `TileGrid`: two columns, an odd first one spanning both.
+**Why this used to be the other way round.** Until plan 29 this said there was
+deliberately no config-driven chart component: a card was 30–60 lines of Svelte, and "a
+config object expressive enough to cover the real cards would be a worse programming
+language than Svelte". That held while a developer wrote each card once. It stopped
+holding when the choice moved to the user, since Settings can't edit Svelte, and when the
+six real cards turned out to be few shapes over views that were already generic per type
+and field. The config only describes those shapes; it is not a language. A genuinely new
+shape is still code: a new chart kind or split in `bars.ts`, not a new card.
 
-`npm run new-event` scaffolds the two common shapes — counts-per-day
-(`StackedColumns`, like walks) and trend-line (`TrendLine`, like weight) — as ordinary
-checked-in components you edit freely afterwards. Anything fancier (an accidents-style
-period picker, stacked segments from details) starts from a generated card and gets
-hand-finished.
+**The chart** is one of two kinds:
 
-A generated card's tooltip reads like the walk one: the day's count with the mean of each
-number field (the length), then **every field the type collects that can be counted** (a
-checkbox, a count or a reveal) that actually happened that day, **with a reveal's causes
-boxed under it**, so one ride that threw up reads as one ride:
+- **Bars**, one column per day for the last 30 days, or with the tabs Olyckor has, per day,
+  week or month. A column can be **split** by a checkbox or an outcome (yes / no / unknown,
+  like Mat and Ensamtid) or by up to two count fields and what's left (Olyckor's kiss and
+  bajs). Each type chooses whether the tooltip **counts by emoji** (🚶 7 · 🟡 5) or by name
+  (Kiss: 5); a field with no `symbol` reads as its name either way.
+- **A timeline** of one number field, its latest value beside the heading (Vikt).
+
+What a type may pick follows from `DETAIL_FIELDS`: a split only by fields it has, a
+timeline only of a number. The tooltip shapes are the ones the six cards already had, in
+`src/lib/stats/bars.ts`, held to them by golden snapshots written by the hand-written
+builders before they were deleted (`tests/bars-golden.test.ts`).
+
+A tooltip in words reads like Biltur's: the day's count with the mean of each number
+field, then **every field that can be counted** (a checkbox, a count or a reveal) that
+happened that day, **with a reveal's causes boxed under it**, so one ride that threw up
+reads as one ride:
 
 ```
 18/9
@@ -554,18 +554,19 @@ Olycka: 1
   ┌ Spydde 1 ┐
 ```
 
-Nothing is declared for this: the fields come from `DETAIL_FIELDS` and their captions are
-the labels the dialog already renders, in declaration order, shortened for the tooltip
-(no unit in parentheses, no question mark). A number is shown as the day's mean in the
-first row, never as a total: "45" under a bar reads as a count and is not one.
+The fields and captions come from `DETAIL_FIELDS`, shortened for the tooltip (no unit in
+parentheses, no question mark). A number is the day's mean, never a total: "45" under a bar
+reads as a count and is not one. That breakdown, and an outcome's boxes, read the type's
+own events, since only the catalogue can say which JSON numbers are counts; by week or
+month the views count instead, which have no per-event detail.
 
-That count is the one aggregate on this screen that is **not** SQL, and it is there by the
-rule above rather than for convenience: `stats_detail_buckets` could sum it, but it could
-not _choose_ the fields. `duration_min` and `pee` are both JSON numbers, so only
-`DETAIL_FIELDS` can say which of them is a count worth putting under a bar. The card has
-to ask the catalogue either way, so `$lib/stats/detailDays.ts` reads the type's own events
-and counts them there — a month of one activity, the way `fieldHistory` does for trend
-cards.
+**The loader** (`loadStats`) names no type. It reads each card's configuration first, then
+the bucket views at the periods on screen, the window views for every tile, the type's
+events only where a tooltip or tile needs them, and a field's history for a timeline, and
+builds each card in `cardView.ts`. The page draws them all with one `StatsCard`.
+
+`npm run new-event` writes no component: a type with stats gets its `CHARTED_TYPES` line,
+and a trend line a timeline default.
 
 #### Tiles — chosen per type in Settings
 
