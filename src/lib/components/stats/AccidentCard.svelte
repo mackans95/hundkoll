@@ -3,7 +3,7 @@
 	import * as locale from '$lib/locale';
 	import ChartLegend, { type LegendItem } from '$lib/components/ChartLegend.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import StatTile from '$lib/components/StatTile.svelte';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import TabBar, { type Tab } from '$lib/components/TabBar.svelte';
 	import { accidentBuckets } from '$lib/stats/buckets';
 	import { accidentColors, type ChartColor } from '$lib/stats/palette';
@@ -59,6 +59,7 @@
 			{buckets}
 			{colors}
 			label={locale.stats.accidents.heading}
+			emptyText={locale.stats.accidents.empty}
 		/>
 		<ChartLegend items={legend} />
 	{:else}
@@ -68,9 +69,5 @@
 		</p>
 	{/if}
 
-	<div class="grid grid-cols-3 gap-2">
-		{#each tiles as tile (tile.label)}
-			<StatTile {tile} />
-		{/each}
-	</div>
+	<TileGrid {tiles} />
 </FoldableCard>

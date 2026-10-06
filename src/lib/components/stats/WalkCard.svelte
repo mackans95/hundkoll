@@ -2,7 +2,7 @@
 	import StackedColumns from '$lib/components/charts/StackedColumns.svelte';
 	import * as locale from '$lib/locale';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import StatTile from '$lib/components/StatTile.svelte';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import { walkBuckets } from '$lib/stats/buckets';
 	import type { ChartColor } from '$lib/stats/palette';
 	import { walkTiles } from '$lib/stats/summary';
@@ -25,13 +25,5 @@
 		colors={[color.main]}
 		label={locale.stats.walks.heading}
 	/>
-	<div class="flex flex-col gap-2">
-		<!-- Walks per day is the headline, so it gets the full width. -->
-		<StatTile tile={tiles[0]} />
-		<div class="grid grid-cols-2 gap-2">
-			{#each tiles.slice(1) as tile (tile.label)}
-				<StatTile {tile} />
-			{/each}
-		</div>
-	</div>
+	<TileGrid {tiles} />
 </FoldableCard>

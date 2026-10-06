@@ -3,7 +3,7 @@
 	import * as locale from '$lib/locale';
 	import ChartLegend, { type LegendItem } from '$lib/components/ChartLegend.svelte';
 	import FoldableCard from '$lib/components/FoldableCard.svelte';
-	import StatTile from '$lib/components/StatTile.svelte';
+	import TileGrid from '$lib/components/TileGrid.svelte';
 	import { mealBuckets } from '$lib/stats/buckets';
 	import { mealColors, type ChartColor } from '$lib/stats/palette';
 	import { mealTiles } from '$lib/stats/summary';
@@ -38,9 +38,5 @@
 		label={locale.stats.meals.heading}
 	/>
 	<ChartLegend items={legend} />
-	<div class="grid grid-cols-2 gap-2">
-		{#each tiles as tile (tile.label)}
-			<StatTile {tile} />
-		{/each}
-	</div>
+	<TileGrid {tiles} />
 </FoldableCard>

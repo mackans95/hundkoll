@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+	import { resolve } from '$app/paths';
 	import type { Tab } from '$lib/components/TabBar.svelte';
 	// codegen:stats-imports — npm run new-event inserts card imports here
 	import AloneCard from '$lib/components/stats/AloneCard.svelte';
@@ -26,7 +28,78 @@
 	// Relative rather than resolve()'d: a tab swaps the parameter and stays
 	// where it is, so the path is deliberately whatever page this is.
 	const periodHref = (value: Period) => `?period=${value}`;
+
+	// Each card by its type, in the order Settings → Tabeller stored. The
+	// snippets are below; a card missing here simply isn't drawn.
+	const CARDS: Record<string, Snippet> = {
+		walk,
+		meal,
+		accident,
+		weight,
+		// codegen:stats-card-map — npm run new-event inserts generated cards here
+		alone,
+		car_ride
+	};
+	const shown = $derived(data.cards.filter((card) => card.shown && card.type in CARDS));
 </script>
+
+{#snippet walk()}
+	<WalkCard
+		days={data.walkDays}
+		summary={data.summary}
+		today={data.today}
+		color={data.chartColors.walk}
+	/>
+{/snippet}
+
+{#snippet meal()}
+	<MealCard
+		days={data.mealDays}
+		summary={data.summary}
+		today={data.today}
+		color={data.chartColors.meal}
+	/>
+{/snippet}
+
+{#snippet accident()}
+	<AccidentCard
+		bins={data.accidentBins}
+		period={data.period}
+		summary={data.summary}
+		{tracked}
+		today={data.today}
+		{tabs}
+		tabHref={periodHref}
+		color={data.chartColors.accident}
+	/>
+{/snippet}
+
+{#snippet weight()}
+	<WeightCard
+		weights={data.weights}
+		color={data.chartColors.weight}
+	/>
+{/snippet}
+
+<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
+{#snippet alone()}
+	<AloneCard
+		outcomes={data.aloneOutcomes}
+		today={data.today}
+		metrics={data.aloneMetrics}
+		longestCalm={data.aloneLongestCalm}
+		color={data.chartColors.alone}
+	/>
+{/snippet}
+{#snippet car_ride()}
+	<CarRideCard
+		days={data.carRideDays}
+		today={data.today}
+		metrics={data.carRideMetrics}
+		detailDays={data.carRideDetailDays}
+		color={data.chartColors.car_ride.main}
+	/>
+{/snippet}
 
 <svelte:head><title>{locale.app.pageTitle(locale.stats.title)}</title></svelte:head>
 
@@ -40,49 +113,15 @@
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
 	{/if}
 
-	<WalkCard
-		days={data.walkDays}
-		summary={data.summary}
-		today={data.today}
-		color={data.chartColors.walk}
-	/>
-
-	<MealCard
-		days={data.mealDays}
-		summary={data.summary}
-		today={data.today}
-		color={data.chartColors.meal}
-	/>
-
-	<AccidentCard
-		bins={data.accidentBins}
-		period={data.period}
-		summary={data.summary}
-		{tracked}
-		today={data.today}
-		{tabs}
-		tabHref={periodHref}
-		color={data.chartColors.accident}
-	/>
-
-	<WeightCard
-		weights={data.weights}
-		color={data.chartColors.weight}
-	/>
-
-	<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
-	<AloneCard
-		outcomes={data.aloneOutcomes}
-		today={data.today}
-		metrics={data.aloneMetrics}
-		longestCalm={data.aloneLongestCalm}
-		color={data.chartColors.alone}
-	/>
-	<CarRideCard
-		days={data.carRideDays}
-		today={data.today}
-		metrics={data.carRideMetrics}
-		detailDays={data.carRideDetailDays}
-		color={data.chartColors.car_ride.main}
-	/>
+	{#each shown as card (card.type)}
+		{@render CARDS[card.type]()}
+	{:else}
+		<p class="py-6 text-center text-sm text-ink-muted">
+			{locale.stats.noCards}
+			<a
+				href={resolve('/settings/tables')}
+				class="underline">{locale.stats.noCardsLink}</a
+			>
+		</p>
+	{/each}
 </main>

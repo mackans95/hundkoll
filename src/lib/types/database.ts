@@ -309,6 +309,29 @@ export type Database = {
 					}
 				];
 			};
+			stats_settings: {
+				Row: {
+					cards: Json;
+					household_id: string;
+				};
+				Insert: {
+					cards: Json;
+					household_id: string;
+				};
+				Update: {
+					cards?: Json;
+					household_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'stats_settings_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: true;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			trend_settings: {
 				Row: {
 					household_id: string;

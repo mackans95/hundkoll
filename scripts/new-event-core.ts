@@ -567,6 +567,13 @@ export function generate(
 			marker: 'codegen:charted-types',
 			insert: `\t${spec.id}: 'single',\n`
 		});
+		// The page draws cards from this map in the stored order; a new one
+		// joins the end of that order, shown (cardConfig.ts).
+		edits.push({
+			path: 'src/routes/stats/+page.svelte',
+			marker: 'codegen:stats-card-map',
+			insert: `\t\t${spec.id},\n`
+		});
 		notes.push('The chart draws in Skiffer until a colour is picked under Inställningar → Typer.');
 		edits.push({
 			path: 'src/routes/stats/+page.svelte',
@@ -680,13 +687,15 @@ export function generate(
 				path: 'src/routes/stats/+page.svelte',
 				marker: 'codegen:stats-cards',
 				insert:
+					`{#snippet ${spec.id}()}\n` +
 					`\t<${pascalId}Card\n` +
 					`\t\tdays={data.${camelId}Days}\n` +
 					`\t\ttoday={data.today}\n` +
 					(metrics.length > 0 ? `\t\tmetrics={data.${camelId}Metrics}\n` : '') +
 					(countable.length > 0 ? `\t\tdetailDays={data.${camelId}DetailDays}\n` : '') +
 					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
-					`\t/>\n`
+					`\t/>\n` +
+					`{/snippet}\n`
 			});
 			creates.push({
 				path: `src/lib/components/stats/${pascalId}Card.svelte`,
@@ -697,7 +706,7 @@ export function generate(
 					// exactly the chart it has always been.
 					metricImports:
 						metrics.length > 0
-							? `\timport StatTile from '$lib/components/StatTile.svelte';\n` +
+							? `\timport TileGrid from '$lib/components/TileGrid.svelte';\n` +
 								`\timport * as format from '$lib/format';\n` +
 								`\timport { metricFor, totalEvents } from '$lib/stats/metrics';\n` +
 								`\timport { avgTile, shareTile } from '$lib/stats/summary';\n`
@@ -708,14 +717,7 @@ export function generate(
 								metrics.map((metric) => metricTile(spec, metric)).join(',\n') +
 								`\n\t]);\n`
 							: '',
-					metricBlock:
-						metrics.length > 0
-							? `\t<div class="grid grid-cols-2 gap-2">\n` +
-								`\t\t{#each tiles as tile (tile.label)}\n` +
-								`\t\t\t<StatTile {tile} />\n` +
-								`\t\t{/each}\n` +
-								`\t</div>\n`
-							: ''
+					metricBlock: metrics.length > 0 ? `\t<TileGrid {tiles} />\n` : ''
 				})
 			});
 			if (metrics.length > 0) {
@@ -757,10 +759,12 @@ export function generate(
 				path: 'src/routes/stats/+page.svelte',
 				marker: 'codegen:stats-cards',
 				insert:
+					`{#snippet ${spec.id}()}\n` +
 					`\t<${pascalId}Card\n` +
 					`\t\tpoints={data.${camelId}Points}\n` +
 					`\t\tcolor={data.chartColors.${spec.id}.main}\n` +
-					`\t/>\n`
+					`\t/>\n` +
+					`{/snippet}\n`
 			});
 			creates.push({
 				path: `src/lib/components/stats/${pascalId}Card.svelte`,

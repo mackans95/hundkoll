@@ -31,11 +31,11 @@ export const PALETTE: PaletteEntry[] = [
 export const CHARTED_TYPES: Record<string, ChartShape> = {
 	// codegen:charted-types — npm run new-event inserts generated cards here
 	walk: 'single',
-	weight: 'single',
-	car_ride: 'single',
 	meal: 'paired',
 	accident: 'paired',
-	alone: 'paired'
+	weight: 'single',
+	alone: 'paired',
+	car_ride: 'single'
 };
 
 /** What each type looked like before it was configurable; anything else is Skiffer. */

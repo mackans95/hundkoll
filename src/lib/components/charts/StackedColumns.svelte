@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ColumnBucket } from '$lib/types/charts';
+	import * as locale from '$lib/locale';
 	import ColumnTooltip from './ColumnTooltip.svelte';
 	import { niceCeil, roundedTop, stack, total } from './geometry';
 
@@ -7,11 +8,14 @@
 		buckets,
 		colors,
 		height = 150,
-		label
+		label,
+		emptyText = locale.stats.emptyChart
 	}: {
 		buckets: ColumnBucket[];
 		colors: string[];
 		height?: number;
+		/** Over the empty axes when no column has anything, so blank never reads as broken. */
+		emptyText?: string;
 		/** Accessible name for the chart, e.g. the card heading. */
 		label?: string;
 	} = $props();
@@ -21,6 +25,7 @@
 	const PAD_BOTTOM = 16;
 	const plotH = $derived(height - PAD_TOP - PAD_BOTTOM);
 
+	const empty = $derived(buckets.every((bucket) => total(bucket.segments) === 0));
 	const top = $derived(niceCeil(Math.max(1, ...buckets.map((bucket) => total(bucket.segments)))));
 	const slot = $derived(W / Math.max(1, buckets.length));
 	const barW = $derived(Math.max(2, Math.min(16, slot - 2)));
@@ -169,6 +174,13 @@
 			</g>
 		{/each}
 	</svg>
+	{#if empty}
+		<p
+			class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-ink-muted"
+		>
+			{emptyText}
+		</p>
+	{/if}
 
 	{#if hoveredBucket !== null}
 		<ColumnTooltip
