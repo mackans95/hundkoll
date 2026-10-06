@@ -4,7 +4,7 @@
 > trends — ideally via basic configuration in the settings rather than requiring a new
 > deployment or code change each time."
 
-> **Status: ✅ Built, awaiting merge** — branch `feature/configurable-trends`. Requires plans
+> **Status: ✅ Built, verified on the phone, awaiting merge** — branch `feature/configurable-trends`. Requires plans
 > 25 and 26 (both merged). All four questions answered as recommended. Verified against a
 > production snapshot (`npm run db-pull`) on the local stack:
 >
