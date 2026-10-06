@@ -30,7 +30,9 @@
 			}))
 			.filter((group) => group.options.length > 0)
 	);
-	let adding = $state('');
+	// The first one still available, so the picker never shows blank; it moves
+	// on by itself once that one is added.
+	let adding = $derived(available[0]?.options[0]?.key ?? '');
 
 	// Each edit button also posts by itself, so the page works without JS;
 	// with it, the button only changes the list on screen.
@@ -48,11 +50,9 @@
 
 	function add(event: MouseEvent) {
 		event.preventDefault();
-		const key = adding || available[0]?.options[0]?.key;
-		const option = available.flatMap((group) => group.options).find((o) => o.key === key);
+		const option = available.flatMap((group) => group.options).find((o) => o.key === adding);
 		if (!option) return;
 		rows = [...rows, { key: option.key, label: option.rowLabel, better: '' }];
-		adding = '';
 	}
 </script>
 
