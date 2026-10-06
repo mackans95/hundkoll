@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import * as locale from '$lib/locale';
+	import { savedToast } from '$lib/toast.svelte';
 	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
@@ -24,10 +25,13 @@
 		class="-mt-4 px-1 text-sm text-ink-muted underline">‹ {words.back}</a
 	>
 
-	{#if data.saved}
-		<p class="rounded-lg bg-success-surface p-4 text-success-ink">{locale.settings.saved}</p>
-	{/if}
-	{#if form?.message}
+	<!-- With JS the save is a toast; without it, the page reloads onto this. -->
+	<noscript>
+		{#if form && 'saved' in form}
+			<p class="rounded-lg bg-success-surface p-4 text-success-ink">{locale.settings.saved}</p>
+		{/if}
+	</noscript>
+	{#if form && 'message' in form && form.message}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{form.message}</p>
 	{/if}
 
@@ -37,7 +41,7 @@
 		<form
 			method="POST"
 			action="?/save"
-			use:enhance
+			use:enhance={savedToast}
 			class="flex flex-col gap-6"
 		>
 			<section class="flex flex-col gap-2">
@@ -85,14 +89,36 @@
 				{/if}
 			</section>
 
-			<!-- Stubs until plans 27–29 add these choices. -->
+			<!-- A stub until plans 28–29 add these choices. -->
 			<section class="flex flex-col gap-2">
 				{@render heading(words.stats)}
 				<p class="px-1 text-sm text-ink-muted">{words.statsStub}</p>
 			</section>
 			<section class="flex flex-col gap-2">
 				{@render heading(words.trends)}
-				<p class="px-1 text-sm text-ink-muted">{words.trendsStub}</p>
+				<p class="px-1 text-sm text-ink-muted">{words.trendsHelp}</p>
+				<!-- Says the switches were on the page, since an unticked box posts nothing. -->
+				<input
+					type="hidden"
+					name="trends_present"
+					value="1"
+				/>
+				<div
+					class="flex flex-col divide-y divide-edge-soft rounded-2xl border border-edge bg-surface-raised"
+				>
+					{#each data.trends as trend (trend.key)}
+						<label class="flex items-center justify-between gap-3 px-4 py-3">
+							<span class="font-medium">{trend.label}</span>
+							<input
+								type="checkbox"
+								name="trend"
+								value={trend.key}
+								checked={trend.on}
+								class="size-6 rounded border-edge-strong text-emerald-600"
+							/>
+						</label>
+					{/each}
+				</div>
 			</section>
 
 			<button

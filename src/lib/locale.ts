@@ -205,7 +205,22 @@ export const settings = {
 		trends: 'Trender'
 	},
 	tablesStub: 'Här kommer du att kunna välja vad Statistik visar.',
-	trendsStub: 'Här kommer du att kunna välja vilka trender som visas.',
+	/** Settings → Trender (plan 27). */
+	trends: {
+		help: 'Det här visar Trender, i den här ordningen. Bättre om säger vilket håll som är en förbättring.',
+		empty: 'Inga trender valda.',
+		better: 'Bättre om',
+		betterUp: 'högre',
+		betterDown: 'lägre',
+		betterNeither: 'ingetdera',
+		up: 'Flytta upp',
+		down: 'Flytta ned',
+		remove: 'Ta bort',
+		add: 'Lägg till trend',
+		addButton: 'Lägg till',
+		allAdded: 'Alla trender som finns är redan tillagda.',
+		unsaved: 'Osparade ändringar.'
+	},
 	notificationsAppOnly: 'Aviseringar finns bara i Android-appen.',
 	loadFailed: 'Kunde inte läsa aktiviteterna. Ladda om sidan för att ändra dem.',
 	typesHelp: 'Välj en typ för att ändra dess intervall och hur den visas.',
@@ -227,7 +242,8 @@ export const settings = {
 		stats: 'Statistik',
 		statsStub: 'Här kommer du att kunna välja vad Statistik visar för typen.',
 		trends: 'Trender',
-		trendsStub: 'Här kommer du att kunna välja om typen tas med i Trender.',
+		trendsHelp:
+			'Bocka i det som ska visas i Trender. Ordningen väljer du under Inställningar → Trender.',
 		back: 'Alla typer'
 	},
 	saved: 'Sparat!',
@@ -472,7 +488,6 @@ export const stats = {
 	},
 
 	trends: {
-		heading: '📈 Trender',
 		comparison: (latest: string, previous: string) => `${latest} jämfört med ${previous}` as const,
 		pending: (period: Period) => {
 			const noun = period === 'day' ? 'dagar' : period === 'week' ? 'veckor' : 'månader';
@@ -481,6 +496,24 @@ export const stats = {
 		unchanged: '±0 %',
 		change: (direction: 'up' | 'down', percent: number) =>
 			`${direction === 'up' ? '↑' : '↓'} ${percent} %` as const,
+		/** Built names for a configured row: "🛁 Bad · antal". */
+		kinds: {
+			count: 'antal',
+			gap: 'tid mellan'
+		},
+		/** Shown with the badge, so better and worse never rest on hue alone. */
+		mark: { better: '✓', worse: '!' },
+		/** Said to a screen reader in place of the mark. */
+		toneName: { better: 'bättre', worse: 'sämre' },
+		empty: 'Inga trender valda. Lägg till under Inställningar → Trender.',
+		/** Under a trend's value: what it was the period before. */
+		from: (value: string) => `från ${value}` as const,
+		/** Under the caption, per compared period she spent part of away. */
+		awayLine: (bucket: string, duration: string, label: string) =>
+			`🧳 ${bucket}: borta ${duration} (${label})` as const,
+		/** On a count compared per time at home rather than as logged. */
+		awayHome: '🧳 jämfört per tid hemma',
+		awayShort: '🧳 för lite tid hemma för att jämföra',
 		metrics: {
 			walks: '🚶 Promenader',
 			walkGap: '⏳ Mellan promenader',

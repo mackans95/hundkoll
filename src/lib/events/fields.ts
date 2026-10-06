@@ -237,6 +237,15 @@ export function fieldsFor(typeId: string): DetailField[] {
 	return DETAIL_FIELDS[typeId] ?? [];
 }
 
+/**
+ * A field label made short enough for a tooltip or a trend: no unit in
+ * parentheses, which the value already carries, and no question mark, which
+ * asks the dialog's question rather than naming an answer. "Längd (minuter)" → "Längd".
+ */
+export function shortFieldLabel(label: string): string {
+	return label.replace(/\s*\([^)]*\)$/, '').replace(/\?$/, '');
+}
+
 /** The fields one reveal uncovers, in declaration order. */
 export function fieldsRevealedBy(fields: DetailField[], name: string): DetailField[] {
 	return fields.filter((field) => field.revealedBy === name);

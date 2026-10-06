@@ -3,14 +3,7 @@
 // lookup that can miss — and what a miss means differs per column.
 
 import { describe, expect, it } from 'vitest';
-import {
-	accidentBins,
-	mealDays,
-	simpleDays,
-	statSummary,
-	trendBuckets,
-	walkDays
-} from '$lib/stats/rows';
+import { accidentBins, mealDays, simpleDays, statSummary, walkDays } from '$lib/stats/rows';
 import type {
 	DetailBucketRow,
 	DetailWindowRow,
@@ -103,56 +96,6 @@ describe('accidentBins and simpleDays', () => {
 		expect(
 			simpleDays([bucket('car_ride', '2026-08-20', 2), bucket('walk', '2026-08-20', 3)], 'car_ride')
 		).toEqual([{ day: '2026-08-20', n: 2 }]);
-	});
-});
-
-describe('trendBuckets', () => {
-	// A bucket exists if anything at all was logged in it, which is what the wide
-	// view produced: a week of only car rides compares as zero walks rather than
-	// going missing and reading as "not tracked yet".
-	it('keeps a bucket that holds no walks and no meals', () => {
-		expect(trendBuckets([bucket('car_ride', '2026-W34', 2)], [])).toEqual([
-			{
-				bucket: '2026-W34',
-				walks: 0,
-				walk_gap_min: null,
-				walk_duration_min: null,
-				meal_gap_min: null,
-				meal_finish_rate: null,
-				accidents: 0
-			}
-		]);
-	});
-
-	it('gathers the three types of one bucket into one row', () => {
-		const rows = trendBuckets(
-			[
-				bucket('walk', '2026-W34', 14, 240),
-				bucket('meal', '2026-W34', 14, 480),
-				bucket('accident', '2026-W34', 2)
-			],
-			[
-				detail('walk', '2026-W34', 'duration_min', { answered: 14, avg_number: 18 }),
-				// The finish rate is the view's own share, so it is not divided twice.
-				detail('meal', '2026-W34', 'finished', {
-					answered: 14,
-					happened: 13,
-					share_answered: 0.9285714
-				})
-			]
-		);
-
-		expect(rows).toEqual([
-			{
-				bucket: '2026-W34',
-				walks: 14,
-				walk_gap_min: 240,
-				walk_duration_min: 18,
-				meal_gap_min: 480,
-				meal_finish_rate: 0.9285714,
-				accidents: 2
-			}
-		]);
 	});
 });
 

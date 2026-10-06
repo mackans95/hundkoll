@@ -159,17 +159,6 @@ export type DetailDayCount = { day: string; field: string; n: number; sum?: numb
 /** Accidents binned by day, ISO week or month, split kiss/bajs. */
 export type AccidentBin = { bucket: string; n: number; pee: number; poop: number };
 
-/** One period bucket of the Trender comparison. */
-export type TrendBucket = {
-	bucket: string;
-	walks: number;
-	walk_gap_min: number | null;
-	walk_duration_min: number | null;
-	meal_gap_min: number | null;
-	meal_finish_rate: number | null;
-	accidents: number;
-};
-
 /** A single weighing, flattened out of the event's details. */
 export type WeightPoint = { occurred_at: string; kg: number };
 

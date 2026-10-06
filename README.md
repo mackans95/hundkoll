@@ -15,14 +15,17 @@ Four screens, as a bottom tab bar, and a ☰ menu for the settings:
 | **Logga** (`/`)         | A grid of tap targets (three per row), one per activity. Tapping opens a dialog for time, type-specific details and a note. While the dog is with someone else, a card on top says so, with one button for coming home. |
 | **Status**              | Cards for activities with an expected interval — last done, next due, colour-coded green/amber/red. Daily ones (walks, meals) on top, measured in hours or by the dog's own average; paused while she is away.          |
 | **Statistik**           | Per-topic cards for walks, food, accidents, weight, alone time and car rides.                                                                                                                                           |
-| **Trender** (`/trends`) | The last two complete days, weeks or months side by side.                                                                                                                                                               |
+| **Trender** (`/trends`) | The last two complete days, weeks or months side by side, one row per trend chosen in Settings; a ✓ or ! marks a row that got better or worse.                                                                          |
 
 **☰**, top right on every screen, is a `<details>` dropdown of the **Inställningar** sub-pages
 (`/settings/…`): Typer (every activity, each opening its own page: the interval — daily
 ones choose between a fixed number of hours and following the average, blank means "no
 schedule" — whether it shows on Status at all, which also silences its reminders, and its
-chart colour on Statistik; plan 26), Utseende (the
-theme), Aviseringar (in the app only), and Tabeller and Trender, stubs for now. Logga ut is at
+chart colour on Statistik, and which of its trends Trender shows; plan 26), Utseende (the
+theme), Aviseringar (in the app only), Trender (the ordered list of trends, each a type and a
+metric the stats views already compute: count, gap, the average of a number field, or the
+share of a checkbox, outcome, reveal or count; each says whether higher or lower is better;
+plan 27), and Tabeller, a stub for now. Logga ut is at
 its foot. Opening it is a shallow history entry, so the Back gesture closes it (plan 25).
 
 Plus **Historik** (`/history`), a month calendar reached from a link on the log page rather
