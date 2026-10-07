@@ -22,7 +22,8 @@
 > - The generator, run for real for a counts type and a trend type: two config lines,
 >   type-checked, then reverted.
 >
-> **Not yet on the phone.** No migration in 29b, so no `db-push` after the merge.
+> **Verified on the phone** against the local preview over four rounds of notes (below),
+> then put back on production. No migration in 29b, so no `db-push` after the merge.
 
 ## Why the README's decision changes
 
@@ -171,6 +172,23 @@ where it can be seen.
   `accidentBuckets`, the row shapers, `weightHistory`, `detailDayCounts`, the generator's
   card templates and `--trend-unit`, and every `codegen:stats-*` marker but the two
   config lists.
+
+## What the phone changed
+
+- **Tooltip details chosen per type**: an ordered checklist on the type page ("Visa i
+  rutan"), shared by bars and timelines, hidden when nothing in it applies. Rows hold two
+  text cells or three emoji ones, and a count split's cells sit where their details do.
+- **Timelines that read**: every event, or an average per day / week / month with tabs; a
+  rounded axis that never goes below zero; a hover tooltip; "senaste" or "snitt <period>"
+  beside the header value.
+- **Trender lists top-level fields only**, a field's sub-details indented under it, on the
+  type page and in Trender itself; "Antal" and "Tid mellan" capitalised.
+- **A select with one choice isn't drawn**: Uppdelning and Värde show only when there is a
+  choice.
+- **Every page's title row and ☰ stick to the top**, below the status-bar inset (one
+  `PageHeader`); a subtitle scrolls away beneath it.
+- **Chart colours moved to Utseende**, a compact row per type with one Spara, which
+  shortens the type page. Visas's help covers both switches.
 
 ## Not in scope
 
