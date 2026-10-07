@@ -3,7 +3,7 @@ import * as locale from '$lib/locale';
 import { listEventTypes, saveInterval } from '$lib/server/care';
 import { readsFailed } from '$lib/server/reads';
 import { listTypeSettings, saveTypeSettings } from '$lib/server/typeSettings';
-import { CHARTED_TYPES, PALETTE } from '$lib/stats/palette';
+import { CHARTED_TYPES } from '$lib/stats/palette';
 import { fieldsFor, shortFieldLabel } from '$lib/events/fields';
 import { typeSettings } from '$lib/typeSettings';
 import { readTrendConfig, saveTrendConfig } from '$lib/server/trendSettings';
@@ -76,8 +76,6 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals: { supab
 		// Null only when the catalogue read failed; the page says so instead of a form.
 		type: type ?? null,
 		settings: typeSettings(params.id, settings?.get(params.id)),
-		// Every entry: the page drops the neutral while the chart it shows is split.
-		palette: params.id in CHARTED_TYPES ? PALETTE : [],
 		chart: chartForm(params.id, typeSettings(params.id, settings?.get(params.id)).chart),
 		splitOptions:
 			params.id in CHARTED_TYPES

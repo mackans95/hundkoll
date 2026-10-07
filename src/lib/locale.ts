@@ -253,12 +253,10 @@ export const settings = {
 		followsAverage: 'följer snittet',
 		shownOn: 'Visas',
 		showOnStatus: 'På Status',
-		showOnStatusHelp:
-			'Av döljer typen på Status och stänger av dess påminnelser. Den går fortfarande att logga.',
+		shownOnHelp: 'Av döljer typen där. Den går fortfarande att logga.',
+		shownOnStatusHelp:
+			'Av döljer typen där. Dold på Status får den heller inga påminnelser. Den går fortfarande att logga.',
 		hiddenOnStatus: 'dold på Status',
-		chartColor: 'Diagramfärg',
-		chartColorHelp: 'Färgen på typens diagram i Statistik.',
-		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
 		stats: 'Statistik',
 		showOnStats: 'På Statistik',
 		tilesHelp: 'Rutorna under typens diagram i Statistik, i den här ordningen.',
@@ -279,6 +277,11 @@ export const settings = {
 	days: 'dagar',
 	save: 'Spara',
 	logout: 'Logga ut',
+	colors: {
+		heading: 'Diagramfärger',
+		help: 'Färgen på varje typs diagram i Statistik. Ett uppdelat diagram behöver två nyanser, så Skiffer finns bara för odelade.',
+		label: (type: string) => `Diagramfärg för ${type}`
+	},
 	theme: {
 		heading: 'Tema',
 		system: 'System',

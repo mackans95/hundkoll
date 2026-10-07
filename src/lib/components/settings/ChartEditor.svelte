@@ -25,8 +25,8 @@
 		splits: Option[];
 		/** The number fields a timeline may plot; none means no timeline. */
 		fields: Option[];
-		/** Told of each change, with whether the chart now draws a second series. */
-		onedit?: (paired: boolean) => void;
+		/** Told of each change the page's own listeners can't see. */
+		onedit?: () => void;
 	} = $props();
 
 	const words = locale.settings.chart;
@@ -45,7 +45,7 @@
 		if (key === `avg:${field}`) return false;
 		return points === 'average' || !(key === 'count' || key === 'gap' || key.startsWith('share:'));
 	};
-	const changed = () => onedit?.(kind === 'bars' && split !== 'none');
+	const changed = () => onedit?.();
 
 	function move(from: number, to: number) {
 		const next = [...details];
