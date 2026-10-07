@@ -156,7 +156,7 @@ describe('buildTrendRows', () => {
 			null,
 			null
 		);
-		expect(rows.map((row) => row.label)).toEqual(['🚗 Biltur · antal', '🚗 Biltur · Längd']);
+		expect(rows.map((row) => row.label)).toEqual(['🚗 Biltur · Antal', '🚗 Biltur · Längd']);
 	});
 });
 
@@ -215,5 +215,43 @@ describe('time away', () => {
 		);
 		expect(count).toMatchObject({ badge: '–', tone: 'neutral', away: 'short' });
 		expect(length).toMatchObject({ badge: '↓ 31 %', away: null });
+	});
+});
+
+describe('a row’s sub-rows', () => {
+	it('compares what Olycka revealed beneath it, each over every ride', () => {
+		const [row] = buildTrendRows(
+			[
+				{
+					type: 'car_ride',
+					kind: 'share',
+					field: 'accident',
+					better: 'down',
+					children: ['threw_up']
+				}
+			],
+			TYPES,
+			period(
+				[type('car_ride', 4)],
+				[
+					detail('car_ride', 'accident', { answered: 2, happened: 2, share_answered: 1 }),
+					detail('car_ride', 'threw_up', { answered: 1, happened: 1, share_answered: 1 })
+				]
+			),
+			period(
+				[type('car_ride', 4)],
+				[detail('car_ride', 'accident', { answered: 1, happened: 1, share_answered: 1 })]
+			)
+		);
+		expect(row.children).toEqual([
+			{
+				key: 'car_ride:share:accident>threw_up',
+				label: 'Spydde',
+				from: '25 %',
+				to: '0 %',
+				badge: '↓ 100 %',
+				tone: 'better'
+			}
+		]);
 	});
 });

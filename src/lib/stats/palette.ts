@@ -12,9 +12,6 @@ export type PaletteKey = 'green' | 'blue' | 'amber' | 'violet' | 'pink' | 'slate
 /** A type's colour on its card: `main` for its series, `alt` for a second one. */
 export type ChartColor = { main: string; alt: string };
 
-/** How many coloured series a type's card draws, which decides what it may pick. */
-export type ChartShape = 'single' | 'paired';
-
 export type PaletteEntry = { key: PaletteKey; label: string; pairs: boolean };
 
 /** In picker order. Skiffer is a deliberate neutral, too close to the card greys to pair. */
@@ -28,14 +25,14 @@ export const PALETTE: PaletteEntry[] = [
 ];
 
 /** The types that have a card on Statistik, and so a colour to choose. */
-export const CHARTED_TYPES: Record<string, ChartShape> = {
+export const CHARTED_TYPES: Record<string, true> = {
 	// codegen:charted-types — npm run new-event inserts generated cards here
-	walk: 'single',
-	meal: 'paired',
-	accident: 'paired',
-	weight: 'single',
-	alone: 'paired',
-	car_ride: 'single'
+	walk: true,
+	meal: true,
+	accident: true,
+	weight: true,
+	alone: true,
+	car_ride: true
 };
 
 /** What each type looked like before it was configurable; anything else is Skiffer. */
@@ -52,21 +49,28 @@ export const NEUTRAL_COLOR = 'var(--chart-neutral)';
 /** Matning's okänt, one step quieter than the neutral beside it. */
 export const NEUTRAL_SOFT_COLOR = 'var(--chart-neutral-soft)';
 
-/** The entries a type may pick: a paired card cannot take the neutral. */
-export function paletteFor(typeId: string): PaletteEntry[] {
-	return CHARTED_TYPES[typeId] === 'paired' ? PALETTE.filter((entry) => entry.pairs) : PALETTE;
+/**
+ * The entries a chart may pick: one with a second series, a split chart,
+ * cannot take the neutral (see chartPaired in cardSpec.ts).
+ */
+export function paletteFor(paired: boolean): PaletteEntry[] {
+	return paired ? PALETTE.filter((entry) => entry.pairs) : PALETTE;
 }
 
 /**
  * The key a type is drawn in: the stored one if this type may use it, else
  * its default. A stale key, from a palette since re-stepped, reads as unset.
  */
-export function chartColorKey(typeId: string, stored: string | null | undefined): PaletteKey {
-	const allowed = paletteFor(typeId);
+export function chartColorKey(
+	typeId: string,
+	stored: string | null | undefined,
+	paired: boolean
+): PaletteKey {
+	const allowed = paletteFor(paired);
 	return (
 		allowed.find((entry) => entry.key === stored)?.key ??
-		allowed.find((entry) => entry.key === DEFAULT_COLORS[typeId])?.key ??
-		'slate'
+		allowed.find((entry) => entry.key === (DEFAULT_COLORS[typeId] ?? 'slate'))?.key ??
+		allowed[0].key
 	);
 }
 

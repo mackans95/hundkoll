@@ -204,6 +204,22 @@ export const settings = {
 		tables: 'Tabeller',
 		trends: 'Trender'
 	},
+	/** A type's chart, on its page (plan 29b). */
+	chart: {
+		kind: 'Diagram',
+		bars: 'Staplar',
+		timeline: 'Tidslinje',
+		split: 'Uppdelning',
+		picker: 'Flikar för dag, vecka och månad',
+		tooltip: 'Rutan vid tryck',
+		text: 'Text',
+		emoji: 'Emoji',
+		field: 'Värde',
+		points: 'Punkter',
+		every: 'Varje gång',
+		average: 'Snitt per period',
+		details: 'Visa i rutan'
+	},
 	/** Settings → Tabeller (plan 28). */
 	tables: {
 		help: 'Statistik visar korten i den här ordningen. Bocka ur ett kort för att dölja det.',
@@ -237,15 +253,14 @@ export const settings = {
 		followsAverage: 'följer snittet',
 		shownOn: 'Visas',
 		showOnStatus: 'På Status',
-		showOnStatusHelp:
-			'Av döljer typen på Status och stänger av dess påminnelser. Den går fortfarande att logga.',
+		shownOnHelp: 'Av döljer typen där. Den går fortfarande att logga.',
+		shownOnStatusHelp:
+			'Av döljer typen där. Dold på Status får den heller inga påminnelser. Den går fortfarande att logga.',
 		hiddenOnStatus: 'dold på Status',
-		chartColor: 'Diagramfärg',
-		chartColorHelp: 'Färgen på typens diagram i Statistik.',
-		noChart: 'Inget diagram i Statistik visar den här typen ännu.',
 		stats: 'Statistik',
 		showOnStats: 'På Statistik',
 		tilesHelp: 'Rutorna under typens diagram i Statistik, i den här ordningen.',
+		chartHelp: 'Hur typens diagram i Statistik ser ut.',
 		noTiles: 'Inga rutor.',
 		addTile: 'Lägg till ruta',
 		trends: 'Trender',
@@ -262,6 +277,11 @@ export const settings = {
 	days: 'dagar',
 	save: 'Spara',
 	logout: 'Logga ut',
+	colors: {
+		heading: 'Diagramfärger',
+		help: 'Färgen på varje typs diagram i Statistik. Ett uppdelat diagram behöver två nyanser, så Skiffer finns bara för odelade.',
+		label: (type: string) => `Diagramfärg för ${type}`
+	},
 	theme: {
 		heading: 'Tema',
 		system: 'System',
@@ -418,7 +438,7 @@ const symbols = {
 
 export const stats = {
 	loadFailed: 'Kunde inte läsa statistiken. Försök igen om en stund.',
-	// codegen:stats-strings — npm run new-event inserts card strings here
+	// The cards' own words, for the six whose captions predate their configuration.
 	alone: {
 		heading: '🏠 Ensamtid',
 		avgDurationMin: 'Snittlängd',
@@ -451,6 +471,24 @@ export const stats = {
 	periodPickerLabel: 'Periodval',
 	/** Over a chart whose 30 days hold nothing, the way Vikt says it has no weighing. */
 	emptyChart: 'Inget loggat de senaste 30 dagarna.',
+	/** The chart's settings on a type's page (plan 29b). */
+	chart: {
+		noSplit: 'Ingen uppdelning',
+		/** A tooltip detail on the type page. */
+		count: 'Antal',
+		share: (field: string) => `Andel ${field.toLowerCase()}` as const,
+		byAnswer: (field: string) => `Efter ${field.toLowerCase()}` as const,
+		byCounts: (fields: string) => `Efter ${fields.toLowerCase()}` as const,
+		and: 'och',
+		/** A checkbox's "no", when the field declares no answers of its own. */
+		notAnswer: (field: string) => `Inte ${field.toLowerCase()}` as const,
+		/** An event that didn't answer the field a chart is split by. */
+		unknown: 'Okänt',
+		emptyTimeline: 'Inget loggat ännu.',
+		/** Before the value beside a timeline's heading. */
+		latest: 'senaste',
+		averageOf: (period: string) => `snitt ${period.toLowerCase()}` as const
+	},
 	/** Built captions for a tile chosen in Settings: "Utan olycka", "Längsta lugn". */
 	tiles: {
 		perDay: 'Per dag',
@@ -521,8 +559,8 @@ export const stats = {
 			`${direction === 'up' ? '↑' : '↓'} ${percent} %` as const,
 		/** Built names for a configured row: "🛁 Bad · antal". */
 		kinds: {
-			count: 'antal',
-			gap: 'tid mellan'
+			count: 'Antal',
+			gap: 'Tid mellan'
 		},
 		/** Shown with the badge, so better and worse never rest on hue alone. */
 		mark: { better: '✓', worse: '!' },

@@ -18,58 +18,38 @@ import {
 } from '$lib/stats/trends';
 import * as time from '$lib/time';
 import type {
-	AccidentBin,
 	DetailBucketRow,
 	DetailDayCount,
 	DetailMetric,
 	DetailWindowRow,
 	EventDetails,
-	MealDay,
 	Period,
 	SimpleDay,
 	StatSummary,
 	TypeBucketRow,
 	TypeWindowRow,
-	ViewRow,
-	WeightPoint
+	ViewRow
 } from '$lib/types/domain';
-import type { WalkDay } from '$lib/types/domain';
-import { fieldsFor, fieldsRevealedBy } from '$lib/events/fields';
-import { outcomeDays, type OutcomeDay } from '$lib/stats/outcomes';
-import { detailDayCounts, weightHistory } from './events';
+import { barNeedsEvents } from '$lib/stats/bars';
+import { cardView, type CardView } from '$lib/stats/cardView';
+import { fieldHistory } from './events';
 import { listTypeSettings } from './typeSettings';
 import { typeSettings } from '$lib/typeSettings';
 import { tileReadsEvents, tileValues } from '$lib/stats/cardSpec';
-import type { Tile } from '$lib/stats/summary';
 import { readTrendConfig } from './trendSettings';
 import { readCardConfig } from './statsSettings';
 import { defaultCards, type CardRow } from '$lib/stats/cardConfig';
 import { listEventTypes } from './care';
-import { CHARTED_TYPES, chartColor, chartColorKey, type ChartColor } from '$lib/stats/palette';
+import { CHARTED_TYPES, chartColor } from '$lib/stats/palette';
 import type { Db } from './db';
 
 export type Stats = {
-	// codegen:stats-shape — npm run new-event inserts card data fields here
-	/** Lugn / Orolig / Vet ej per day: the card is stacked by outcome (plan 22). */
-	aloneOutcomes: OutcomeDay[];
-	/** The longest alone time she stayed calm through, in the 30 days. */
-	carRideDetailDays: DetailDayCount[];
-	carRideDays: SimpleDay[];
 	period: Period;
-	/** The Stockholm day the query windows were cut from, for the charts to
-	 * zero-fill the same window. */
-	today: string;
 	summary: StatSummary | null;
-	/** Each charted type's tiles, as its Settings page chose them (plan 29). */
-	tiles: Record<string, Tile[]>;
-	walkDays: WalkDay[];
-	mealDays: MealDay[];
-	accidentBins: AccidentBin[];
-	weights: WeightPoint[];
 	/** The cards in Settings → Tabeller's order, each shown or not (plan 28). */
 	cards: CardRow[];
-	/** Each charted type's colour, as Settings chose it (plan 26). */
-	chartColors: Record<string, ChartColor>;
+	/** Each charted type's card, drawn from its configuration (plan 29). */
+	views: Record<string, CardView>;
 	/** Whether any read failed. Empty charts and unreadable ones look the same
 	 * otherwise, and the second must not be cached as the first. */
 	failed: boolean;
@@ -221,174 +201,156 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 	const DAILY_WINDOW_DAYS = 30;
 
 	const today = time.stockholmNowForInput().slice(0, 10);
-
 	// Counted in Stockholm days, the same days the charts zero-fill — a UTC
 	// cutoff would disagree with them for the hours around midnight.
 	const daysAgo = (days: number) => time.addDays(today, -days);
 
-	// The daily charts read two types and four fields out of one pair of reads,
-	// which is what a per-type-per-field view buys over a column per metric.
-	const DAILY_TYPES = ['walk', 'meal'];
-	const DAILY_FIELDS = ['pee', 'poop', 'finished', 'duration_min'];
-
-	// Read first: the tiles decide which types' own events the reads below need.
+	// Read first: each card's configuration decides what the reads below fetch.
 	// A failed read draws the defaults, which is no reason to call the page failed.
 	const settings = await listTypeSettings(db);
 	const charted = Object.keys(CHARTED_TYPES);
-	const tileSpecs = Object.fromEntries(
-		charted.map((type) => [type, typeSettings(type, settings?.get(type)).tiles])
+	const config = Object.fromEntries(
+		charted.map((type) => [type, typeSettings(type, settings?.get(type))])
 	);
-	const eventTypes = charted.filter((type) => tileSpecs[type].some(tileReadsEvents));
+	const chartOf = (type: string) => config[type].chart!;
+	const periodOf = (type: string): Period => (chartOf(type).picker ? period : 'day');
+	// Bars and an average timeline read the bucket views; an every-event
+	// timeline reads the field's whole history instead.
+	const bucketed = charted.filter((type) => {
+		const chart = chartOf(type);
+		return chart.kind === 'bars' || !chart.every;
+	});
+	const daily = bucketed.filter((type) => periodOf(type) === 'day');
+	const tabbed = bucketed.filter((type) => periodOf(type) !== 'day');
+	const timelines = charted.filter((type) => {
+		const chart = chartOf(type);
+		return chart.kind === 'timeline' && chart.every;
+	});
+	// The type's own events, for a tooltip or a tile no view can answer.
+	const eventTypes = charted.filter((type) => {
+		const chart = chartOf(type);
+		return (
+			config[type].tiles.some(tileReadsEvents) ||
+			(chart.kind === 'bars' && barNeedsEvents(type, chart, periodOf(type)))
+		);
+	});
 
-	// Kept as an array as well as destructured, so the failure check below sees
-	// every read — including the ones npm run new-event adds, which would
-	// otherwise need listing a second time and eventually would not be.
-	const results = await Promise.all([
-		// codegen:stats-queries — npm run new-event inserts card queries here
-		// The type's own events: the outcome split with its signs and lengths, and
-		// the longest calm stretch, all come from these; no view can name the fields.
-		db
-			.from('events')
-			.select('occurred_at, details')
-			.eq('type_id', 'alone')
-			.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS)),
-		detailDayCounts(db, 'car_ride', daysAgo(DAILY_WINDOW_DAYS)),
-		db
-			.from('stats_type_buckets')
-			.select(TYPE_BUCKET_COLUMNS)
-			.eq('type_id', 'car_ride')
-			.eq('period', 'day')
-			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
-			.order('bucket'),
-		db
-			.from('stats_type_buckets')
-			.select(TYPE_BUCKET_COLUMNS)
-			.in('type_id', DAILY_TYPES)
-			.eq('period', 'day')
-			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS))
-			.order('bucket'),
-		db
-			.from('stats_detail_buckets')
-			.select(DETAIL_BUCKET_COLUMNS)
-			.in('type_id', DAILY_TYPES)
-			.in('field', DAILY_FIELDS)
-			.eq('period', 'day')
-			.gte('bucket', daysAgo(DAILY_WINDOW_DAYS)),
-		// Every card's tiles come out of these two, by type and field (plan 29).
-		db.from('stats_type_windows').select(TYPE_WINDOW_COLUMNS).in('type_id', charted),
-		db
-			.from('stats_detail_windows')
-			.select(DETAIL_WINDOW_COLUMNS)
-			.in('type_id', charted)
-			.eq('window_days', 30),
-		// Only for a tile no view can answer: a longest, a latest.
-		eventTypes.length > 0
-			? db
-					.from('events')
-					.select('type_id, occurred_at, details')
-					.in('type_id', eventTypes)
-					.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS))
-					.order('occurred_at')
-			: { data: [], error: null },
-		db
-			.from('stats_type_buckets')
-			.select(TYPE_BUCKET_COLUMNS)
-			.eq('type_id', 'accident')
-			.eq('period', period)
-			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period]))
-			.order('bucket'),
-		db
-			.from('stats_detail_buckets')
-			.select(DETAIL_BUCKET_COLUMNS)
-			.eq('type_id', 'accident')
-			.in('field', ['pee', 'poop'])
-			.eq('period', period)
-			.gte('bucket', daysAgo(BIN_WINDOW_DAYS[period])),
-		weightHistory(db),
-		readCardConfig(db)
-	]);
+	// A bucket and detail read per period on screen: by day for most, at the
+	// tabs' period for a chart that has them.
+	async function bucketReads(types: string[], at: Period) {
+		if (types.length === 0) {
+			return { buckets: [] as TypeBucketRow[], details: [] as DetailBucketRow[], error: false };
+		}
+		const [bucketsRes, detailsRes] = await Promise.all([
+			db
+				.from('stats_type_buckets')
+				.select(TYPE_BUCKET_COLUMNS)
+				.in('type_id', types)
+				.eq('period', at)
+				.gte('bucket', daysAgo(BIN_WINDOW_DAYS[at]))
+				.order('bucket'),
+			db
+				.from('stats_detail_buckets')
+				.select(DETAIL_BUCKET_COLUMNS)
+				.in('type_id', types)
+				.eq('period', at)
+				.gte('bucket', daysAgo(BIN_WINDOW_DAYS[at]))
+		]);
+		return {
+			buckets: present((bucketsRes.data ?? []).map(toTypeBucket)),
+			details: present((detailsRes.data ?? []).map(toDetailBucket)),
+			error: Boolean(bucketsRes.error || detailsRes.error)
+		};
+	}
 
-	const [
-		// codegen:stats-results — one name here per query above, same order
-		aloneEventsRes,
-		carRideDetailDays,
-		carRideRes,
-		dailyRes,
-		dailyDetailRes,
-		windowsRes,
-		windowDetailRes,
-		tileEventsRes,
-		binsRes,
-		binDetailRes,
-		weights,
-		cards
-	] = results;
+	const [dailyRows, tabbedRows, windowsRes, windowDetailRes, eventsRes, types, histories, cards] =
+		await Promise.all([
+			bucketReads(daily, 'day'),
+			bucketReads(tabbed, period),
+			// Every card's tiles come out of these two, by type and field.
+			db.from('stats_type_windows').select(TYPE_WINDOW_COLUMNS).in('type_id', charted),
+			db
+				.from('stats_detail_windows')
+				.select(DETAIL_WINDOW_COLUMNS)
+				.in('type_id', charted)
+				.eq('window_days', 30),
+			eventTypes.length > 0
+				? db
+						.from('events')
+						.select('type_id, occurred_at, details')
+						.in('type_id', eventTypes)
+						.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS))
+						.order('occurred_at')
+				: { data: [], error: null },
+			listEventTypes(db),
+			Promise.all(
+				timelines.map((type) => {
+					const chart = chartOf(type);
+					return chart.kind === 'timeline' ? fieldHistory(db, type, chart.field) : [];
+				})
+			),
+			readCardConfig(db)
+		]);
 
-	// Asked of the array rather than of each name, so a query added here later —
-	// by hand or by the generator — is covered without being remembered. The
-	// two entries that are not view reads report their own failures already and
-	// carry no `error` to find.
-	const failed = results.some(
-		(result) => result !== null && typeof result === 'object' && 'error' in result && result.error
+	const failed = Boolean(
+		dailyRows.error ||
+		tabbedRows.error ||
+		windowsRes.error ||
+		windowDetailRes.error ||
+		eventsRes.error ||
+		types === null
 	);
 
-	const aloneEvents = (aloneEventsRes.data ?? []).map((row) => ({
-		occurred_at: row.occurred_at,
-		details: (row.details ?? {}) as EventDetails
-	}));
-
+	const typeBuckets = [...dailyRows.buckets, ...tabbedRows.buckets];
+	const detailBuckets = [...dailyRows.details, ...tabbedRows.details];
 	const windows = present((windowsRes.data ?? []).map(toTypeWindow));
 	const windowDetails = present((windowDetailRes.data ?? []).map(toDetailWindow));
 	const summary = rows.statSummary(windows, windowDetails);
-	const tileEvents = tileEventsRes.data ?? [];
-	const tiles = Object.fromEntries(
-		charted.map((type) => [
-			type,
-			tileValues(type, tileSpecs[type], {
-				windows: windows.filter((row) => row.type_id === type),
-				metrics: windowDetails.filter((row) => row.type_id === type),
-				events: tileEvents
-					.filter((row) => row.type_id === type)
-					.map((row) => ({
-						occurred_at: row.occurred_at,
-						details: (row.details ?? {}) as EventDetails
-					})),
-				tracked: summary?.days_counted ?? 0
-			})
-		])
+	const tracked = summary?.days_counted ?? 0;
+	const eventsOf = (type: string) =>
+		(eventsRes.data ?? [])
+			.filter((row) => row.type_id === type)
+			.map((row) => ({
+				occurred_at: row.occurred_at,
+				details: (row.details ?? {}) as EventDetails
+			}));
+
+	const views = Object.fromEntries(
+		charted.map((type) => {
+			const chart = chartOf(type);
+			const catalogue = types?.find((candidate) => candidate.id === type);
+			const typeEvents = eventsOf(type);
+			return [
+				type,
+				cardView({
+					typeId: type,
+					type: { label: catalogue?.label ?? type, icon: catalogue?.icon ?? null },
+					chart,
+					color: chartColor(config[type].chartColor ?? 'slate'),
+					tiles: tileValues(type, config[type].tiles, {
+						windows: windows.filter((row) => row.type_id === type),
+						metrics: windowDetails.filter((row) => row.type_id === type),
+						events: typeEvents,
+						tracked
+					}),
+					period,
+					today,
+					tracked,
+					buckets: typeBuckets.filter((row) => row.type_id === type),
+					details: detailBuckets.filter((row) => row.type_id === type),
+					events: typeEvents,
+					history: histories[timelines.indexOf(type)] ?? []
+				})
+			];
+		})
 	);
 
-	const dailyBuckets = present((dailyRes.data ?? []).map(toTypeBucket));
-	const dailyDetails = present((dailyDetailRes.data ?? []).map(toDetailBucket));
-
 	return {
-		// codegen:stats-return — npm run new-event inserts narrowed results here
-		aloneOutcomes: outcomeDays(aloneEvents, {
-			outcome: 'calm',
-			measure: 'duration_min',
-			revealed: fieldsRevealedBy(fieldsFor('alone'), 'calm')
-		}),
-		carRideDetailDays,
-		carRideDays: rows.simpleDays(present((carRideRes.data ?? []).map(toTypeBucket)), 'car_ride'),
 		period,
-		today,
 		summary,
-		tiles,
-		walkDays: rows.walkDays(dailyBuckets, dailyDetails),
-		mealDays: rows.mealDays(dailyBuckets, dailyDetails),
-		accidentBins: rows.accidentBins(
-			present((binsRes.data ?? []).map(toTypeBucket)),
-			present((binDetailRes.data ?? []).map(toDetailBucket))
-		),
-		weights,
 		// A failed read shows every card in the default order rather than none.
 		cards: cards ?? defaultCards(),
-		chartColors: Object.fromEntries(
-			Object.keys(CHARTED_TYPES).map((typeId) => [
-				typeId,
-				chartColor(chartColorKey(typeId, settings?.get(typeId)?.chart_color))
-			])
-		),
+		views,
 		failed
 	};
 }
@@ -414,7 +376,9 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const config = await readTrendConfig(db, new Set((types ?? []).map((type) => type.id)));
 	const rows = config ?? [];
 	const typeIds = [...new Set(rows.map((row) => row.type))];
-	const fields = [...new Set(rows.flatMap((row) => (row.field ? [row.field] : [])))];
+	const fields = [
+		...new Set(rows.flatMap((row) => [...(row.field ? [row.field] : []), ...(row.children ?? [])]))
+	];
 
 	const prevSpan = bucketSpan(period, prevBucket);
 	const latestSpan = bucketSpan(period, latestBucket);

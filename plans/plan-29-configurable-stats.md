@@ -4,33 +4,26 @@
 > (with/without day/week/month selection) / timeline (Weight))", and "which additional boxes
 > to include and track (e.g. '🚶 per dag' for Walks)".
 
-> **Status: ✅ 29a built, verified on the phone, awaiting merge; 29b next** — branch `feature/configurable-stats`.
-> Requires plans 26 and 28 (both merged). **Two PRs**: 29a (config, loader, tiles), then 29b
-> (chart kinds). 29a verified on the local stack with a production snapshot:
+> **Status: ✅ 29a merged (#61); 29b built, awaiting merge** — branch
+> `feature/stats-chart-kinds`. 29b verified on the local stack with a production snapshot:
 >
-> - **Statistik reads exactly as on master** before any edit: every tile of all six cards,
->   in all three periods, captured from both builds and identical. (The snapshot has no
->   Ensamtid session in the last 30 days, so its tiles are dashes on both; unit tests cover
->   its share and longest stretch.)
-> - In headless Chrome, on Promenad's page: add "Kiss", ▼ and ✕ change the screen without
->   posting; Enter in the interval field saves rather than pressing a tile button; Statistik
->   then shows Mellan promenader, Per dag, Kiss. Every tile removed leaves the chart alone.
->   Bad has no tile editor. Without JS, Lägg till posts and adds. No exceptions.
-> - The generator, run for real: its card type-checks, gets "Per dag" plus the number
->   field's average, written in the unit it declared ("~1,3 mm"), then reverted.
+> - **Before any edit, Statistik draws exactly as master**: every card's text, legend,
+>   tiles, and every bar's and line's geometry and colour, in all three periods, captured
+>   from both builds and identical (157, 140 and 136 bar segments). Each tooltip shape is
+>   held to today's by golden snapshots, written by the hand-written builders on shared
+>   fixtures and checked equal to the generic builder before those were deleted.
+> - In headless Chrome: Promenad split by kiss and bajs with tabs (Skiffer drops out of
+>   its colours as soon as it's split, and "Osparade ändringar." shows); Vikt as bars;
+>   Biltur as a timeline of its length, "50 min" in the header; Mat unsplit without JS.
+> - **A latent bug it exposed**: the timeline keyed its points by time, and two car rides
+>   logged at the same instant crashed hydration and took every card after it down. It
+>   keys by position too now; its end label is right-aligned at the edge, so "50 min"
+>   isn't clipped (Vikt's moves a few pixels, from beside its last point to just above).
+> - The generator, run for real for a counts type and a trend type: two config lines,
+>   type-checked, then reverted.
 >
-> **What 29a changed beyond the plan:** `npm run new-event` no longer writes tiles, asks
-> for them (`--metric` is gone), or reads detail windows, and `DETAIL_FIELDS` gains an
-> optional `unit` the generator fills, so any average can be written in its unit. The six
-> hand-written tile builders, `metrics.ts` and `answeredShare` are gone; Trender's number
-> formatting now shares `numberWriter` with the tiles.
->
-> **On the phone** (test APK against the local preview, then back to production): the tile
-> editor and Statistik following it, as above. One change from it: the type page says
-> "Osparade ändringar." under Spara while anything on it has changed, as Trender and
-> Tabeller do, cleared once the save goes through.
->
-> After the merge: `db-push`.
+> **Verified on the phone** against the local preview over four rounds of notes (below),
+> then put back on production. No migration in 29b, so no `db-push` after the merge.
 
 ## Why the README's decision changes
 
@@ -163,6 +156,39 @@ where it can be seen.
   until edited; then change a tile, a split and a chart kind, and see Statistik follow.
 - The generator, run for real with a throwaway type, then reverted.
 - The phone against the local preview, and back.
+
+## What 29b changed beyond the plan
+
+- **Tooltips are text or emoji per type** (Marcus's answer to question 1). `DETAIL_FIELDS`
+  gains `symbol` (🟡 kiss, 💩 bajs) and a checkbox's `answers` (Mat's ✅ / ❌ and words); a
+  type's own emoji is its catalogue icon.
+- **The chart's colours follow its split**: an outcome split takes the colour's second
+  shade for Vet ej, a checkbox split the quiet greys, a count split the second shade for
+  the second field. Skiffer is offered only while the chart is unsplit; one stored and
+  then split is drawn as the type's default rather than failing the save.
+- **By week or month, a split counts from the views**, which have no per-event detail, so
+  Ensamtid's boxes and Biltur's breakdown are the day view's.
+- **Removed**: the six card components, `walkBuckets`, `mealBuckets`, `aloneBuckets`,
+  `accidentBuckets`, the row shapers, `weightHistory`, `detailDayCounts`, the generator's
+  card templates and `--trend-unit`, and every `codegen:stats-*` marker but the two
+  config lists.
+
+## What the phone changed
+
+- **Tooltip details chosen per type**: an ordered checklist on the type page ("Visa i
+  rutan"), shared by bars and timelines, hidden when nothing in it applies. Rows hold two
+  text cells or three emoji ones, and a count split's cells sit where their details do.
+- **Timelines that read**: every event, or an average per day / week / month with tabs; a
+  rounded axis that never goes below zero; a hover tooltip; "senaste" or "snitt <period>"
+  beside the header value.
+- **Trender lists top-level fields only**, a field's sub-details indented under it, on the
+  type page and in Trender itself; "Antal" and "Tid mellan" capitalised.
+- **A select with one choice isn't drawn**: Uppdelning and Värde show only when there is a
+  choice.
+- **Every page's title row and ☰ stick to the top**, below the status-bar inset (one
+  `PageHeader`); a subtitle scrolls away beneath it.
+- **Chart colours moved to Utseende**, a compact row per type with one Spara, which
+  shortens the type page. Visas's help covers both switches.
 
 ## Not in scope
 

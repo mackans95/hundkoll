@@ -1,14 +1,8 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { resolve } from '$app/paths';
 	import type { Tab } from '$lib/components/TabBar.svelte';
-	// codegen:stats-imports — npm run new-event inserts card imports here
-	import AloneCard from '$lib/components/stats/AloneCard.svelte';
-	import CarRideCard from '$lib/components/stats/CarRideCard.svelte';
-	import AccidentCard from '$lib/components/stats/AccidentCard.svelte';
-	import MealCard from '$lib/components/stats/MealCard.svelte';
-	import WalkCard from '$lib/components/stats/WalkCard.svelte';
-	import WeightCard from '$lib/components/stats/WeightCard.svelte';
+	import StatsCard from '$lib/components/stats/StatsCard.svelte';
 	import * as locale from '$lib/locale';
 	import { daysAwayText, daysTracked } from '$lib/stats/summary';
 	import type { Period } from '$lib/types/domain';
@@ -29,85 +23,18 @@
 	// where it is, so the path is deliberately whatever page this is.
 	const periodHref = (value: Period) => `?period=${value}`;
 
-	// Each card by its type, in the order Settings → Tabeller stored. The
-	// snippets are below; a card missing here simply isn't drawn.
-	const CARDS: Record<string, Snippet> = {
-		walk,
-		meal,
-		accident,
-		weight,
-		// codegen:stats-card-map — npm run new-event inserts generated cards here
-		alone,
-		car_ride
-	};
-	const shown = $derived(data.cards.filter((card) => card.shown && card.type in CARDS));
+	// In Settings → Tabeller's order, each drawn from its type's configuration.
+	const shown = $derived(data.cards.filter((card) => card.shown && card.type in data.views));
 </script>
-
-{#snippet walk()}
-	<WalkCard
-		days={data.walkDays}
-		tiles={data.tiles.walk}
-		today={data.today}
-		color={data.chartColors.walk}
-	/>
-{/snippet}
-
-{#snippet meal()}
-	<MealCard
-		days={data.mealDays}
-		tiles={data.tiles.meal}
-		today={data.today}
-		color={data.chartColors.meal}
-	/>
-{/snippet}
-
-{#snippet accident()}
-	<AccidentCard
-		bins={data.accidentBins}
-		period={data.period}
-		tiles={data.tiles.accident}
-		{tracked}
-		today={data.today}
-		{tabs}
-		tabHref={periodHref}
-		color={data.chartColors.accident}
-	/>
-{/snippet}
-
-{#snippet weight()}
-	<WeightCard
-		weights={data.weights}
-		tiles={data.tiles.weight}
-		color={data.chartColors.weight}
-	/>
-{/snippet}
-
-<!-- codegen:stats-cards — npm run new-event inserts generated cards here -->
-{#snippet alone()}
-	<AloneCard
-		outcomes={data.aloneOutcomes}
-		today={data.today}
-		tiles={data.tiles.alone}
-		color={data.chartColors.alone}
-	/>
-{/snippet}
-{#snippet car_ride()}
-	<CarRideCard
-		days={data.carRideDays}
-		today={data.today}
-		tiles={data.tiles.car_ride}
-		detailDays={data.carRideDetailDays}
-		color={data.chartColors.car_ride.main}
-	/>
-{/snippet}
 
 <svelte:head><title>{locale.app.pageTitle(locale.stats.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
-	<header class="px-1">
-		<h1 class="text-3xl font-bold">{locale.stats.title}</h1>
-		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30, away)}</p>
-	</header>
+	<PageHeader title={locale.stats.title}>
+		{#snippet subtitle()}
+			<p class="text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30, away)}</p>
+		{/snippet}
+	</PageHeader>
 
 	{#if data.failed}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
@@ -120,7 +47,12 @@
 			class="flex flex-col [&>details]:rounded-none [&>details+details]:border-t-0 [&>details:first-child]:rounded-t-2xl [&>details:last-child]:rounded-b-2xl"
 		>
 			{#each shown as card (card.type)}
-				{@render CARDS[card.type]()}
+				<StatsCard
+					view={data.views[card.type]}
+					period={data.period}
+					{tabs}
+					tabHref={periodHref}
+				/>
 			{/each}
 		</div>
 	{:else}

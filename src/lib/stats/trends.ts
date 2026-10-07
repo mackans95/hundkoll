@@ -8,7 +8,15 @@ import { fieldsFor } from '$lib/events/fields';
 import { isDaily } from '$lib/status/schedule';
 import { numberWriter } from './cardSpec';
 import type { DetailBucketRow, EventType, Period, TypeBucketRow } from '$lib/types/domain';
-import { shareSource, trendKey, trendLabel, type Better, type TrendConfigRow } from './trendConfig';
+import {
+	childRow,
+	shareSource,
+	trendKey,
+	trendLabel,
+	trendMetricLabel,
+	type Better,
+	type TrendConfigRow
+} from './trendConfig';
 
 /**
  * Names the last two complete buckets for a period. Today never takes part —
@@ -119,6 +127,15 @@ export type TrendRow = {
 	 * little of it to compare at all.
 	 */
 	away: 'home' | 'short' | null;
+	/** What the row's field revealed, compared the same way beneath it. */
+	children: {
+		key: string;
+		label: string;
+		from: string;
+		to: string;
+		badge: string;
+		tone: TrendTone;
+	}[];
 };
 
 /**
@@ -243,7 +260,20 @@ export function buildTrendRows(
 			from: from === null ? locale.units.missing : show(from),
 			to: to === null ? locale.units.missing : show(to),
 			...change,
-			away
+			away,
+			children: (row.children ?? []).map((name) => {
+				const child = childRow(row, name);
+				const childFrom = prev ? trendValue(child, prev) : null;
+				const childTo = latest ? trendValue(child, latest) : null;
+				const write = trendFormat(child);
+				return {
+					key: `${trendKey(row)}>${name}`,
+					label: trendMetricLabel(child),
+					from: childFrom === null ? locale.units.missing : write(childFrom),
+					to: childTo === null ? locale.units.missing : write(childTo),
+					...changeBadge(childFrom, childTo, row.better)
+				};
+			})
 		};
 	});
 }

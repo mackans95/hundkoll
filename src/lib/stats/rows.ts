@@ -10,15 +10,12 @@
 // is never rounded twice.
 
 import type {
-	AccidentBin,
 	DetailBucketRow,
 	DetailWindowRow,
-	MealDay,
 	SimpleDay,
 	StatSummary,
 	TypeBucketRow,
-	TypeWindowRow,
-	WalkDay
+	TypeWindowRow
 } from '$lib/types/domain';
 
 /** One field's row for a type's bucket, or null when nothing carried it. */
@@ -32,65 +29,6 @@ function detailAt(
 		rows.find((row) => row.type_id === typeId && row.bucket === bucket && row.field === field) ??
 		null
 	);
-}
-
-/**
- * A bucket's total for one field. A missing row means no event that bucket
- * carried the field, which is a zero — the reading the old summed column gave.
- */
-function totalAt(rows: DetailBucketRow[], typeId: string, bucket: string, field: string): number {
-	return detailAt(rows, typeId, bucket, field)?.total ?? 0;
-}
-
-/** The walk chart's days: counts, kiss and bajs, and the day's own averages. */
-export function walkDays(buckets: TypeBucketRow[], details: DetailBucketRow[]): WalkDay[] {
-	return buckets
-		.filter((bucket) => bucket.type_id === 'walk')
-		.map((bucket) => ({
-			day: bucket.bucket,
-			n: bucket.n,
-			pee: totalAt(details, 'walk', bucket.bucket, 'pee'),
-			poop: totalAt(details, 'walk', bucket.bucket, 'poop'),
-			avg_gap_min: bucket.avg_gap_min,
-			avg_duration_min: detailAt(details, 'walk', bucket.bucket, 'duration_min')?.avg_number ?? null
-		}));
-}
-
-/** The meal chart's days, split finished / not finished. */
-export function mealDays(buckets: TypeBucketRow[], details: DetailBucketRow[]): MealDay[] {
-	return buckets
-		.filter((bucket) => bucket.type_id === 'meal')
-		.map((bucket) => {
-			const finished = detailAt(details, 'meal', bucket.bucket, 'finished');
-			return {
-				day: bucket.bucket,
-				n: bucket.n,
-				finished_true: finished?.happened ?? 0,
-				// answered − happened rather than n − happened: a meal nobody
-				// answered for is neither finished nor unfinished.
-				finished_false: finished ? finished.answered - finished.happened : 0,
-				avg_gap_min: bucket.avg_gap_min
-			};
-		});
-}
-
-/** The accident bins for whichever period the screen is showing. */
-export function accidentBins(buckets: TypeBucketRow[], details: DetailBucketRow[]): AccidentBin[] {
-	return buckets
-		.filter((bucket) => bucket.type_id === 'accident')
-		.map((bucket) => ({
-			bucket: bucket.bucket,
-			n: bucket.n,
-			pee: totalAt(details, 'accident', bucket.bucket, 'pee'),
-			poop: totalAt(details, 'accident', bucket.bucket, 'poop')
-		}));
-}
-
-/** One type's days and counts, which is all a generated counts card plots. */
-export function simpleDays(buckets: TypeBucketRow[], typeId: string): SimpleDay[] {
-	return buckets
-		.filter((bucket) => bucket.type_id === typeId)
-		.map((bucket) => ({ day: bucket.bucket, n: bucket.n }));
 }
 
 /**

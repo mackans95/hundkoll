@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusCard from '$lib/components/status/StatusCard.svelte';
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
@@ -13,9 +14,7 @@
 <svelte:head><title>{locale.app.pageTitle(locale.status.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
-	<header class="px-1">
-		<h1 class="text-3xl font-bold">{locale.status.title}</h1>
-	</header>
+	<PageHeader title={locale.status.title} />
 
 	{#if data.statusFailed}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.status.loadFailed}</p>

@@ -5,6 +5,10 @@
 import { describe, expect, it } from 'vitest';
 import * as locale from '$lib/locale';
 import {
+	defaultChart,
+	defaultDetails,
+	parseChart,
+	planChart,
 	defaultTiles,
 	parseTiles,
 	planTiles,
@@ -14,6 +18,9 @@ import {
 	type TileData
 } from '$lib/stats/cardSpec';
 import { shareTile } from '$lib/stats/summary';
+import { packCells } from '$lib/stats/tooltip';
+import { cardView } from '$lib/stats/cardView';
+import { chartColor } from '$lib/stats/palette';
 import type { DetailWindowRow, TypeWindowRow } from '$lib/types/domain';
 
 const DASH = locale.units.missing;
@@ -207,6 +214,192 @@ describe('planTiles', () => {
 		expect(keys(planTiles('walk', walk, posted(keys(walk), 'remove:0')))).toEqual([
 			'gap::',
 			'avg:duration_min:'
+		]);
+	});
+});
+
+describe('the chart’s configuration', () => {
+	const posted = (fields: [string, string][]) => {
+		const form = new FormData();
+		form.set('chart_present', '1');
+		for (const [key, value] of fields) form.append(key, value);
+		return form;
+	};
+
+	it('reads a timeline stored before it had modes as every event, Vikt’s', () => {
+		expect(
+			parseChart('car_ride', { chart: { kind: 'timeline', field: 'duration_min' } })
+		).toMatchObject({
+			kind: 'timeline',
+			field: 'duration_min',
+			every: true,
+			picker: false
+		});
+	});
+
+	it('reads bars stored before they had details as the type’s default tooltip', () => {
+		const chart = parseChart('walk', {
+			chart: { kind: 'bars', split: { by: 'none' }, picker: false, tooltip: 'emoji' }
+		});
+		expect(chart.kind === 'bars' && chart.details).toEqual(defaultDetails('walk'));
+	});
+
+	it('keeps the ticked details in the list’s order, after its one move', () => {
+		const chart = planChart(
+			'walk',
+			defaultChart('walk'),
+			posted([
+				['chart_kind', 'bars'],
+				['chart_split', 'none'],
+				['details_present', '1'],
+				['detail', 'count'],
+				['detail', 'gap'],
+				['detail', 'avg:duration_min'],
+				['detail_on', 'gap'],
+				['detail_on', 'avg:duration_min'],
+				['detail_op', 'up:2']
+			])
+		);
+		expect(chart.kind === 'bars' && chart.details).toEqual(['avg:duration_min', 'gap']);
+	});
+
+	it('takes an average timeline with tabs, and drops tabs from an every-event one', () => {
+		const base: [string, string][] = [
+			['chart_kind', 'timeline'],
+			['chart_field', 'duration_min'],
+			['chart_picker', 'false'],
+			['chart_picker', 'true']
+		];
+		expect(
+			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'average']]))
+		).toMatchObject({ kind: 'timeline', field: 'duration_min', every: false, picker: true });
+		expect(
+			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'every']]))
+		).toMatchObject({ kind: 'timeline', field: 'duration_min', every: true, picker: false });
+	});
+});
+
+describe('packCells', () => {
+	const big = (label: string) => ({ label, value: '1', big: true });
+	const text = (label: string) => ({ label, value: '1' });
+
+	it('fits three emoji counts to a row, but two once one has words', () => {
+		expect(
+			packCells([big('🚶'), big('🟡'), big('💩'), big('❔')]).map((row) => row.length)
+		).toEqual([3, 1]);
+		expect(
+			packCells([text('Tid mellan'), text('Längd'), text('Kiss')]).map((row) => row.length)
+		).toEqual([2, 1]);
+		expect(packCells([big('🏠'), text('Längd'), big('🟡')]).map((row) => row.length)).toEqual([
+			2, 1
+		]);
+	});
+});
+
+describe('a timeline’s tooltips', () => {
+	const view = (
+		chart: Parameters<typeof cardView>[0]['chart'],
+		history: Parameters<typeof cardView>[0]['history']
+	) =>
+		cardView({
+			typeId: 'car_ride',
+			type: { label: 'Biltur', icon: '🚗' },
+			chart,
+			color: chartColor('green'),
+			tiles: [],
+			period: 'day',
+			today: '2026-10-06',
+			tracked: 30,
+			buckets: [],
+			details: [],
+			events: [],
+			history
+		}).chart;
+
+	it('shows a ride’s own accident, its causes boxed under it, beside its length', () => {
+		const chart = view(
+			{
+				kind: 'timeline',
+				field: 'duration_min',
+				every: true,
+				picker: false,
+				tooltip: 'text',
+				details: ['count', 'avg:duration_min', 'count:accident']
+			},
+			[
+				{
+					occurred_at: '2026-10-05T08:00:00Z',
+					value: 45,
+					details: { duration_min: 45, accident: true, threw_up: true }
+				}
+			]
+		);
+		expect(chart.kind === 'timeline' && chart.points[0].tooltip.rows).toEqual([
+			[{ label: 'Längd', value: '45 min' }],
+			[{ label: 'Olycka:', value: '1' }],
+			{ nested: [[{ label: 'Spydde', value: '1' }]] }
+		]);
+		expect(chart.kind === 'timeline' && chart.latestCaption).toBe('senaste');
+	});
+
+	it('shows a period’s accidents with their causes, from the views', () => {
+		const chart = cardView({
+			typeId: 'car_ride',
+			type: { label: 'Biltur', icon: '🚗' },
+			chart: {
+				kind: 'timeline',
+				field: 'duration_min',
+				every: false,
+				picker: false,
+				tooltip: 'text',
+				details: ['count', 'count:accident']
+			},
+			color: chartColor('green'),
+			tiles: [],
+			period: 'day',
+			today: '2026-10-06',
+			tracked: 30,
+			buckets: [{ type_id: 'car_ride', bucket: '2026-10-05', n: 3, avg_gap_min: null }],
+			details: [
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'duration_min',
+					answered: 3,
+					happened: 3,
+					total: 0,
+					avg_number: 30,
+					share_answered: null
+				},
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'accident',
+					answered: 2,
+					happened: 2,
+					total: 0,
+					avg_number: null,
+					share_answered: 1
+				},
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'threw_up',
+					answered: 1,
+					happened: 1,
+					total: 0,
+					avg_number: null,
+					share_answered: 1
+				}
+			],
+			events: [],
+			history: []
+		}).chart;
+		expect(chart.kind === 'timeline' && chart.points[0].tooltip.rows).toEqual([
+			[{ label: 'Längd', value: '~30 min' }],
+			[{ label: 'Biltur', value: '3', color: 'var(--palette-green)' }],
+			[{ label: 'Olycka:', value: '2' }],
+			{ nested: [[{ label: 'Spydde', value: '1' }]] }
 		]);
 	});
 });

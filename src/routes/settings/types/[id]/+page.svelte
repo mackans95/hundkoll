@@ -3,8 +3,8 @@
 	import { resolve } from '$app/paths';
 	import * as locale from '$lib/locale';
 	import { savedToastThen } from '$lib/toast.svelte';
-	import ColorPicker from '$lib/components/settings/ColorPicker.svelte';
 	import IntervalField from '$lib/components/settings/IntervalField.svelte';
+	import ChartEditor from '$lib/components/settings/ChartEditor.svelte';
 	import TileEditor from '$lib/components/settings/TileEditor.svelte';
 	import SettingsPage from '$lib/components/settings/SettingsPage.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -108,29 +108,22 @@
 							</label>
 						{/if}
 					</div>
-					{#if data.statusOption}
-						<p class="px-1 text-sm text-ink-muted">{words.showOnStatusHelp}</p>
-					{/if}
+					<p class="px-1 text-sm text-ink-muted">
+						{data.statusOption ? words.shownOnStatusHelp : words.shownOnHelp}
+					</p>
 				</section>
 			{/if}
-
-			<section class="flex flex-col gap-2">
-				{@render heading(words.chartColor)}
-				{#if data.palette.length > 0}
-					<p class="px-1 text-sm text-ink-muted">{words.chartColorHelp}</p>
-					<ColorPicker
-						palette={data.palette}
-						current={data.settings.chartColor}
-						label={words.chartColor}
-					/>
-				{:else}
-					<p class="px-1 text-sm text-ink-muted">{words.noChart}</p>
-				{/if}
-			</section>
 
 			{#if data.tileOptions.length > 0}
 				<section class="flex flex-col gap-2">
 					{@render heading(words.stats)}
+					<p class="px-1 text-sm text-ink-muted">{words.chartHelp}</p>
+					<ChartEditor
+						chart={data.chart}
+						splits={data.splitOptions}
+						fields={data.timelineOptions}
+						onedit={markDirty}
+					/>
 					<p class="px-1 text-sm text-ink-muted">{words.tilesHelp}</p>
 					<TileEditor
 						tiles={data.tiles}
@@ -152,16 +145,35 @@
 					class="flex flex-col divide-y divide-edge-soft rounded-2xl border border-edge bg-surface-raised"
 				>
 					{#each data.trends as trend (trend.key)}
-						<label class="flex items-center justify-between gap-3 px-4 py-3">
-							<span class="font-medium">{trend.label}</span>
-							<input
-								type="checkbox"
-								name="trend"
-								value={trend.key}
-								checked={trend.on}
-								class="size-6 rounded border-edge-strong text-emerald-600"
-							/>
-						</label>
+						<!-- Its sub-details show once it is ticked: CSS, so it works without JS. -->
+						<div class="group">
+							<label class="flex items-center justify-between gap-3 px-4 py-3">
+								<span class="font-medium">{trend.label}</span>
+								<input
+									type="checkbox"
+									name="trend"
+									value={trend.key}
+									checked={trend.on}
+									class="parent size-6 rounded border-edge-strong text-emerald-600"
+								/>
+							</label>
+							{#if trend.children.length > 0}
+								<div class="hidden flex-col gap-1 pr-4 pb-3 pl-8 group-has-[.parent:checked]:flex">
+									{#each trend.children as child (child.name)}
+										<label class="flex items-center justify-between gap-3 text-sm">
+											<span>{child.label}</span>
+											<input
+												type="checkbox"
+												name="trend_child"
+												value="{trend.key}>{child.name}"
+												checked={child.on}
+												class="size-5 rounded border-edge-strong text-emerald-600"
+											/>
+										</label>
+									{/each}
+								</div>
+							{/if}
+						</div>
 					{/each}
 				</div>
 			</section>

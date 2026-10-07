@@ -31,6 +31,16 @@ export type DetailField = {
 	 * _min field is minutes and needs none; the generator writes it for others.
 	 */
 	unit?: string;
+	/**
+	 * What a chart's emoji tooltip counts this field by (plan 29): 🟡 for kiss.
+	 * A field without one reads as its label even in emoji mode.
+	 */
+	symbol?: string;
+	/**
+	 * A checkbox's two answers, for a chart split by it: the legend's words and
+	 * the emoji tooltip's marks. An outcome has its own in `outcome`.
+	 */
+	answers?: { yes: string; no: string; yesSymbol?: string; noSymbol?: string };
 	/** Another number field this one cannot exceed: anxious after 50 of 40 minutes. */
 	atMost?: string;
 	/** How the value reads in the events list; null hides it. */
@@ -155,12 +165,14 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 			name: 'pee',
 			label: locale.activities.fields.pee,
 			input: 'count',
+			symbol: locale.stats.symbols.pee,
 			summarize: (value) => countText(value, locale.activities.summary.pee)
 		},
 		{
 			name: 'poop',
 			label: locale.activities.fields.poop,
 			input: 'count',
+			symbol: locale.stats.symbols.poop,
 			summarize: (value) => countText(value, locale.activities.summary.poop)
 		}
 	],
@@ -169,12 +181,14 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 			name: 'pee',
 			label: locale.activities.fields.pee,
 			input: 'count',
+			symbol: locale.stats.symbols.pee,
 			summarize: (value) => countText(value, locale.activities.summary.pee)
 		},
 		{
 			name: 'poop',
 			label: locale.activities.fields.poop,
 			input: 'count',
+			symbol: locale.stats.symbols.poop,
 			summarize: (value) => countText(value, locale.activities.summary.poop)
 		}
 	],
@@ -185,6 +199,12 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
 			name: 'finished',
 			label: locale.activities.fields.finished,
 			input: 'checkbox',
+			answers: {
+				yes: locale.stats.meals.legendFinished,
+				no: locale.stats.meals.legendNotFinished,
+				yesSymbol: locale.stats.symbols.finished,
+				noSymbol: locale.stats.symbols.notFinished
+			},
 			summarize: (value) =>
 				value === true
 					? locale.activities.summary.finished

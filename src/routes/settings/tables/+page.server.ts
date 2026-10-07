@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import { listEventTypes } from '$lib/server/care';
 import { readsFailed } from '$lib/server/reads';
 import { readCardConfig, saveCardConfig } from '$lib/server/statsSettings';
 import { cardHeading, planCardList, sameCards } from '$lib/stats/cardConfig';
@@ -6,11 +7,19 @@ import * as locale from '$lib/locale';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ setHeaders, locals: { supabase } }) => {
-	const cards = await readCardConfig(supabase);
+	const [cards, types] = await Promise.all([readCardConfig(supabase), listEventTypes(supabase)]);
 	readsFailed(setHeaders, cards);
 
 	return {
-		cards: (cards ?? []).map((card) => ({ ...card, label: cardHeading(card.type) })),
+		// The catalogue names a card whose type has no words of its own; a
+		// failed read of it only costs that name.
+		cards: (cards ?? []).map((card) => ({
+			...card,
+			label: cardHeading(
+				card.type,
+				types?.find((type) => type.id === card.type)
+			)
+		})),
 		failed: cards === null
 	};
 };

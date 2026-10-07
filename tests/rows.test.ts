@@ -3,7 +3,7 @@
 // lookup that can miss — and what a miss means differs per column.
 
 import { describe, expect, it } from 'vitest';
-import { accidentBins, mealDays, simpleDays, statSummary, walkDays } from '$lib/stats/rows';
+import { statSummary } from '$lib/stats/rows';
 import type {
 	DetailBucketRow,
 	DetailWindowRow,
@@ -33,70 +33,6 @@ const detail = (
 	avg_number: null,
 	share_answered: null,
 	...part
-});
-
-describe('walkDays', () => {
-	const buckets = [bucket('walk', '2026-08-20', 3, 210), bucket('meal', '2026-08-20', 2)];
-	const details = [
-		detail('walk', '2026-08-20', 'pee', { answered: 3, happened: 3, total: 5 }),
-		detail('walk', '2026-08-20', 'duration_min', { answered: 3, avg_number: 22.5 }),
-		detail('meal', '2026-08-20', 'finished', { answered: 2, happened: 2 })
-	];
-
-	it('takes its own type only, and its own fields', () => {
-		expect(walkDays(buckets, details)).toEqual([
-			{ day: '2026-08-20', n: 3, pee: 5, poop: 0, avg_gap_min: 210, avg_duration_min: 22.5 }
-		]);
-	});
-
-	// A day nobody recorded a bajs on has no row for the field, and that is a
-	// zero — the same reading the old summed column gave.
-	it('reads a field with no row as zero, and a missing average as null', () => {
-		expect(walkDays([bucket('walk', '2026-08-21', 1)], [])).toEqual([
-			{ day: '2026-08-21', n: 1, pee: 0, poop: 0, avg_gap_min: null, avg_duration_min: null }
-		]);
-	});
-});
-
-describe('mealDays', () => {
-	// The case a subtraction from n would get wrong: three meals, two of them
-	// answered for, one finished. The unanswered meal is neither.
-	it('counts unfinished from what was answered, not from the meal count', () => {
-		expect(
-			mealDays(
-				[bucket('meal', '2026-08-20', 3)],
-				[detail('meal', '2026-08-20', 'finished', { answered: 2, happened: 1 })]
-			)
-		).toEqual([
-			{ day: '2026-08-20', n: 3, finished_true: 1, finished_false: 1, avg_gap_min: null }
-		]);
-	});
-
-	it('leaves a day nobody answered for at neither', () => {
-		expect(mealDays([bucket('meal', '2026-08-20', 2)], [])).toEqual([
-			{ day: '2026-08-20', n: 2, finished_true: 0, finished_false: 0, avg_gap_min: null }
-		]);
-	});
-});
-
-describe('accidentBins and simpleDays', () => {
-	it('splits a bin by kiss and bajs', () => {
-		expect(
-			accidentBins(
-				[bucket('accident', '2026-08-17', 4)],
-				[
-					detail('accident', '2026-08-17', 'pee', { answered: 4, happened: 3, total: 3 }),
-					detail('accident', '2026-08-17', 'poop', { answered: 4, happened: 1, total: 1 })
-				]
-			)
-		).toEqual([{ bucket: '2026-08-17', n: 4, pee: 3, poop: 1 }]);
-	});
-
-	it('reduces one type to days and counts', () => {
-		expect(
-			simpleDays([bucket('car_ride', '2026-08-20', 2), bucket('walk', '2026-08-20', 3)], 'car_ride')
-		).toEqual([{ day: '2026-08-20', n: 2 }]);
-	});
 });
 
 describe('statSummary', () => {

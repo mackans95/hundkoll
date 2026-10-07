@@ -4,7 +4,17 @@ import { listEventTypes } from '$lib/server/care';
 import type { Db } from '$lib/server/db';
 import { readsFailed } from '$lib/server/reads';
 import { readTrendConfig, saveTrendConfig } from '$lib/server/trendSettings';
-import { planTrendList, sameTrends, trendKey, trendLabel, trendsFor } from '$lib/stats/trendConfig';
+import {
+	childRow,
+	planTrendList,
+	sameTrends,
+	trendChildren,
+	trendKey,
+	trendLabel,
+	trendMetricLabel,
+	trendsFor,
+	type TrendConfigRow
+} from '$lib/stats/trendConfig';
 import type { Actions, PageServerLoad } from './$types';
 
 /** The catalogue and the list it validates, read together for load and action alike. */
@@ -12,6 +22,15 @@ async function current(db: Db) {
 	const types = await listEventTypes(db);
 	const rows = types ? await readTrendConfig(db, new Set(types.map((type) => type.id))) : null;
 	return { types, rows };
+}
+
+/** What a row's field reveals, each a checkbox under it, ticked when the row compares it. */
+function childOptions(row: TrendConfigRow) {
+	return trendChildren(row).map((field) => ({
+		name: field.name,
+		label: trendMetricLabel(childRow(row, field.name)),
+		on: row.children?.includes(field.name) ?? false
+	}));
 }
 
 export const load: PageServerLoad = async ({ setHeaders, locals: { supabase } }) => {
@@ -24,7 +43,8 @@ export const load: PageServerLoad = async ({ setHeaders, locals: { supabase } })
 		rows: (rows ?? []).map((row) => ({
 			key: trendKey(row),
 			label: trendLabel(row, byId.get(row.type)),
-			better: row.better ?? ''
+			better: row.better ?? '',
+			children: childOptions(row)
 		})),
 		// Every metric, grouped by type; the page hides the ones already listed,
 		// so a row removed before saving is offered again straight away.
@@ -33,7 +53,8 @@ export const load: PageServerLoad = async ({ setHeaders, locals: { supabase } })
 			options: trendsFor(type.id).map((row) => ({
 				key: trendKey(row),
 				label: trendLabel(row, type, { icon: false }),
-				rowLabel: trendLabel(row, type)
+				rowLabel: trendLabel(row, type),
+				children: childOptions(row)
 			}))
 		})),
 		failed: types === null || rows === null

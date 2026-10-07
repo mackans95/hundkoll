@@ -46,7 +46,6 @@ Flags (anything missing is prompted for):
   --field "name=vomit;label=Spydde;input=checkbox;revealed-by=accident"
   --stats <none|counts|trend> stats card scaffold
   --trend-field <name>        trend only: which number field to plot
-  --trend-unit <kg>           trend only: the unit on the chart's axis
   --dry-run                   print every planned write, write nothing
 `;
 
@@ -83,7 +82,6 @@ const { values: flags } = parseArgs({
 		field: { type: 'string', multiple: true },
 		stats: { type: 'string' },
 		'trend-field': { type: 'string' },
-		'trend-unit': { type: 'string' },
 		'dry-run': { type: 'boolean' },
 		help: { type: 'boolean' }
 	}
@@ -203,8 +201,7 @@ if (statsAnswer === 'counts') {
 		.map((field) => field.name);
 	stats = {
 		kind: 'trend-line',
-		field: await ask(flags['trend-field'], `Field to plot (${numberFields.join('/')})`),
-		unit: await ask(flags['trend-unit'], "Axis unit (like 'kg')")
+		field: await ask(flags['trend-field'], `Field to plot (${numberFields.join('/')})`)
 	};
 } else if (statsAnswer !== 'none') {
 	console.error(`Unknown stats kind '${statsAnswer}' — none, counts or trend.`);
@@ -246,12 +243,8 @@ if (errors.length > 0) {
 	process.exit(1);
 }
 
-const templates = {
-	counts: readFileSync(new URL('./templates/counts-card.svelte.tpl', import.meta.url), 'utf8'),
-	trend: readFileSync(new URL('./templates/trend-card.svelte.tpl', import.meta.url), 'utf8')
-};
 const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-const { creates, edits, notes } = generate(spec, templates, stamp, localeSource);
+const { creates, edits, notes } = generate(spec, stamp, localeSource);
 
 /** The snippet goes on the line after its marker, indentation carried by it. */
 function applyEdit(source: string, marker: string, insert: string): string {
