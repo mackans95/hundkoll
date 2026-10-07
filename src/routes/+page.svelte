@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import LiveSessionCard from '$lib/components/log/LiveSessionCard.svelte';
 	import AwayCard from '$lib/components/log/AwayCard.svelte';
@@ -187,10 +188,14 @@
 <svelte:head><title>{locale.app.name}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4 pb-10">
-	<header class="px-1">
-		<h1 class="text-3xl font-bold">{data.dog?.name ?? locale.app.name}</h1>
-		<p class="mt-1 text-sm text-ink-muted">{locale.log.subtitle}</p>
-	</header>
+	<PageHeader
+		title={data.dog?.name ?? locale.app.name}
+		gap={4}
+	>
+		{#snippet subtitle()}
+			<p class="text-sm text-ink-muted">{locale.log.subtitle}</p>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Not while the dialog or the away card is up: each shows the message
 	     itself, next to the form it came from. -->

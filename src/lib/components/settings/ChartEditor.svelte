@@ -224,7 +224,11 @@
 		)}
 	</fieldset>
 
-	<fieldset class="flex flex-col gap-1">
+	<!-- Hidden, not dropped, when nothing in it applies: the list still posts,
+	     so its order and ticks come back with bars. -->
+	<fieldset
+		class="flex-col gap-1 {details.some((detail) => offered(detail.key)) ? 'flex' : 'hidden'}"
+	>
 		<legend class="text-sm text-ink-muted">{words.details}</legend>
 		<input
 			type="hidden"

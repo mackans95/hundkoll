@@ -58,8 +58,9 @@
 {#if data.session}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
 	<div class="pb-[calc(5rem+var(--nav-inset))]">
-		<!-- Zero height: the menu sits over each page's own header. -->
-		<div class="relative mx-auto max-w-sm">
+		<!-- Zero height: the menu sits over each page's own header, and sticks
+		     to the top with it. -->
+		<div class="sticky top-0 z-30 mx-auto h-0 max-w-sm">
 			<AppMenu />
 		</div>
 		{@render children()}

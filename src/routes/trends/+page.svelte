@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import TabBar, { type Tab } from '$lib/components/TabBar.svelte';
 	import TrendTile from '$lib/components/stats/TrendTile.svelte';
 	import * as locale from '$lib/locale';
@@ -22,9 +23,7 @@
 <svelte:head><title>{locale.app.pageTitle(locale.trends.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-4 p-4">
-	<header class="px-1">
-		<h1 class="text-3xl font-bold">{locale.trends.title}</h1>
-	</header>
+	<PageHeader title={locale.trends.title} />
 
 	{#if data.failed}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>

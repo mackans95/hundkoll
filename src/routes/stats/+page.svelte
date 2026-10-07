@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { resolve } from '$app/paths';
 	import type { Tab } from '$lib/components/TabBar.svelte';
 	import StatsCard from '$lib/components/stats/StatsCard.svelte';
@@ -29,10 +30,11 @@
 <svelte:head><title>{locale.app.pageTitle(locale.stats.title)}</title></svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-4">
-	<header class="px-1">
-		<h1 class="text-3xl font-bold">{locale.stats.title}</h1>
-		<p class="mt-1 text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30, away)}</p>
-	</header>
+	<PageHeader title={locale.stats.title}>
+		{#snippet subtitle()}
+			<p class="text-sm text-ink-muted">{locale.stats.subtitle(tracked || 30, away)}</p>
+		{/snippet}
+	</PageHeader>
 
 	{#if data.failed}
 		<p class="rounded-lg bg-danger-surface p-4 text-danger-ink">{locale.stats.loadFailed}</p>
