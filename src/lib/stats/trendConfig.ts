@@ -26,6 +26,11 @@ export type TrendConfigRow = {
 	better: Better;
 	/** Only the defaults carry one, so they keep today's names. */
 	label?: string;
+	/**
+	 * What a share's field revealed, compared beneath it: Biltur's Olycka with
+	 * Spydde and Bajsade under it. Field names, in declaration order.
+	 */
+	children?: string[];
 };
 
 /** Today's six rows, until the list is first edited. */
@@ -72,13 +77,44 @@ export function trendsFor(typeId: string): TrendConfigRow[] {
 	return [
 		{ type: typeId, kind: 'count', better: null },
 		{ type: typeId, kind: 'gap', better: null },
-		...fieldsFor(typeId).map((field): TrendConfigRow => ({
-			type: typeId,
-			kind: field.input === 'number' ? 'avg' : 'share',
-			field: field.name,
-			better: null
-		}))
+		// Only the top level: what a field reveals is chosen under it (trendChildren).
+		...fieldsFor(typeId)
+			.filter((field) => !field.revealedBy)
+			.map((field): TrendConfigRow => ({
+				type: typeId,
+				kind: field.input === 'number' ? 'avg' : 'share',
+				field: field.name,
+				better: null
+			}))
 	];
+}
+
+/**
+ * The fields a row's field reveals, which it may compare beneath it: only a
+ * share has them, since what it counted is what revealed them.
+ */
+export function trendChildren(row: Pick<TrendConfigRow, 'type' | 'kind' | 'field'>): DetailField[] {
+	if (row.kind !== 'share' || !row.field) return [];
+	return fieldsFor(row.type).filter((field) => field.revealedBy === row.field);
+}
+
+/** A sub-row as a row of its own, for reading its value: an average of a number, else a share. */
+export function childRow(parent: TrendConfigRow, name: string): TrendConfigRow {
+	const field = fieldsFor(parent.type).find((candidate) => candidate.name === name);
+	return {
+		type: parent.type,
+		kind: field?.input === 'number' ? 'avg' : 'share',
+		field: name,
+		better: parent.better
+	};
+}
+
+/** Only the sub-fields the row's field still reveals, each once, in declaration order. */
+function keepChildren(row: TrendConfigRow, raw: unknown): string[] {
+	const wanted = new Set(Array.isArray(raw) ? raw.filter((name) => typeof name === 'string') : []);
+	return trendChildren(row)
+		.map((field) => field.name)
+		.filter((name) => wanted.has(name));
 }
 
 /**
@@ -95,8 +131,19 @@ export function parseTrendRows(raw: unknown, knownTypes: ReadonlySet<string>): T
 	const rows: TrendConfigRow[] = [];
 	for (const item of raw) {
 		if (typeof item !== 'object' || item === null) continue;
-		const { type, kind, field, better, label } = item as Record<string, unknown>;
+		const { type, kind, field, better, label, children } = item as Record<string, unknown>;
 		if (typeof type !== 'string' || !knownTypes.has(type)) continue;
+
+		// A sub-field stored as a row of its own, from before rows had sub-rows:
+		// it joins its parent's, if the list has that row.
+		const revealedBy = fieldsFor(type).find((candidate) => candidate.name === field)?.revealedBy;
+		if (revealedBy) {
+			const parent = rows.find((row) => row.type === type && row.field === revealedBy);
+			if (parent && trendChildren(parent).some((child) => child.name === field)) {
+				parent.children = keepChildren(parent, [...(parent.children ?? []), field]);
+			}
+			continue;
+		}
 
 		const supported = trendsFor(type).find(
 			(row) => row.kind === kind && (row.field ?? null) === (field ?? null)
@@ -104,11 +151,13 @@ export function parseTrendRows(raw: unknown, knownTypes: ReadonlySet<string>): T
 		if (!supported || seen.has(trendKey(supported))) continue;
 		seen.add(trendKey(supported));
 
-		rows.push({
+		const row: TrendConfigRow = {
 			...supported,
 			better: better === 'up' || better === 'down' ? better : null,
 			...(typeof label === 'string' && label !== '' ? { label } : {})
-		});
+		};
+		const kept = keepChildren(row, children);
+		rows.push(kept.length > 0 ? { ...row, children: kept } : row);
 	}
 	return rows;
 }
@@ -130,7 +179,7 @@ export function trendLabel(
 	return `${name} · ${trendMetricLabel(row)}`;
 }
 
-/** The metric alone, for a list already headed by its type: "antal", "Kiss", "Lugn". */
+/** The metric alone, for a list already headed by its type: "Antal", "Kiss", "Lugn". */
 export function trendMetricLabel(row: TrendConfigRow): string {
 	const words = locale.stats.trends.kinds;
 	if (row.kind === 'count') return words.count;
@@ -164,7 +213,13 @@ export function planTrendList(
 		const row = byKey.get(key) ?? addTrend([], key)[0];
 		if (!row || rows.some((existing) => trendKey(existing) === key)) return;
 		const better = betters[i];
-		rows.push({ ...row, better: better === 'up' || better === 'down' ? better : null });
+		const next: TrendConfigRow = {
+			...row,
+			better: better === 'up' || better === 'down' ? better : null
+		};
+		delete next.children;
+		const children = keepChildren(next, form.getAll(`children:${key}`));
+		rows.push(children.length > 0 ? { ...next, children } : next);
 	});
 
 	const [op, at] = String(form.get('op') ?? '').split(':');
@@ -199,14 +254,28 @@ export function addTrend(current: TrendConfigRow[], key: string): TrendConfigRow
 export function setTypeTrends(
 	current: TrendConfigRow[],
 	typeId: string,
-	ticked: readonly string[]
+	ticked: readonly string[],
+	/** "parentKey>childField" for each ticked sub-row. */
+	tickedChildren: readonly string[] = []
 ): TrendConfigRow[] {
 	const wanted = new Set(ticked);
-	const kept = current.filter((row) => row.type !== typeId || wanted.has(trendKey(row)));
+	const withChildren = (row: TrendConfigRow): TrendConfigRow => {
+		const prefix = `${trendKey(row)}>`;
+		const next: TrendConfigRow = { ...row };
+		delete next.children;
+		const children = keepChildren(
+			next,
+			tickedChildren.filter((key) => key.startsWith(prefix)).map((key) => key.slice(prefix.length))
+		);
+		return children.length > 0 ? { ...next, children } : next;
+	};
+	const kept = current
+		.filter((row) => row.type !== typeId || wanted.has(trendKey(row)))
+		.map((row) => (row.type === typeId ? withChildren(row) : row));
 	const have = new Set(kept.map(trendKey));
-	const added = trendsFor(typeId).filter(
-		(row) => wanted.has(trendKey(row)) && !have.has(trendKey(row))
-	);
+	const added = trendsFor(typeId)
+		.filter((row) => wanted.has(trendKey(row)) && !have.has(trendKey(row)))
+		.map(withChildren);
 	return [...kept, ...added];
 }
 

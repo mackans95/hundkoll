@@ -167,16 +167,35 @@
 					class="flex flex-col divide-y divide-edge-soft rounded-2xl border border-edge bg-surface-raised"
 				>
 					{#each data.trends as trend (trend.key)}
-						<label class="flex items-center justify-between gap-3 px-4 py-3">
-							<span class="font-medium">{trend.label}</span>
-							<input
-								type="checkbox"
-								name="trend"
-								value={trend.key}
-								checked={trend.on}
-								class="size-6 rounded border-edge-strong text-emerald-600"
-							/>
-						</label>
+						<!-- Its sub-details show once it is ticked: CSS, so it works without JS. -->
+						<div class="group">
+							<label class="flex items-center justify-between gap-3 px-4 py-3">
+								<span class="font-medium">{trend.label}</span>
+								<input
+									type="checkbox"
+									name="trend"
+									value={trend.key}
+									checked={trend.on}
+									class="parent size-6 rounded border-edge-strong text-emerald-600"
+								/>
+							</label>
+							{#if trend.children.length > 0}
+								<div class="hidden flex-col gap-1 pr-4 pb-3 pl-8 group-has-[.parent:checked]:flex">
+									{#each trend.children as child (child.name)}
+										<label class="flex items-center justify-between gap-3 text-sm">
+											<span>{child.label}</span>
+											<input
+												type="checkbox"
+												name="trend_child"
+												value="{trend.key}>{child.name}"
+												checked={child.on}
+												class="size-5 rounded border-edge-strong text-emerald-600"
+											/>
+										</label>
+									{/each}
+								</div>
+							{/if}
+						</div>
 					{/each}
 				</div>
 			</section>

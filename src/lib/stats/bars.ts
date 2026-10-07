@@ -24,7 +24,7 @@ import * as time from '$lib/time';
 import { numberWriter, type ChartSpec } from './cardSpec';
 import { countDetailDays, dayBreakdown, type DetailRow } from './detailDays';
 import { outcomeDays, type Mean, type OutcomeDay } from './outcomes';
-import { countAsRow, countCell, detailRows, type DetailSource } from './tooltip';
+import { countAsRow, countCell, detailRows, viewCauses, type DetailSource } from './tooltip';
 import { accidentColors, aloneColors, mealColors, NEUTRAL_COLOR, type ChartColor } from './palette';
 
 export type BarChart = Extract<ChartSpec, { kind: 'bars' }>;
@@ -274,7 +274,7 @@ export function barBuckets(input: BarInput): ColumnBucket[] {
 				fromEvents
 					? (dayBreakdown(dayCounts, fields, start).find((group) => group.label === field.label)
 							?.children ?? [])
-					: [],
+					: viewCauses(typeId, field, (name) => detail(start, name)?.happened ?? 0),
 			share: (field) => {
 				const answered = detail(start, field.name);
 				return answered && answered.answered > 0 ? answered.happened / answered.answered : null;

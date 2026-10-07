@@ -63,6 +63,22 @@ export function packCells(cells: TooltipCell[]): TooltipCell[][] {
 	return rows;
 }
 
+/**
+ * What a field revealed in one period, from the views: each cause that
+ * happened, the way the day's events would box it. Every field the views
+ * cover has a row per bucket, causes included.
+ */
+export function viewCauses(
+	typeId: string,
+	field: DetailField,
+	happened: (name: string) => number
+): { label: string; n: number }[] {
+	return fieldsFor(typeId)
+		.filter((child) => child.revealedBy === field.name && child.input !== 'number')
+		.map((child) => ({ label: child.label, n: happened(child.name) }))
+		.filter((child) => child.n > 0);
+}
+
 /** Whether a counted field is drawn as its own row, causes boxed under it, rather than an emoji in line. */
 export function countAsRow(emoji: boolean, field: DetailField | undefined): boolean {
 	return !(emoji && field?.symbol);

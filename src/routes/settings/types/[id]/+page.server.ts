@@ -8,8 +8,10 @@ import { fieldsFor, shortFieldLabel } from '$lib/events/fields';
 import { typeSettings } from '$lib/typeSettings';
 import { readTrendConfig, saveTrendConfig } from '$lib/server/trendSettings';
 import {
+	childRow,
 	sameTrends,
 	setTypeTrends,
+	trendChildren,
 	trendKey,
 	trendMetricLabel,
 	trendsFor
@@ -110,11 +112,20 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals: { supab
 					}))
 				: [],
 		showOnStats: (cards ?? []).find((card) => card.type === params.id)?.shown ?? true,
-		trends: trendsFor(params.id).map((row) => ({
-			key: trendKey(row),
-			label: trendMetricLabel(row),
-			on: (trends ?? []).some((listed) => trendKey(listed) === trendKey(row))
-		})),
+		trends: trendsFor(params.id).map((row) => {
+			const listed = (trends ?? []).find((candidate) => trendKey(candidate) === trendKey(row));
+			return {
+				key: trendKey(row),
+				label: trendMetricLabel(row),
+				on: listed !== undefined,
+				// What the field reveals, offered under it once it is ticked.
+				children: trendChildren(row).map((field) => ({
+					name: field.name,
+					label: trendMetricLabel(childRow(row, field.name)),
+					on: listed?.children?.includes(field.name) ?? false
+				}))
+			};
+		}),
 		// A form over defaults it could not read would save over the real choice.
 		failed: types === null || settings === null || trends === null || cards === null
 	};
@@ -130,7 +141,12 @@ async function saveTypeTrends(db: Db, typeId: string, form: FormData): Promise<s
 	if (!before) {
 		return locale.errors.saveFailed;
 	}
-	const after = setTypeTrends(before, typeId, form.getAll('trend').map(String));
+	const after = setTypeTrends(
+		before,
+		typeId,
+		form.getAll('trend').map(String),
+		form.getAll('trend_child').map(String)
+	);
 	return sameTrends(before, after) ? null : saveTrendConfig(db, after);
 }
 

@@ -20,7 +20,9 @@
 
 	// Edited here and sent only by Spara. Re-read from the server after a save,
 	// which is what makes it equal again.
-	let rows = $derived(data.rows.map((row) => ({ ...row })));
+	let rows = $derived(
+		data.rows.map((row) => ({ ...row, children: row.children.map((child) => ({ ...child })) }))
+	);
 	const dirty = $derived(JSON.stringify(rows) !== JSON.stringify(data.rows));
 
 	const available = $derived(
@@ -52,7 +54,10 @@
 		event.preventDefault();
 		const option = available.flatMap((group) => group.options).find((o) => o.key === adding);
 		if (!option) return;
-		rows = [...rows, { key: option.key, label: option.rowLabel, better: '' }];
+		rows = [
+			...rows,
+			{ key: option.key, label: option.rowLabel, better: '', children: option.children }
+		];
 	}
 </script>
 
@@ -117,6 +122,23 @@
 								{/each}
 							</select>
 						</label>
+						<!-- What the field revealed: compared beneath it on Trender when ticked. -->
+						{#if row.children.length > 0}
+							<div class="flex flex-col gap-1 border-l-2 border-edge pl-3">
+								{#each row.children as child (child.name)}
+									<label class="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											name="children:{row.key}"
+											value={child.name}
+											bind:checked={child.on}
+											class="size-5 rounded border-edge-strong text-emerald-600"
+										/>
+										{child.label}
+									</label>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				{:else}
 					<p class="px-1 text-sm text-ink-muted">{words.empty}</p>

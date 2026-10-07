@@ -556,8 +556,8 @@ export const stats = {
 			`${direction === 'up' ? '↑' : '↓'} ${percent} %` as const,
 		/** Built names for a configured row: "🛁 Bad · antal". */
 		kinds: {
-			count: 'antal',
-			gap: 'tid mellan'
+			count: 'Antal',
+			gap: 'Tid mellan'
 		},
 		/** Shown with the badge, so better and worse never rest on hue alone. */
 		mark: { better: '✓', worse: '!' },

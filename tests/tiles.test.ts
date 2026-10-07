@@ -341,4 +341,65 @@ describe('a timeline’s tooltips', () => {
 		]);
 		expect(chart.kind === 'timeline' && chart.latestCaption).toBe('senaste');
 	});
+
+	it('shows a period’s accidents with their causes, from the views', () => {
+		const chart = cardView({
+			typeId: 'car_ride',
+			type: { label: 'Biltur', icon: '🚗' },
+			chart: {
+				kind: 'timeline',
+				field: 'duration_min',
+				every: false,
+				picker: false,
+				tooltip: 'text',
+				details: ['count', 'count:accident']
+			},
+			color: chartColor('green'),
+			tiles: [],
+			period: 'day',
+			today: '2026-10-06',
+			tracked: 30,
+			buckets: [{ type_id: 'car_ride', bucket: '2026-10-05', n: 3, avg_gap_min: null }],
+			details: [
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'duration_min',
+					answered: 3,
+					happened: 3,
+					total: 0,
+					avg_number: 30,
+					share_answered: null
+				},
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'accident',
+					answered: 2,
+					happened: 2,
+					total: 0,
+					avg_number: null,
+					share_answered: 1
+				},
+				{
+					type_id: 'car_ride',
+					bucket: '2026-10-05',
+					field: 'threw_up',
+					answered: 1,
+					happened: 1,
+					total: 0,
+					avg_number: null,
+					share_answered: 1
+				}
+			],
+			events: [],
+			history: []
+		}).chart;
+		expect(chart.kind === 'timeline' && chart.points[0].tooltip.rows).toEqual([
+			[{ label: 'Längd', value: '~30 min' }],
+			[{ label: 'Biltur', value: '3', color: 'var(--palette-green)' }],
+			[{ label: 'Olycka:', value: '2' }],
+			{ nested: [[{ label: 'Spydde', value: '1' }]] }
+		]);
+	});
 });

@@ -132,18 +132,30 @@
 	{/if}
 
 	{#if kind === 'timeline'}
-		<label class="flex flex-col gap-1 text-sm text-ink-muted">
-			{words.field}
-			<select
+		{#if fields.length > 1}
+			<label class="flex flex-col gap-1 text-sm text-ink-muted">
+				{words.field}
+				<select
+					name="chart_field"
+					bind:value={field}
+					class={SELECT}
+				>
+					{#each fields as option (option.key)}
+						<option value={option.key}>{option.label}</option>
+					{/each}
+				</select>
+			</label>
+		{:else}
+			<!-- Nothing to choose between: say what is plotted, and post it. -->
+			<input
+				type="hidden"
 				name="chart_field"
-				bind:value={field}
-				class={SELECT}
-			>
-				{#each fields as option (option.key)}
-					<option value={option.key}>{option.label}</option>
-				{/each}
-			</select>
-		</label>
+				value={fields[0].key}
+			/>
+			<p class="text-sm text-ink-muted">
+				{words.field}: <span class="text-ink">{fields[0].label}</span>
+			</p>
+		{/if}
 		<fieldset class="flex flex-col gap-1">
 			<legend class="text-sm text-ink-muted">{words.points}</legend>
 			{@render segmented(
@@ -157,19 +169,28 @@
 			)}
 		</fieldset>
 	{:else}
-		<label class="flex flex-col gap-1 text-sm text-ink-muted">
-			{words.split}
-			<select
+		{#if splits.length > 1}
+			<label class="flex flex-col gap-1 text-sm text-ink-muted">
+				{words.split}
+				<select
+					name="chart_split"
+					bind:value={split}
+					onchange={changed}
+					class={SELECT}
+				>
+					{#each splits as option (option.key)}
+						<option value={option.key}>{option.label}</option>
+					{/each}
+				</select>
+			</label>
+		{:else}
+			<!-- A type with nothing to split by: no choice to offer. -->
+			<input
+				type="hidden"
 				name="chart_split"
-				bind:value={split}
-				onchange={changed}
-				class={SELECT}
-			>
-				{#each splits as option (option.key)}
-					<option value={option.key}>{option.label}</option>
-				{/each}
-			</select>
-		</label>
+				value="none"
+			/>
+		{/if}
 	{/if}
 
 	<!-- Tabs: the bars' periods, or an average timeline's; an every-event line has none. -->

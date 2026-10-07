@@ -14,7 +14,7 @@ import type {
 	Period,
 	TypeBucketRow
 } from '$lib/types/domain';
-import { detailRows, type DetailOptions, type DetailSource } from './tooltip';
+import { detailRows, viewCauses, type DetailOptions, type DetailSource } from './tooltip';
 import {
 	AXIS_LABEL,
 	barBuckets,
@@ -137,7 +137,7 @@ function periodSource(typeId: string, input: CardInput, start: string): DetailSo
 			field.input === 'count'
 				? (detail(field.name)?.total ?? 0)
 				: (detail(field.name)?.happened ?? 0),
-		causes: () => [],
+		causes: (field) => viewCauses(typeId, field, (name) => detail(name)?.happened ?? 0),
 		share: (field) => {
 			const row = detail(field.name);
 			return row && row.answered > 0 ? row.happened / row.answered : null;

@@ -7,6 +7,7 @@ import {
 	parseTrendRows,
 	planTrendList,
 	setTypeTrends,
+	trendChildren,
 	trendKey,
 	trendsFor,
 	type TrendConfigRow
@@ -23,15 +24,14 @@ const submit = (fields: [string, string][]) => {
 const keys = (rows: TrendConfigRow[]) => rows.map(trendKey);
 
 describe('trendsFor', () => {
-	it('offers a count and a gap for every type, and one metric per field', () => {
+	it('offers a count and a gap for every type, and one metric per top-level field', () => {
 		expect(keys(trendsFor('bath'))).toEqual(['bath:count:', 'bath:gap:']);
 		expect(keys(trendsFor('car_ride'))).toEqual([
 			'car_ride:count:',
 			'car_ride:gap:',
 			'car_ride:avg:duration_min',
-			'car_ride:share:accident',
-			'car_ride:share:pooped',
-			'car_ride:share:threw_up'
+			// Only the top level: Spydde and Bajsade are chosen under Olycka.
+			'car_ride:share:accident'
 		]);
 	});
 });
@@ -117,5 +117,44 @@ describe('setTypeTrends', () => {
 			'accident:count:',
 			'walk:share:pee'
 		]);
+	});
+});
+
+describe('sub-rows', () => {
+	const accident = { type: 'car_ride', kind: 'share' as const, field: 'accident', better: null };
+
+	it('offers a share what its field reveals, and nothing else', () => {
+		expect(trendChildren(accident).map((field) => field.name)).toEqual(['pooped', 'threw_up']);
+		expect(trendChildren({ type: 'car_ride', kind: 'avg', field: 'duration_min' })).toEqual([]);
+	});
+
+	it('folds a sub-field stored as its own row into its parent’s', () => {
+		const stored = [accident, { type: 'car_ride', kind: 'share', field: 'threw_up', better: null }];
+		expect(parseTrendRows(stored, KNOWN)).toEqual([{ ...accident, children: ['threw_up'] }]);
+		// Without its parent in the list, it has nowhere to go.
+		expect(parseTrendRows([stored[1]], KNOWN)).toEqual([]);
+	});
+
+	it('takes each row’s ticked sub-rows from the settings form', () => {
+		const planned = planTrendList(
+			[accident],
+			submit([
+				['key', 'car_ride:share:accident'],
+				['better', ''],
+				['children:car_ride:share:accident', 'threw_up'],
+				['children:car_ride:share:accident', 'gone']
+			])
+		);
+		expect('rows' in planned && planned.rows).toEqual([{ ...accident, children: ['threw_up'] }]);
+	});
+
+	it('applies a type page’s sub-switches to its parent', () => {
+		const next = setTypeTrends(
+			[],
+			'car_ride',
+			['car_ride:share:accident'],
+			['car_ride:share:accident>pooped']
+		);
+		expect(next).toEqual([{ ...accident, children: ['pooped'] }]);
 	});
 });

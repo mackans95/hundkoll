@@ -376,7 +376,9 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const config = await readTrendConfig(db, new Set((types ?? []).map((type) => type.id)));
 	const rows = config ?? [];
 	const typeIds = [...new Set(rows.map((row) => row.type))];
-	const fields = [...new Set(rows.flatMap((row) => (row.field ? [row.field] : [])))];
+	const fields = [
+		...new Set(rows.flatMap((row) => [...(row.field ? [row.field] : []), ...(row.children ?? [])]))
+	];
 
 	const prevSpan = bucketSpan(period, prevBucket);
 	const latestSpan = bucketSpan(period, latestBucket);
