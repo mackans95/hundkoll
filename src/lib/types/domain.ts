@@ -143,7 +143,8 @@ export type DetailDayCount = { day: string; field: string; n: number; sum?: numb
 export type SimpleDay = { day: string; n: number };
 
 /** One numeric detail value over time, for generated trend-line cards. */
-export type FieldPoint = { occurred_at: string; value: number };
+/** One event's value of a number field, with the rest of what it logged, for its tooltip. */
+export type FieldPoint = { occurred_at: string; value: number; details: EventDetails };
 
 /** The bucket size the stats screen is showing. */
 export type Period = 'day' | 'week' | 'month';

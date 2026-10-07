@@ -481,7 +481,10 @@ export const stats = {
 		notAnswer: (field: string) => `Inte ${field.toLowerCase()}` as const,
 		/** An event that didn't answer the field a chart is split by. */
 		unknown: 'Okänt',
-		emptyTimeline: 'Inget loggat ännu.'
+		emptyTimeline: 'Inget loggat ännu.',
+		/** Before the value beside a timeline's heading. */
+		latest: 'senaste',
+		averageOf: (period: string) => `snitt ${period.toLowerCase()}` as const
 	},
 	/** Built captions for a tile chosen in Settings: "Utan olycka", "Längsta lugn". */
 	tiles: {

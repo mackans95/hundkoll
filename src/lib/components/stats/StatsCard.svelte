@@ -30,7 +30,10 @@
 	{#snippet aside()}
 		{#if chart.kind === 'timeline' && chart.latest}
 			<!-- The header's own size, so this header is as tall as every other card's. -->
-			<span class="font-bold">{chart.latest}</span>
+			<span class="flex items-baseline gap-1.5">
+				<span class="text-xs font-normal text-ink-muted">{chart.latestCaption}</span>
+				<span class="font-bold">{chart.latest}</span>
+			</span>
 		{/if}
 	{/snippet}
 

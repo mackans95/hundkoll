@@ -139,7 +139,11 @@ export async function fieldHistory(db: Db, typeId: string, field: string): Promi
 		.order('occurred_at');
 
 	return (data ?? [])
-		.map((row) => ({ occurred_at: row.occurred_at, value: (row.details as EventDetails)?.[field] }))
+		.map((row) => ({
+			occurred_at: row.occurred_at,
+			value: (row.details as EventDetails)?.[field],
+			details: (row.details ?? {}) as EventDetails
+		}))
 		.filter((point): point is FieldPoint => typeof point.value === 'number');
 }
 

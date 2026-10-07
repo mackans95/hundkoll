@@ -34,12 +34,12 @@ import type { Actions, PageServerLoad } from './$types';
 
 /** The chart as the page's controls hold it. */
 function chartForm(typeId: string, chart: ChartSpec | null) {
-	const shown = chart?.kind === 'bars' ? chart.details : defaultDetails(typeId);
+	const shown = chart?.details ?? defaultDetails(typeId);
 	return {
 		kind: chart?.kind ?? 'bars',
 		split: chart?.kind === 'bars' ? splitKey(chart.split) : 'none',
 		picker: chart?.picker ?? false,
-		tooltip: chart?.kind === 'bars' ? chart.tooltip : ('text' as const),
+		tooltip: chart?.tooltip ?? ('text' as const),
 		field: chart?.kind === 'timeline' ? chart.field : (timelineFieldsFor(typeId)[0] ?? ''),
 		every: chart?.kind === 'timeline' ? chart.every : true,
 		// Ticked first, in their order, then the rest the type allows.

@@ -24,6 +24,7 @@ import * as time from '$lib/time';
 import { numberWriter, type ChartSpec } from './cardSpec';
 import { countDetailDays, dayBreakdown, type DetailRow } from './detailDays';
 import { outcomeDays, type Mean, type OutcomeDay } from './outcomes';
+import { countAsRow, countCell, detailRows, type DetailSource } from './tooltip';
 import { accidentColors, aloneColors, mealColors, NEUTRAL_COLOR, type ChartColor } from './palette';
 
 export type BarChart = Extract<ChartSpec, { kind: 'bars' }>;
@@ -79,11 +80,6 @@ export const TOOLTIP_HEADING: Record<Period, (start: string) => string> = {
 
 function cell(label: string, value: string, color?: string): TooltipCell {
 	return color === undefined ? { label, value } : { label, value, color };
-}
-
-/** A count labelled by an emoji, sized up so the emoji reads at a glance. */
-function countCell(label: string, count: number): TooltipCell {
-	return { label, value: String(count), big: true };
 }
 
 function tooltipRow(...cells: (TooltipCell | null)[]): TooltipCell[] {
@@ -172,11 +168,6 @@ export function barLegend(
 	];
 }
 
-/** Whether a counted field is drawn as its own row in this tooltip, causes boxed under it. */
-function asRow(chart: BarChart, field: DetailField | undefined): boolean {
-	return !(chart.tooltip === 'emoji' && field?.symbol);
-}
-
 /**
  * Whether a chart reads the type's own events, by day: an outcome split's
  * boxes, or a counted field drawn as a row with what it revealed. The views
@@ -193,8 +184,8 @@ export function barNeedsEvents(typeId: string, chart: BarChart, period: Period):
 		const [kind, name] = detail.split(':');
 		if (kind !== 'count' || !name) return false;
 		if (split.by === 'counts' && split.fields.includes(name)) return false;
-		return asRow(
-			chart,
+		return countAsRow(
+			chart.tooltip === 'emoji',
 			fields.find((field) => field.name === name)
 		);
 	});
@@ -216,9 +207,6 @@ export type BarInput = {
 	/** The type's events of the last 30 days, when barNeedsEvents says so. */
 	events: DetailRow[];
 };
-
-/** Cells to rows, at most three to a row: the shape every card's tooltip already had. */
-const ROW_CELLS = 3;
 
 /** Every column of one type's bar chart, tooltips included. */
 export function barBuckets(input: BarInput): ColumnBucket[] {
@@ -250,88 +238,48 @@ export function barBuckets(input: BarInput): ColumnBucket[] {
 				)
 			: null;
 
-	/** The details' cells and rows for one column, in the configured order. */
-	function detailRows(start: string, n: number): TooltipRow[] {
-		const rows: TooltipRow[] = [];
-		let line: TooltipCell[] = [];
-		const flush = () => {
-			for (let i = 0; i < line.length; i += ROW_CELLS) rows.push(line.slice(i, i + ROW_CELLS));
-			line = [];
-		};
+	const options = {
+		typeId,
+		details: chart.details,
+		emoji,
+		icon: input.type.icon,
+		label,
+		color: colors[0]
+	};
+
+	/** What one column can tell its tooltip: from the events by day where it needs them, else the views. */
+	function columnSource(start: string, n: number): DetailSource {
 		const dayCount = (name: string) =>
 			dayCounts.find((count) => count.day === start && count.field === name);
-
-		for (const key of chart.details) {
-			const [kind, name] = key.split(':');
-			const field = byName(name);
-			if (kind === 'count' && !name) {
-				line.push(
-					emoji && input.type.icon
-						? countCell(input.type.icon, n)
-						: cell(label, String(n), colors[0])
-				);
-			} else if (kind === 'gap') {
-				line.push(
-					cell(
-						words.walks.between,
-						optionalAverage(typeId, '_min', byBucket.get(start)?.avg_gap_min ?? null)
-					)
-				);
-			} else if (kind === 'avg' && field) {
-				if (fromEvents) {
-					// From the events: a day with nothing measured says nothing.
-					const count = dayCount(field.name);
-					if (count && count.n > 0) {
-						line.push(
-							cell(
-								shortFieldLabel(field.label),
-								meanValue(typeId, field.name, { sum: count.sum ?? 0, n: count.n })
-							)
-						);
-					}
-				} else {
-					line.push(
-						cell(
-							shortFieldLabel(field.label),
-							optionalAverage(typeId, field.name, detail(start, field.name)?.avg_number ?? null)
-						)
-					);
+		return {
+			n,
+			gap: optionalAverage(typeId, '_min', byBucket.get(start)?.avg_gap_min ?? null),
+			avg: (field) => {
+				if (!fromEvents) {
+					return optionalAverage(typeId, field.name, detail(start, field.name)?.avg_number ?? null);
 				}
-			} else if (kind === 'count' && field) {
-				// The split already counts it.
-				if (split.by === 'counts' && split.fields.includes(field.name)) continue;
-				const counted = fromEvents
+				// From the events: a day with nothing measured says nothing.
+				const count = dayCount(field.name);
+				return count && count.n > 0
+					? meanValue(typeId, field.name, { sum: count.sum ?? 0, n: count.n })
+					: null;
+			},
+			count: (field) =>
+				fromEvents
 					? (dayCount(field.name)?.n ?? 0)
 					: field.input === 'count'
 						? (detail(start, field.name)?.total ?? 0)
-						: (detail(start, field.name)?.happened ?? 0);
-				if (!asRow(chart, field)) {
-					line.push(countCell(field.symbol!, counted));
-				} else if (counted > 0) {
-					flush();
-					rows.push(tooltipRow(cell(`${shortFieldLabel(field.label)}:`, String(counted))));
-					const causes = fromEvents
-						? (dayBreakdown(dayCounts, fields, start).find((group) => group.label === field.label)
-								?.children ?? [])
-						: [];
-					if (causes.length > 0) {
-						rows.push({
-							nested: [tooltipRow(...causes.map((cause) => cell(cause.label, String(cause.n))))]
-						});
-					}
-				}
-			} else if (kind === 'share' && field) {
+						: (detail(start, field.name)?.happened ?? 0),
+			causes: (field) =>
+				fromEvents
+					? (dayBreakdown(dayCounts, fields, start).find((group) => group.label === field.label)
+							?.children ?? [])
+					: [],
+			share: (field) => {
 				const answered = detail(start, field.name);
-				const judged = answered?.answered ?? 0;
-				if (judged > 0) {
-					line.push(
-						cell(words.meals.share, format.percentageText((answered?.happened ?? 0) / judged))
-					);
-				}
+				return answered && answered.answered > 0 ? answered.happened / answered.answered : null;
 			}
-		}
-		flush();
-		return rows;
+		};
 	}
 
 	return bucketStarts(today, period).map((start, i) => {
@@ -340,22 +288,27 @@ export function barBuckets(input: BarInput): ColumnBucket[] {
 		let segments: number[];
 		let first: TooltipRow[] = [];
 		let last: TooltipRow[] = [];
+		let splitCells: DetailSource['split'];
 
 		if (split.by === 'counts') {
 			const totals = split.fields.map((name) => detail(start, name)?.total ?? 0);
 			const other = Math.max(0, n - totals.reduce((sum, total) => sum + total, 0));
 			segments = [...totals, other];
-			first = [
-				tooltipRow(
-					...split.fields.map((name, j) => {
+			splitCells = {
+				cells: new Map(
+					split.fields.map((name, j) => {
 						const field = byName(name);
-						return counted(emoji, field?.symbol, shortFieldLabel(field?.label ?? ''), totals[j]);
-					}),
+						return [
+							name,
+							counted(emoji, field?.symbol, shortFieldLabel(field?.label ?? ''), totals[j])
+						];
+					})
+				),
+				rest:
 					other > 0
 						? counted(emoji, words.symbols.unknown, words.accidents.legendUnspecified, other)
 						: null
-				)
-			];
+			};
 		} else if (split.by === 'answer' && outcomeRows) {
 			const answer = answerWords(splitField);
 			segments = [outcome?.yes.count ?? 0, outcome?.no.count ?? 0, outcome?.unknown.count ?? 0];
@@ -393,7 +346,11 @@ export function barBuckets(input: BarInput): ColumnBucket[] {
 		const rows =
 			n === 0 && split.by !== 'counts'
 				? [tooltipRow(cell(label, '0', colors[0]))]
-				: [...first, ...detailRows(start, n), ...last];
+				: [
+						...first,
+						...detailRows(options, { ...columnSource(start, n), split: splitCells }),
+						...last
+					];
 
 		return {
 			label: AXIS_LABEL[period](start),

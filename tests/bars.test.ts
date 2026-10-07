@@ -161,13 +161,15 @@ describe('the tooltip keeps its details whatever the split or style', () => {
 			split: { by: 'counts', fields: ['pee', 'poop'] },
 			picker: true
 		};
+		// In the list's order: the count first, the split's kiss and bajs where
+		// they sit, and words two to a row so the tooltip stays narrow.
 		expect(tooltip(chart, 'week')).toEqual([
 			[
+				{ label: '🚶', value: '52', big: true },
 				{ label: '🟡', value: '40', big: true },
 				{ label: '💩', value: '15', big: true }
 			],
 			[
-				{ label: '🚶', value: '52', big: true },
 				{ label: 'Tid mellan', value: '~2,3 tim' },
 				{ label: 'Längd', value: '~12 min' }
 			]

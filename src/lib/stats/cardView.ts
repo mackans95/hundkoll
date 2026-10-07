@@ -3,11 +3,18 @@
 // Built on the server from the generic rows; the page only renders it.
 
 import type { LegendItem } from '$lib/components/ChartLegend.svelte';
-import { fieldsFor, shortFieldLabel } from '$lib/events/fields';
+import { fieldsFor, shortFieldLabel, type DetailField } from '$lib/events/fields';
 import * as format from '$lib/format';
 import * as locale from '$lib/locale';
 import type { ColumnBucket, TrendPoint, TrendTick } from '$lib/types/charts';
-import type { DetailBucketRow, FieldPoint, Period, TypeBucketRow } from '$lib/types/domain';
+import type {
+	DetailBucketRow,
+	EventDetails,
+	FieldPoint,
+	Period,
+	TypeBucketRow
+} from '$lib/types/domain';
+import { detailRows, type DetailOptions, type DetailSource } from './tooltip';
 import {
 	AXIS_LABEL,
 	barBuckets,
@@ -47,6 +54,8 @@ export type TimelineView = {
 	picker: boolean;
 	/** The last value, beside the heading: "4,8 kg". */
 	latest: string | null;
+	/** What that value is: "senaste", "snitt 6/10". */
+	latestCaption: string;
 	color: string;
 	empty: string;
 };
@@ -78,6 +87,8 @@ export type CardInput = {
 	events: DetailRow[];
 	/** The timeline's field over all time, oldest first. */
 	history: FieldPoint[];
+	/** How a timeline's tooltips show their details; set by cardView itself. */
+	detailOptions?: DetailOptions;
 };
 
 /** The axis labels of a timeline by period: every 7th day, or every 3rd week or month. */
@@ -87,6 +98,51 @@ function periodTicks(today: string, period: Period): TrendTick[] {
 	return starts.flatMap((start, i) =>
 		i % every === 0 ? [{ at: i / (starts.length - 1), label: AXIS_LABEL[period](start) }] : []
 	);
+}
+
+/** What one event tells its point's tooltip: its own other values, and what it revealed. */
+function eventSource(typeId: string, details: EventDetails): DetailSource {
+	const fields = fieldsFor(typeId);
+	const counted = (field: DetailField) => {
+		const v = details[field.name];
+		return v === true ? 1 : typeof v === 'number' ? Math.max(0, Math.floor(v)) : 0;
+	};
+	return {
+		n: null,
+		avg: (field) => {
+			const v = details[field.name];
+			return typeof v === 'number' ? numberWriter(typeId, field.name)(v) : null;
+		},
+		count: counted,
+		causes: (field) =>
+			fields
+				.filter((child) => child.revealedBy === field.name && counted(child) > 0)
+				.map((child) => ({ label: child.label, n: counted(child) })),
+		share: () => null
+	};
+}
+
+/** What one period tells its point's tooltip, from the views. */
+function periodSource(typeId: string, input: CardInput, start: string): DetailSource {
+	const bucket = input.buckets.find((row) => row.bucket === start);
+	const detail = (name: string) =>
+		input.details.find((row) => row.bucket === start && row.field === name);
+	const average = (name: string, value: number | null | undefined) =>
+		value == null ? null : locale.units.approximately(numberWriter(typeId, name)(value));
+	return {
+		n: bucket?.n ?? 0,
+		gap: average('_min', bucket?.avg_gap_min) ?? locale.units.missing,
+		avg: (field) => average(field.name, detail(field.name)?.avg_number),
+		count: (field) =>
+			field.input === 'count'
+				? (detail(field.name)?.total ?? 0)
+				: (detail(field.name)?.happened ?? 0),
+		causes: () => [],
+		share: (field) => {
+			const row = detail(field.name);
+			return row && row.answered > 0 ? row.happened / row.answered : null;
+		}
+	};
 }
 
 /** Every event its own point, placed by time: Vikt's weighings. */
@@ -107,7 +163,13 @@ function everyPoint(
 			at: t1 === t0 ? 0.5 : (t - t0) / (t1 - t0),
 			value: point.value,
 			text: write(point.value),
-			tooltip: { heading: day, rows: [[{ label: name, value: write(point.value) }]] }
+			tooltip: {
+				heading: day,
+				rows: [
+					[{ label: name, value: write(point.value) }],
+					...detailRows(input.detailOptions!, eventSource(input.typeId, point.details))
+				]
+			}
 		};
 	});
 }
@@ -124,13 +186,11 @@ function averagePoints(
 	write: (value: number) => string
 ): TrendPoint[] {
 	const starts = bucketStarts(input.today, period);
-	const count = countLabel(input.typeId, input.type.label);
 	return starts.flatMap((start, i) => {
 		const row = input.details.find(
 			(detail) => detail.bucket === start && detail.field === fieldName
 		);
 		if (row?.avg_number == null) return [];
-		const n = input.buckets.find((bucket) => bucket.bucket === start)?.n ?? row.answered;
 		return [
 			{
 				at: starts.length === 1 ? 0.5 : i / (starts.length - 1),
@@ -140,7 +200,7 @@ function averagePoints(
 					heading: TOOLTIP_HEADING[period](start),
 					rows: [
 						[{ label: name, value: locale.units.approximately(write(row.avg_number)) }],
-						[{ label: count, value: String(n) }]
+						...detailRows(input.detailOptions!, periodSource(input.typeId, input, start))
 					]
 				}
 			}
@@ -155,12 +215,25 @@ export function cardView(input: CardInput): CardView {
 
 	if (chart.kind === 'timeline') {
 		const write = numberWriter(typeId, chart.field);
+		// The plotted value leads every tooltip, so its own detail isn't repeated.
+		const withOptions: CardInput = {
+			...input,
+			detailOptions: {
+				typeId,
+				details: chart.details,
+				emoji: chart.tooltip === 'emoji',
+				icon: input.type.icon,
+				label: countLabel(typeId, input.type.label),
+				color: input.color.main,
+				skip: new Set([`avg:${chart.field}`])
+			}
+		};
 		const field = fieldsFor(typeId).find((candidate) => candidate.name === chart.field);
 		const name = shortFieldLabel(field?.label ?? chart.field);
 		const period = chart.picker ? input.period : 'day';
 		const points = chart.every
-			? everyPoint(input, name, write)
-			: averagePoints(input, period, chart.field, name, write);
+			? everyPoint(withOptions, name, write)
+			: averagePoints(withOptions, period, chart.field, name, write);
 		// Every-event: the span's two ends. By period: evenly, as the bar charts tick.
 		const ticks: TrendTick[] = chart.every
 			? input.history.length === 0
@@ -179,11 +252,13 @@ export function cardView(input: CardInput): CardView {
 				kind: 'timeline',
 				points,
 				ticks,
-				latest: last
-					? chart.every
-						? write(last.value)
-						: locale.units.approximately(write(last.value))
-					: null,
+				latest: last ? last.text : null,
+				// Says what the number beside the heading is: the last weighing, or a period's average.
+				latestCaption: !last
+					? ''
+					: chart.every
+						? locale.stats.chart.latest
+						: locale.stats.chart.averageOf(last.tooltip.heading),
 				color: input.color.main,
 				picker: chart.picker,
 				empty: EMPTY_TIMELINE[typeId] ?? locale.stats.chart.emptyTimeline

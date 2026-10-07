@@ -361,6 +361,9 @@ export type ChartSpec =
 			every: boolean;
 			/** Day / week / month tabs; an every-event timeline has none. */
 			picker: boolean;
+			/** As a bar's: whether counts read as emoji, and what the tooltip shows. */
+			tooltip: 'text' | 'emoji';
+			details: TooltipDetail[];
 	  };
 
 /** More than two would need colours the palette doesn't validate side by side. */
@@ -371,6 +374,8 @@ const DEFAULT_DETAILS: Record<string, TooltipDetail[]> = {
 	walk: ['count', 'count:pee', 'count:poop', 'gap', 'avg:duration_min'],
 	meal: ['share:finished', 'gap'],
 	accident: [],
+	// Vikt's points said only their weight.
+	weight: [],
 	alone: ['count', 'avg:duration_min'],
 	car_ride: ['count', 'avg:duration_min', 'count:accident']
 };
@@ -416,12 +421,14 @@ const bars = (
 	picker = false
 ): ChartSpec => ({ kind: 'bars', picker, split, tooltip, details: defaultDetails(typeId) });
 
-const timeline = (field: string, every: boolean, picker = false): ChartSpec => ({
-	kind: 'timeline',
-	field,
-	every,
-	picker
-});
+const timeline = (
+	typeId: string,
+	field: string,
+	every: boolean,
+	picker = false,
+	tooltip: 'text' | 'emoji' = 'text',
+	details = defaultDetails(typeId)
+): ChartSpec => ({ kind: 'timeline', field, every, picker, tooltip, details });
 
 /** Today's charts, until someone edits them; a generated trend type's is written here too. */
 const DEFAULT_CHARTS: Record<string, (typeId: string) => ChartSpec> = {
@@ -429,7 +436,7 @@ const DEFAULT_CHARTS: Record<string, (typeId: string) => ChartSpec> = {
 	walk: (id) => bars(id, { by: 'none' }, 'emoji'),
 	meal: (id) => bars(id, { by: 'answer', field: 'finished' }, 'emoji'),
 	accident: (id) => bars(id, { by: 'counts', fields: ['pee', 'poop'] }, 'emoji', true),
-	weight: () => timeline('kg', true),
+	weight: (id) => timeline(id, 'kg', true),
 	alone: (id) => bars(id, { by: 'answer', field: 'calm' }, 'emoji'),
 	car_ride: (id) => bars(id, { by: 'none' }, 'text')
 };
@@ -499,7 +506,14 @@ export function parseChart(typeId: string, raw: unknown): ChartSpec {
 	}
 	if (chart.kind === 'timeline') {
 		return typeof chart.field === 'string' && timelineFieldsFor(typeId).includes(chart.field)
-			? timeline(chart.field, chart.every !== false, chart.every === false && chart.picker === true)
+			? timeline(
+					typeId,
+					chart.field,
+					chart.every !== false,
+					chart.every === false && chart.picker === true,
+					chart.tooltip === 'emoji' ? 'emoji' : 'text',
+					keepDetails(typeId, chart.details) ?? defaultDetails(typeId)
+				)
 			: defaultChart(typeId);
 	}
 	if (chart.kind !== 'bars') {
@@ -552,12 +566,21 @@ export function planChart(typeId: string, current: ChartSpec, form: FormData): C
 		return current;
 	}
 	const picker = form.getAll('chart_picker').includes('true');
+	const tooltip = form.get('chart_tooltip') === 'emoji' ? 'emoji' : 'text';
+	const details = form.has('details_present') ? planDetails(typeId, form) : current.details;
 	if (form.get('chart_kind') === 'timeline') {
 		const field = String(form.get('chart_field') ?? '');
 		const fields = timelineFieldsFor(typeId);
 		const every = form.get('chart_points') !== 'average';
 		return fields.length > 0
-			? timeline(fields.includes(field) ? field : fields[0], every, !every && picker)
+			? timeline(
+					typeId,
+					fields.includes(field) ? field : fields[0],
+					every,
+					!every && picker,
+					tooltip,
+					details
+				)
 			: current;
 	}
 	const key = String(form.get('chart_split') ?? 'none');
@@ -565,12 +588,8 @@ export function planChart(typeId: string, current: ChartSpec, form: FormData): C
 		kind: 'bars',
 		picker,
 		split: splitsFor(typeId).find((candidate) => splitKey(candidate) === key) ?? { by: 'none' },
-		tooltip: form.get('chart_tooltip') === 'emoji' ? 'emoji' : 'text',
-		details: form.has('details_present')
-			? planDetails(typeId, form)
-			: current.kind === 'bars'
-				? current.details
-				: defaultDetails(typeId)
+		tooltip,
+		details
 	};
 }
 

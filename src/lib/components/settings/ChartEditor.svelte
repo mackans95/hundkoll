@@ -37,6 +37,14 @@
 	let split = $derived(chart.split);
 	let points = $derived(chart.every ? 'every' : 'average');
 	let details = $derived(chart.details.map((detail) => ({ ...detail })));
+	let field = $derived(chart.field);
+	// What a timeline's tooltip can't show: its own plotted value, and, for a
+	// single event, a count, a gap or a share. Kept and posted, just not offered.
+	const offered = (key: string) => {
+		if (kind !== 'timeline') return true;
+		if (key === `avg:${field}`) return false;
+		return points === 'average' || !(key === 'count' || key === 'gap' || key.startsWith('share:'));
+	};
 	const changed = () => onedit?.(kind === 'bars' && split !== 'none');
 
 	function move(from: number, to: number) {
@@ -128,13 +136,11 @@
 			{words.field}
 			<select
 				name="chart_field"
+				bind:value={field}
 				class={SELECT}
 			>
 				{#each fields as option (option.key)}
-					<option
-						value={option.key}
-						selected={option.key === chart.field}>{option.label}</option
-					>
+					<option value={option.key}>{option.label}</option>
 				{/each}
 			</select>
 		</label>
@@ -185,56 +191,54 @@
 		</label>
 	{/if}
 
-	{#if kind === 'bars'}
-		<fieldset class="flex flex-col gap-1">
-			<legend class="text-sm text-ink-muted">{words.tooltip}</legend>
-			{@render segmented(
-				'chart_tooltip',
-				[
-					{ value: 'text', label: words.text },
-					{ value: 'emoji', label: words.emoji }
-				],
-				chart.tooltip
-			)}
-		</fieldset>
+	<fieldset class="flex flex-col gap-1">
+		<legend class="text-sm text-ink-muted">{words.tooltip}</legend>
+		{@render segmented(
+			'chart_tooltip',
+			[
+				{ value: 'text', label: words.text },
+				{ value: 'emoji', label: words.emoji }
+			],
+			chart.tooltip
+		)}
+	</fieldset>
 
-		<fieldset class="flex flex-col gap-1">
-			<legend class="text-sm text-ink-muted">{words.details}</legend>
-			<input
-				type="hidden"
-				name="details_present"
-				value="1"
-			/>
-			<div class="flex flex-col divide-y divide-edge-soft">
-				{#each details as detail, i (detail.key)}
-					<div class="flex items-center gap-2 py-1.5">
+	<fieldset class="flex flex-col gap-1">
+		<legend class="text-sm text-ink-muted">{words.details}</legend>
+		<input
+			type="hidden"
+			name="details_present"
+			value="1"
+		/>
+		<div class="flex flex-col divide-y divide-edge-soft">
+			{#each details as detail, i (detail.key)}
+				<div class="items-center gap-2 py-1.5 {offered(detail.key) ? 'flex' : 'hidden'}">
+					<input
+						type="hidden"
+						name="detail"
+						value={detail.key}
+					/>
+					<label class="flex min-w-0 flex-1 items-center gap-3">
 						<input
-							type="hidden"
-							name="detail"
+							type="checkbox"
+							name="detail_on"
 							value={detail.key}
+							bind:checked={detail.on}
+							class={CHECK}
 						/>
-						<label class="flex min-w-0 flex-1 items-center gap-3">
-							<input
-								type="checkbox"
-								name="detail_on"
-								value={detail.key}
-								bind:checked={detail.on}
-								class={CHECK}
-							/>
-							<span class="text-sm font-medium {detail.on ? '' : 'text-ink-muted'}"
-								>{detail.label}</span
-							>
-						</label>
-						<MoveButtons
-							index={i}
-							count={details.length}
-							label={detail.label}
-							onmove={move}
-							name="detail_op"
-						/>
-					</div>
-				{/each}
-			</div>
-		</fieldset>
-	{/if}
+						<span class="text-sm font-medium {detail.on ? '' : 'text-ink-muted'}"
+							>{detail.label}</span
+						>
+					</label>
+					<MoveButtons
+						index={i}
+						count={details.length}
+						label={detail.label}
+						onmove={move}
+						name="detail_op"
+					/>
+				</div>
+			{/each}
+		</div>
+	</fieldset>
 </div>

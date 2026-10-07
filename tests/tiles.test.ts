@@ -18,6 +18,9 @@ import {
 	type TileData
 } from '$lib/stats/cardSpec';
 import { shareTile } from '$lib/stats/summary';
+import { packCells } from '$lib/stats/tooltip';
+import { cardView } from '$lib/stats/cardView';
+import { chartColor } from '$lib/stats/palette';
 import type { DetailWindowRow, TypeWindowRow } from '$lib/types/domain';
 
 const DASH = locale.units.missing;
@@ -224,7 +227,9 @@ describe('the chart’s configuration', () => {
 	};
 
 	it('reads a timeline stored before it had modes as every event, Vikt’s', () => {
-		expect(parseChart('car_ride', { chart: { kind: 'timeline', field: 'duration_min' } })).toEqual({
+		expect(
+			parseChart('car_ride', { chart: { kind: 'timeline', field: 'duration_min' } })
+		).toMatchObject({
 			kind: 'timeline',
 			field: 'duration_min',
 			every: true,
@@ -267,9 +272,73 @@ describe('the chart’s configuration', () => {
 		];
 		expect(
 			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'average']]))
-		).toEqual({ kind: 'timeline', field: 'duration_min', every: false, picker: true });
+		).toMatchObject({ kind: 'timeline', field: 'duration_min', every: false, picker: true });
 		expect(
 			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'every']]))
-		).toEqual({ kind: 'timeline', field: 'duration_min', every: true, picker: false });
+		).toMatchObject({ kind: 'timeline', field: 'duration_min', every: true, picker: false });
+	});
+});
+
+describe('packCells', () => {
+	const big = (label: string) => ({ label, value: '1', big: true });
+	const text = (label: string) => ({ label, value: '1' });
+
+	it('fits three emoji counts to a row, but two once one has words', () => {
+		expect(
+			packCells([big('🚶'), big('🟡'), big('💩'), big('❔')]).map((row) => row.length)
+		).toEqual([3, 1]);
+		expect(
+			packCells([text('Tid mellan'), text('Längd'), text('Kiss')]).map((row) => row.length)
+		).toEqual([2, 1]);
+		expect(packCells([big('🏠'), text('Längd'), big('🟡')]).map((row) => row.length)).toEqual([
+			2, 1
+		]);
+	});
+});
+
+describe('a timeline’s tooltips', () => {
+	const view = (
+		chart: Parameters<typeof cardView>[0]['chart'],
+		history: Parameters<typeof cardView>[0]['history']
+	) =>
+		cardView({
+			typeId: 'car_ride',
+			type: { label: 'Biltur', icon: '🚗' },
+			chart,
+			color: chartColor('green'),
+			tiles: [],
+			period: 'day',
+			today: '2026-10-06',
+			tracked: 30,
+			buckets: [],
+			details: [],
+			events: [],
+			history
+		}).chart;
+
+	it('shows a ride’s own accident, its causes boxed under it, beside its length', () => {
+		const chart = view(
+			{
+				kind: 'timeline',
+				field: 'duration_min',
+				every: true,
+				picker: false,
+				tooltip: 'text',
+				details: ['count', 'avg:duration_min', 'count:accident']
+			},
+			[
+				{
+					occurred_at: '2026-10-05T08:00:00Z',
+					value: 45,
+					details: { duration_min: 45, accident: true, threw_up: true }
+				}
+			]
+		);
+		expect(chart.kind === 'timeline' && chart.points[0].tooltip.rows).toEqual([
+			[{ label: 'Längd', value: '45 min' }],
+			[{ label: 'Olycka:', value: '1' }],
+			{ nested: [[{ label: 'Spydde', value: '1' }]] }
+		]);
+		expect(chart.kind === 'timeline' && chart.latestCaption).toBe('senaste');
 	});
 });
