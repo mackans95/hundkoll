@@ -331,6 +331,16 @@ export function sameTiles(a: TileSpec[], b: TileSpec[]): boolean {
 export type BarSplit =
 	{ by: 'none' } | { by: 'answer'; field: string } | { by: 'counts'; fields: string[] };
 
+/**
+ * What a bar's tooltip shows besides its split, in order. Keys:
+ *   count          how many events the column holds
+ *   gap            the average time between them
+ *   avg:<field>    a number field's average (Längd)
+ *   count:<field>  a counted field (Kiss): an emoji in line, or a row with its causes
+ *   share:<field>  how often a checkbox or outcome was yes (Mat's Andel)
+ */
+export type TooltipDetail = string;
+
 export type ChartSpec =
 	| {
 			kind: 'bars';
@@ -339,33 +349,94 @@ export type ChartSpec =
 			split: BarSplit;
 			/** Whether the tooltip counts by emoji (🚶 7 · 🟡 5) or by name (Kiss: 5). */
 			tooltip: 'text' | 'emoji';
+			details: TooltipDetail[];
 	  }
-	| { kind: 'timeline'; field: string };
+	| {
+			kind: 'timeline';
+			field: string;
+			/**
+			 * Every event as its own point (Vikt), or each period's average,
+			 * which is what reads for something logged several times a day.
+			 */
+			every: boolean;
+			/** Day / week / month tabs; an every-event timeline has none. */
+			picker: boolean;
+	  };
 
 /** More than two would need colours the palette doesn't validate side by side. */
 export const MAX_COUNT_SPLIT = 2;
 
-const bars = (split: BarSplit, tooltip: 'text' | 'emoji', picker = false): ChartSpec => ({
-	kind: 'bars',
-	picker,
-	split,
-	tooltip
+/** Today's cards' tooltips, as details: exactly what each one showed before it was configurable. */
+const DEFAULT_DETAILS: Record<string, TooltipDetail[]> = {
+	walk: ['count', 'count:pee', 'count:poop', 'gap', 'avg:duration_min'],
+	meal: ['share:finished', 'gap'],
+	accident: [],
+	alone: ['count', 'avg:duration_min'],
+	car_ride: ['count', 'avg:duration_min', 'count:accident']
+};
+
+/** Every detail a type's tooltip may show, in the order its page first lists them. */
+export function tooltipDetailsFor(typeId: string): TooltipDetail[] {
+	const roots = fieldsFor(typeId).filter((field) => !field.revealedBy);
+	return [
+		'count',
+		'gap',
+		...roots.filter((field) => field.input === 'number').map((field) => `avg:${field.name}`),
+		...roots
+			.filter((field) => ['count', 'checkbox', 'reveal'].includes(field.input))
+			.map((field) => `count:${field.name}`),
+		...roots
+			.filter((field) => field.input === 'checkbox' || field.input === 'outcome')
+			.map((field) => `share:${field.name}`)
+	];
+}
+
+/** A type's tooltip before anyone edits it: today's for the six, else the count, gap, averages and counts. */
+export function defaultDetails(typeId: string): TooltipDetail[] {
+	return (
+		DEFAULT_DETAILS[typeId] ??
+		tooltipDetailsFor(typeId).filter((detail) => !detail.startsWith('share:'))
+	);
+}
+
+/** How a tooltip detail reads on the type page. */
+export function detailLabel(typeId: string, detail: TooltipDetail): string {
+	const [kind, name] = detail.split(':');
+	const t = words.chart;
+	if (kind === 'count' && !name) return t.count;
+	if (kind === 'gap') return words.tiles.gap;
+	if (kind === 'share') return t.share(fieldWord(typeId, name));
+	return fieldWord(typeId, name);
+}
+
+const bars = (
+	typeId: string,
+	split: BarSplit,
+	tooltip: 'text' | 'emoji',
+	picker = false
+): ChartSpec => ({ kind: 'bars', picker, split, tooltip, details: defaultDetails(typeId) });
+
+const timeline = (field: string, every: boolean, picker = false): ChartSpec => ({
+	kind: 'timeline',
+	field,
+	every,
+	picker
 });
 
-/** Today's charts, until someone edits them; a generated type's is written here too. */
-const DEFAULT_CHARTS: Record<string, ChartSpec> = {
+/** Today's charts, until someone edits them; a generated trend type's is written here too. */
+const DEFAULT_CHARTS: Record<string, (typeId: string) => ChartSpec> = {
 	// codegen:default-charts — npm run new-event inserts generated charts here
-	walk: bars({ by: 'none' }, 'emoji'),
-	meal: bars({ by: 'answer', field: 'finished' }, 'emoji'),
-	accident: bars({ by: 'counts', fields: ['pee', 'poop'] }, 'emoji', true),
-	weight: { kind: 'timeline', field: 'kg' },
-	alone: bars({ by: 'answer', field: 'calm' }, 'emoji'),
-	car_ride: bars({ by: 'none' }, 'text')
+	walk: (id) => bars(id, { by: 'none' }, 'emoji'),
+	meal: (id) => bars(id, { by: 'answer', field: 'finished' }, 'emoji'),
+	accident: (id) => bars(id, { by: 'counts', fields: ['pee', 'poop'] }, 'emoji', true),
+	weight: () => timeline('kg', true),
+	alone: (id) => bars(id, { by: 'answer', field: 'calm' }, 'emoji'),
+	car_ride: (id) => bars(id, { by: 'none' }, 'text')
 };
 
 /** A type's chart before anyone edits it: one bar a day, named in words. */
 export function defaultChart(typeId: string): ChartSpec {
-	return DEFAULT_CHARTS[typeId] ?? bars({ by: 'none' }, 'text');
+	return DEFAULT_CHARTS[typeId]?.(typeId) ?? bars(typeId, { by: 'none' }, 'text');
 }
 
 /** Every way the type's fields let a bar be split, in the order its page offers them. */
@@ -407,10 +478,19 @@ export function splitLabel(typeId: string, split: BarSplit): string {
 	return t.noSplit;
 }
 
+/** The details a type allows, in the stored order, each once. */
+function keepDetails(typeId: string, raw: unknown): TooltipDetail[] | null {
+	if (!Array.isArray(raw)) return null;
+	const allowed = new Set(tooltipDetailsFor(typeId));
+	return [...new Set(raw.filter((detail): detail is string => typeof detail === 'string'))].filter(
+		(detail) => allowed.has(detail)
+	);
+}
+
 /**
  * Reads a stored chart back, falling back to the type's default for anything
  * its fields no longer allow: a split by a removed field, a timeline of a
- * field that is gone.
+ * field that is gone, a tooltip detail it can't show.
  */
 export function parseChart(typeId: string, raw: unknown): ChartSpec {
 	const chart = (raw as { chart?: Record<string, unknown> } | null)?.chart;
@@ -419,7 +499,7 @@ export function parseChart(typeId: string, raw: unknown): ChartSpec {
 	}
 	if (chart.kind === 'timeline') {
 		return typeof chart.field === 'string' && timelineFieldsFor(typeId).includes(chart.field)
-			? { kind: 'timeline', field: chart.field }
+			? timeline(chart.field, chart.every !== false, chart.every === false && chart.picker === true)
 			: defaultChart(typeId);
 	}
 	if (chart.kind !== 'bars') {
@@ -429,16 +509,38 @@ export function parseChart(typeId: string, raw: unknown): ChartSpec {
 	const split = splitsFor(typeId).find(
 		(candidate) => posted !== undefined && splitKey(candidate) === splitKey(posted)
 	);
-	return bars(
-		split ?? { by: 'none' },
-		chart.tooltip === 'emoji' ? 'emoji' : 'text',
-		chart.picker === true
-	);
+	return {
+		kind: 'bars',
+		picker: chart.picker === true,
+		split: split ?? { by: 'none' },
+		tooltip: chart.tooltip === 'emoji' ? 'emoji' : 'text',
+		details: keepDetails(typeId, chart.details) ?? defaultDetails(typeId)
+	};
 }
 
 /** Whether a chart draws a second series, which rules out the neutral colour. */
 export function chartPaired(chart: ChartSpec): boolean {
 	return chart.kind === 'bars' && chart.split.by !== 'none';
+}
+
+/**
+ * The tooltip details the page posted: the ticked ones, in the list's order,
+ * then the one move its button asked for. Moves happen on screen and arrive
+ * only with Spara; without JS each ▲ ▼ posts the page with its own move.
+ */
+function planDetails(typeId: string, form: FormData): TooltipDetail[] {
+	const order = form.getAll('detail').map(String);
+	const [op, at] = String(form.get('detail_op') ?? '').split(':');
+	const i = Number(at);
+	if ((op === 'up' || op === 'down') && order[i]) {
+		const j = op === 'up' ? i - 1 : i + 1;
+		if (order[j]) [order[i], order[j]] = [order[j], order[i]];
+	}
+	const ticked = new Set(form.getAll('detail_on').map(String));
+	return keepDetails(
+		typeId,
+		order.filter((detail) => ticked.has(detail))
+	)!;
 }
 
 /**
@@ -449,22 +551,27 @@ export function planChart(typeId: string, current: ChartSpec, form: FormData): C
 	if (!form.has('chart_present')) {
 		return current;
 	}
+	const picker = form.getAll('chart_picker').includes('true');
 	if (form.get('chart_kind') === 'timeline') {
 		const field = String(form.get('chart_field') ?? '');
 		const fields = timelineFieldsFor(typeId);
+		const every = form.get('chart_points') !== 'average';
 		return fields.length > 0
-			? { kind: 'timeline', field: fields.includes(field) ? field : fields[0] }
+			? timeline(fields.includes(field) ? field : fields[0], every, !every && picker)
 			: current;
 	}
 	const key = String(form.get('chart_split') ?? 'none');
-	const split = splitsFor(typeId).find((candidate) => splitKey(candidate) === key) ?? {
-		by: 'none'
+	return {
+		kind: 'bars',
+		picker,
+		split: splitsFor(typeId).find((candidate) => splitKey(candidate) === key) ?? { by: 'none' },
+		tooltip: form.get('chart_tooltip') === 'emoji' ? 'emoji' : 'text',
+		details: form.has('details_present')
+			? planDetails(typeId, form)
+			: current.kind === 'bars'
+				? current.details
+				: defaultDetails(typeId)
 	};
-	return bars(
-		split,
-		form.get('chart_tooltip') === 'emoji' ? 'emoji' : 'text',
-		form.getAll('chart_picker').includes('true')
-	);
 }
 
 /** Whether two charts say the same thing, so an untouched form writes nothing. */

@@ -25,18 +25,32 @@ import {
 	tileLabel,
 	tilesFor,
 	timelineFieldsFor,
+	tooltipDetailsFor,
+	defaultDetails,
+	detailLabel,
 	type ChartSpec
 } from '$lib/stats/cardSpec';
 import type { Actions, PageServerLoad } from './$types';
 
 /** The chart as the page's controls hold it. */
 function chartForm(typeId: string, chart: ChartSpec | null) {
+	const shown = chart?.kind === 'bars' ? chart.details : defaultDetails(typeId);
 	return {
 		kind: chart?.kind ?? 'bars',
 		split: chart?.kind === 'bars' ? splitKey(chart.split) : 'none',
-		picker: chart?.kind === 'bars' && chart.picker,
+		picker: chart?.picker ?? false,
 		tooltip: chart?.kind === 'bars' ? chart.tooltip : ('text' as const),
-		field: chart?.kind === 'timeline' ? chart.field : (timelineFieldsFor(typeId)[0] ?? '')
+		field: chart?.kind === 'timeline' ? chart.field : (timelineFieldsFor(typeId)[0] ?? ''),
+		every: chart?.kind === 'timeline' ? chart.every : true,
+		// Ticked first, in their order, then the rest the type allows.
+		details: [
+			...shown,
+			...tooltipDetailsFor(typeId).filter((detail) => !shown.includes(detail))
+		].map((detail) => ({
+			key: detail,
+			label: detailLabel(typeId, detail),
+			on: shown.includes(detail)
+		}))
 	};
 }
 

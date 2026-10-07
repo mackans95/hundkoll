@@ -130,3 +130,76 @@ describe('barBuckets', () => {
 		expect(weeks[11].segments).toEqual([2, 1, 1]);
 	});
 });
+
+// Marcus, on the phone: choosing a split, tabs or words must not drop what the
+// tooltip shows. The details are configured; the split and style only change
+// how they're drawn.
+describe('the tooltip keeps its details whatever the split or style', () => {
+	const walkWeek = {
+		buckets: [{ ...bucket('walk', '2026-08-10', 52), avg_gap_min: 140 }],
+		details: [
+			detail('walk', '2026-08-10', 'pee', { total: 40 }),
+			detail('walk', '2026-08-10', 'poop', { total: 15 }),
+			detail('walk', '2026-08-10', 'duration_min', { avg_number: 12.2 })
+		]
+	};
+	const tooltip = (chart: BarChart, period: Period) =>
+		barBuckets({
+			typeId: 'walk',
+			type: { label: 'Promenad', icon: '🚶' },
+			chart,
+			period,
+			today: TODAY,
+			colors: barColors('walk', chart, chartColor('green')),
+			...walkWeek,
+			events: []
+		})[11].tooltip.rows;
+
+	it('split by kiss and bajs by week: the count, time between and length stay', () => {
+		const chart: BarChart = {
+			...(defaultChart('walk') as BarChart),
+			split: { by: 'counts', fields: ['pee', 'poop'] },
+			picker: true
+		};
+		expect(tooltip(chart, 'week')).toEqual([
+			[
+				{ label: '🟡', value: '40', big: true },
+				{ label: '💩', value: '15', big: true }
+			],
+			[
+				{ label: '🚶', value: '52', big: true },
+				{ label: 'Tid mellan', value: '~2,3 tim' },
+				{ label: 'Längd', value: '~12 min' }
+			]
+		]);
+	});
+
+	it('in words by week: every detail stays, kiss and bajs as rows of their own', () => {
+		const chart: BarChart = {
+			...(defaultChart('walk') as BarChart),
+			tooltip: 'text',
+			picker: true
+		};
+		const rows = tooltip(chart, 'week');
+		expect(rows[0]).toEqual([{ label: 'Promenader', value: '52', color: 'var(--palette-green)' }]);
+		expect(rows).toContainEqual([{ label: 'Kiss:', value: '40' }]);
+		expect(rows).toContainEqual([{ label: 'Bajs:', value: '15' }]);
+		expect(rows.at(-1)).toEqual([
+			{ label: 'Tid mellan', value: '~2,3 tim' },
+			{ label: 'Längd', value: '~12 min' }
+		]);
+	});
+
+	it('shows only what is ticked, in its order', () => {
+		const chart: BarChart = {
+			...(defaultChart('walk') as BarChart),
+			details: ['avg:duration_min', 'count']
+		};
+		expect(tooltip({ ...chart, picker: true }, 'week')).toEqual([
+			[
+				{ label: 'Längd', value: '~12 min' },
+				{ label: '🚶', value: '52', big: true }
+			]
+		]);
+	});
+});

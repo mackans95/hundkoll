@@ -22,4 +22,16 @@ export type ColumnBucket = {
 	tooltip: { heading: string; rows: TooltipRow[] };
 };
 
-export type TrendPoint = { t: number; label: string; value: number };
+/**
+ * One point of a timeline: where it sits across the chart (0 to 1), its value,
+ * the value as written beside the last point, and its tooltip.
+ */
+export type TrendPoint = {
+	at: number;
+	value: number;
+	text: string;
+	tooltip: { heading: string; rows: TooltipRow[] };
+};
+
+/** An axis label under a timeline, where it sits across the chart (0 to 1). */
+export type TrendTick = { at: number; label: string };

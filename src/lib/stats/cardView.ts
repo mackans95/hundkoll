@@ -3,12 +3,22 @@
 // Built on the server from the generic rows; the page only renders it.
 
 import type { LegendItem } from '$lib/components/ChartLegend.svelte';
-import { fieldsFor } from '$lib/events/fields';
+import { fieldsFor, shortFieldLabel } from '$lib/events/fields';
 import * as format from '$lib/format';
 import * as locale from '$lib/locale';
-import type { ColumnBucket, TrendPoint } from '$lib/types/charts';
+import type { ColumnBucket, TrendPoint, TrendTick } from '$lib/types/charts';
 import type { DetailBucketRow, FieldPoint, Period, TypeBucketRow } from '$lib/types/domain';
-import { barBuckets, barColors, barLegend } from './bars';
+import {
+	AXIS_LABEL,
+	barBuckets,
+	barColors,
+	barLegend,
+	bucketStarts,
+	countLabel,
+	DAY_TICK_EVERY,
+	PERIOD_TICK_EVERY,
+	TOOLTIP_HEADING
+} from './bars';
 import { cardHeading } from './cardConfig';
 import { numberWriter, type ChartSpec } from './cardSpec';
 import type { DetailRow } from './detailDays';
@@ -32,9 +42,11 @@ export type BarsView = {
 export type TimelineView = {
 	kind: 'timeline';
 	points: TrendPoint[];
+	ticks: TrendTick[];
+	/** Day / week / month tabs over an average timeline. */
+	picker: boolean;
 	/** The last value, beside the heading: "4,8 kg". */
 	latest: string | null;
-	unit: string;
 	color: string;
 	empty: string;
 };
@@ -49,14 +61,6 @@ export type CardView = {
 /** What an empty chart says, where today's cards said something of their own. */
 const EMPTY_BARS: Record<string, string> = { accident: locale.stats.accidents.empty };
 const EMPTY_TIMELINE: Record<string, string> = { weight: locale.stats.weight.empty };
-
-/** The unit a timeline's axis carries: the field's own, kg for Vikt, min for a duration. */
-function timelineUnit(typeId: string, name: string): string {
-	const field = fieldsFor(typeId).find((candidate) => candidate.name === name);
-	if (field?.unit) return field.unit;
-	if (name === 'kg' || name.endsWith('_kg')) return 'kg';
-	return name.endsWith('_min') ? 'min' : '';
-}
 
 export type CardInput = {
 	typeId: string;
@@ -76,6 +80,74 @@ export type CardInput = {
 	history: FieldPoint[];
 };
 
+/** The axis labels of a timeline by period: every 7th day, or every 3rd week or month. */
+function periodTicks(today: string, period: Period): TrendTick[] {
+	const starts = bucketStarts(today, period);
+	const every = period === 'day' ? DAY_TICK_EVERY : PERIOD_TICK_EVERY;
+	return starts.flatMap((start, i) =>
+		i % every === 0 ? [{ at: i / (starts.length - 1), label: AXIS_LABEL[period](start) }] : []
+	);
+}
+
+/** Every event its own point, placed by time: Vikt's weighings. */
+function everyPoint(
+	input: CardInput,
+	name: string,
+	write: (value: number) => string
+): TrendPoint[] {
+	const history = input.history;
+	if (history.length === 0) return [];
+	const t0 = new Date(history[0].occurred_at).getTime();
+	const t1 = new Date(history[history.length - 1].occurred_at).getTime();
+	return history.map((point) => {
+		const t = new Date(point.occurred_at).getTime();
+		const day = format.dayLabel(point.occurred_at.slice(0, 10));
+		return {
+			// A lone point sits in the middle rather than at an edge.
+			at: t1 === t0 ? 0.5 : (t - t0) / (t1 - t0),
+			value: point.value,
+			text: write(point.value),
+			tooltip: { heading: day, rows: [[{ label: name, value: write(point.value) }]] }
+		};
+	});
+}
+
+/**
+ * Each period's average as a point, placed by its period, a period with
+ * nothing measured left out: a walk's average length per day, say.
+ */
+function averagePoints(
+	input: CardInput,
+	period: Period,
+	fieldName: string,
+	name: string,
+	write: (value: number) => string
+): TrendPoint[] {
+	const starts = bucketStarts(input.today, period);
+	const count = countLabel(input.typeId, input.type.label);
+	return starts.flatMap((start, i) => {
+		const row = input.details.find(
+			(detail) => detail.bucket === start && detail.field === fieldName
+		);
+		if (row?.avg_number == null) return [];
+		const n = input.buckets.find((bucket) => bucket.bucket === start)?.n ?? row.answered;
+		return [
+			{
+				at: starts.length === 1 ? 0.5 : i / (starts.length - 1),
+				value: row.avg_number,
+				text: locale.units.approximately(write(row.avg_number)),
+				tooltip: {
+					heading: TOOLTIP_HEADING[period](start),
+					rows: [
+						[{ label: name, value: locale.units.approximately(write(row.avg_number)) }],
+						[{ label: count, value: String(n) }]
+					]
+				}
+			}
+		];
+	});
+}
+
 /** One card, ready to draw. */
 export function cardView(input: CardInput): CardView {
 	const { typeId, chart } = input;
@@ -83,21 +155,37 @@ export function cardView(input: CardInput): CardView {
 
 	if (chart.kind === 'timeline') {
 		const write = numberWriter(typeId, chart.field);
-		const last = input.history.at(-1);
+		const field = fieldsFor(typeId).find((candidate) => candidate.name === chart.field);
+		const name = shortFieldLabel(field?.label ?? chart.field);
+		const period = chart.picker ? input.period : 'day';
+		const points = chart.every
+			? everyPoint(input, name, write)
+			: averagePoints(input, period, chart.field, name, write);
+		// Every-event: the span's two ends. By period: evenly, as the bar charts tick.
+		const ticks: TrendTick[] = chart.every
+			? input.history.length === 0
+				? []
+				: [
+						{ at: 0, label: format.dayLabel(input.history[0].occurred_at.slice(0, 10)) },
+						{ at: 1, label: format.dayLabel(input.history.at(-1)!.occurred_at.slice(0, 10)) }
+					]
+			: periodTicks(input.today, period);
+		const last = points.at(-1);
 		return {
 			type: typeId,
 			heading,
 			tiles: input.tiles,
 			chart: {
 				kind: 'timeline',
-				points: input.history.map((point) => ({
-					t: new Date(point.occurred_at).getTime(),
-					label: format.dayLabel(point.occurred_at.slice(0, 10)),
-					value: point.value
-				})),
-				latest: last ? write(last.value) : null,
-				unit: timelineUnit(typeId, chart.field),
+				points,
+				ticks,
+				latest: last
+					? chart.every
+						? write(last.value)
+						: locale.units.approximately(write(last.value))
+					: null,
 				color: input.color.main,
+				picker: chart.picker,
 				empty: EMPTY_TIMELINE[typeId] ?? locale.stats.chart.emptyTimeline
 			}
 		};

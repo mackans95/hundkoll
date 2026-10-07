@@ -34,15 +34,16 @@
 		{/if}
 	{/snippet}
 
+	{#if chart.picker}
+		<TabBar
+			{tabs}
+			current={period}
+			href={tabHref}
+			label={locale.stats.periodPickerLabel}
+		/>
+	{/if}
+
 	{#if chart.kind === 'bars'}
-		{#if chart.picker}
-			<TabBar
-				{tabs}
-				current={period}
-				href={tabHref}
-				label={locale.stats.periodPickerLabel}
-			/>
-		{/if}
 		{#if chart.ready}
 			<StackedColumns
 				buckets={chart.buckets}
@@ -62,8 +63,8 @@
 	{:else}
 		<TrendLine
 			points={chart.points}
+			ticks={chart.ticks}
 			color={chart.color}
-			unit={chart.unit}
 			label={view.heading}
 		/>
 	{/if}

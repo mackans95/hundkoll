@@ -5,6 +5,10 @@
 import { describe, expect, it } from 'vitest';
 import * as locale from '$lib/locale';
 import {
+	defaultChart,
+	defaultDetails,
+	parseChart,
+	planChart,
 	defaultTiles,
 	parseTiles,
 	planTiles,
@@ -208,5 +212,64 @@ describe('planTiles', () => {
 			'gap::',
 			'avg:duration_min:'
 		]);
+	});
+});
+
+describe('the chart’s configuration', () => {
+	const posted = (fields: [string, string][]) => {
+		const form = new FormData();
+		form.set('chart_present', '1');
+		for (const [key, value] of fields) form.append(key, value);
+		return form;
+	};
+
+	it('reads a timeline stored before it had modes as every event, Vikt’s', () => {
+		expect(parseChart('car_ride', { chart: { kind: 'timeline', field: 'duration_min' } })).toEqual({
+			kind: 'timeline',
+			field: 'duration_min',
+			every: true,
+			picker: false
+		});
+	});
+
+	it('reads bars stored before they had details as the type’s default tooltip', () => {
+		const chart = parseChart('walk', {
+			chart: { kind: 'bars', split: { by: 'none' }, picker: false, tooltip: 'emoji' }
+		});
+		expect(chart.kind === 'bars' && chart.details).toEqual(defaultDetails('walk'));
+	});
+
+	it('keeps the ticked details in the list’s order, after its one move', () => {
+		const chart = planChart(
+			'walk',
+			defaultChart('walk'),
+			posted([
+				['chart_kind', 'bars'],
+				['chart_split', 'none'],
+				['details_present', '1'],
+				['detail', 'count'],
+				['detail', 'gap'],
+				['detail', 'avg:duration_min'],
+				['detail_on', 'gap'],
+				['detail_on', 'avg:duration_min'],
+				['detail_op', 'up:2']
+			])
+		);
+		expect(chart.kind === 'bars' && chart.details).toEqual(['avg:duration_min', 'gap']);
+	});
+
+	it('takes an average timeline with tabs, and drops tabs from an every-event one', () => {
+		const base: [string, string][] = [
+			['chart_kind', 'timeline'],
+			['chart_field', 'duration_min'],
+			['chart_picker', 'false'],
+			['chart_picker', 'true']
+		];
+		expect(
+			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'average']]))
+		).toEqual({ kind: 'timeline', field: 'duration_min', every: false, picker: true });
+		expect(
+			planChart('walk', defaultChart('walk'), posted([...base, ['chart_points', 'every']]))
+		).toEqual({ kind: 'timeline', field: 'duration_min', every: true, picker: false });
 	});
 });

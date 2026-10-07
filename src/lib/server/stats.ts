@@ -213,14 +213,19 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 		charted.map((type) => [type, typeSettings(type, settings?.get(type))])
 	);
 	const chartOf = (type: string) => config[type].chart!;
-	const periodOf = (type: string): Period => {
+	const periodOf = (type: string): Period => (chartOf(type).picker ? period : 'day');
+	// Bars and an average timeline read the bucket views; an every-event
+	// timeline reads the field's whole history instead.
+	const bucketed = charted.filter((type) => {
 		const chart = chartOf(type);
-		return chart.kind === 'bars' && chart.picker ? period : 'day';
-	};
-	const bars = charted.filter((type) => chartOf(type).kind === 'bars');
-	const daily = bars.filter((type) => periodOf(type) === 'day');
-	const tabbed = bars.filter((type) => periodOf(type) !== 'day');
-	const timelines = charted.filter((type) => chartOf(type).kind === 'timeline');
+		return chart.kind === 'bars' || !chart.every;
+	});
+	const daily = bucketed.filter((type) => periodOf(type) === 'day');
+	const tabbed = bucketed.filter((type) => periodOf(type) !== 'day');
+	const timelines = charted.filter((type) => {
+		const chart = chartOf(type);
+		return chart.kind === 'timeline' && chart.every;
+	});
 	// The type's own events, for a tooltip or a tile no view can answer.
 	const eventTypes = charted.filter((type) => {
 		const chart = chartOf(type);

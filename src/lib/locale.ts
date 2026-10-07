@@ -214,7 +214,11 @@ export const settings = {
 		tooltip: 'Rutan vid tryck',
 		text: 'Text',
 		emoji: 'Emoji',
-		field: 'Värde'
+		field: 'Värde',
+		points: 'Punkter',
+		every: 'Varje gång',
+		average: 'Snitt per period',
+		details: 'Visa i rutan'
 	},
 	/** Settings → Tabeller (plan 28). */
 	tables: {
@@ -467,6 +471,9 @@ export const stats = {
 	/** The chart's settings on a type's page (plan 29b). */
 	chart: {
 		noSplit: 'Ingen uppdelning',
+		/** A tooltip detail on the type page. */
+		count: 'Antal',
+		share: (field: string) => `Andel ${field.toLowerCase()}` as const,
 		byAnswer: (field: string) => `Efter ${field.toLowerCase()}` as const,
 		byCounts: (fields: string) => `Efter ${fields.toLowerCase()}` as const,
 		and: 'och',
