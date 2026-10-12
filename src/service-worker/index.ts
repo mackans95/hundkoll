@@ -200,15 +200,21 @@ async function respond(event: FetchEvent): Promise<Response> {
 	}
 
 	// Everything else, and stale copies: prefer fresh, but keep the last good
-	// copy — that copy is what lets the app open at all without signal.
-	try {
-		const response = await fetch(request);
+	// copy — that copy is what lets the app open at all without signal. A weak
+	// signal doesn't fail, it hangs, so the network gets a deadline: shorter
+	// when there is a copy to fall back on. A late answer is still kept.
+	const network = fetch(request).then((response) => {
 		if (worthKeeping(response)) {
 			event.waitUntil(cache.put(request, response.clone()));
 		}
 		const stamp = readStamp(response.headers);
 		if (stamp) event.waitUntil(update((current) => afterResponse(current, stamp)));
 		return response;
+	});
+	event.waitUntil(network.catch(() => undefined));
+	try {
+		const fallback = await cache.match(request, { ignoreVary: true });
+		return await within(network, fallback ? 3_000 : 8_000);
 	} catch {
 		// ignoreVary: SvelteKit varies its responses on headers that differ
 		// between a navigation and a data request, which would otherwise turn
@@ -224,6 +230,14 @@ async function respond(event: FetchEvent): Promise<Response> {
 		}
 		return offlineResponse();
 	}
+}
+
+/** The promise, or a rejection once `ms` have passed without it settling. */
+function within<T>(promise: Promise<T>, ms: number): Promise<T> {
+	return Promise.race([
+		promise,
+		new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+	]);
 }
 
 /**
