@@ -192,6 +192,27 @@ re-reads, as before.
 - **Status ticks now.** Its times came from the server's `now` and never moved; Logga and
   Status follow the phone's clock from hydration on (`liveNow`).
 
+## What the phone changed
+
+Tested on the phone against the local preview (2026-10-12), then put back on production.
+Our own logs showed on Status and Statistik at once, as did a log inserted from the Mac
+as the other phone.
+
+- **The check runs on every page switch**, not at most once per 30 s. Marcus's call: a
+  hidden timer made another phone's log wait for no good reason, and the check is one
+  tiny read. Coming back to the app keeps its 30 s rule; the next tap checks anyway.
+- **A weak signal hangs rather than fails.** With the server unreachable, a page without
+  a copy never opened and a hung version check held up every catch-up after it.
+  Headless Chrome's offline mode fails at once, which is why the earlier runs missed it.
+  Pages now get 3 s on the network when there is a copy, 8 s without (a late answer is
+  still kept), and the check gives up after 5 s.
+- **Only the launch renews the document copy.** Renewing after every caught-up
+  navigation cost a second full render each time.
+- **Trender switches period in place, like Statistik**, so its tabs work offline and
+  without a request; drawn identically to master in all three periods.
+- **A deploy starts with an empty cache**, and the new worker deletes the old one when it
+  takes over, so the first launch or two after a merge read from the network.
+
 ## Decided
 
 | Question                          | Answer                                                                |
