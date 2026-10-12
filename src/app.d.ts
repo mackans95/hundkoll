@@ -16,7 +16,7 @@ declare global {
 		interface PageState {
 			/** The ☰ menu is open: a shallow history entry, so Back closes it. */
 			menuOpen?: boolean;
-			/** Statistik's tab, switched in place: every period is already loaded. */
+			/** Statistik's or Trender's tab, switched in place: every period is loaded. */
 			period?: Period;
 		}
 		interface PageData {
