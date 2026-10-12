@@ -16,8 +16,8 @@ async function readSession(request: Request): Promise<{ sessionId: string; typeI
 	return { sessionId, typeId };
 }
 
-export const POST: RequestHandler = async ({ request, locals: { supabase, user } }) => {
-	if (!user) error(401);
+export const POST: RequestHandler = async ({ request, locals: { supabase, userId } }) => {
+	if (!userId) error(401);
 	const { sessionId, typeId } = await readSession(request);
 	const dog = await currentDog(supabase);
 	if (!dog) error(404);
@@ -37,8 +37,8 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, user }
 };
 
 // By session id, so a late call from an old walk cannot end a newer one.
-export const DELETE: RequestHandler = async ({ request, locals: { supabase, user } }) => {
-	if (!user) error(401);
+export const DELETE: RequestHandler = async ({ request, locals: { supabase, userId } }) => {
+	if (!userId) error(401);
 	const { sessionId } = await readSession(request);
 	const { error: failed } = await supabase
 		.from('live_sessions')

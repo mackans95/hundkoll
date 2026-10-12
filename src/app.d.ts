@@ -1,6 +1,5 @@
-import type { Session, User } from '@supabase/supabase-js';
 import type { Db } from '$lib/server/db';
-import type { SessionResult } from '$lib/server/auth';
+import type { Period } from '$lib/types/domain';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 declare global {
@@ -8,17 +7,17 @@ declare global {
 		interface Locals {
 			/** Request-scoped and typed against the generated schema. */
 			supabase: Db;
-			safeGetSession: () => Promise<SessionResult>;
-			session: Session | null;
-			user: User | null;
+			/** Verified by the hook; null when signed out. */
+			userId: string | null;
 		}
 		interface PageState {
 			/** The ☰ menu is open: a shallow history entry, so Back closes it. */
 			menuOpen?: boolean;
+			/** Statistik's tab, switched in place: every period is already loaded. */
+			period?: Period;
 		}
 		interface PageData {
-			session: Session | null;
-			user: User | null;
+			signedIn: boolean;
 		}
 	}
 }

@@ -55,7 +55,7 @@
 />
 <svelte:document onvisibilitychange={catchUp} />
 
-{#if data.session}
+{#if data.signedIn}
 	<!-- Clears the fixed nav, which now grows by the home-indicator inset. -->
 	<div class="pb-[calc(5rem+var(--nav-inset))]">
 		<!-- Zero height: the menu sits over each page's own header, and sticks

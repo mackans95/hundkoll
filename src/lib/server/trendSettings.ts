@@ -6,15 +6,16 @@ import { readHouseholdJson, saveHouseholdJson } from './householdSettings';
 /**
  * The household's Trender list, or the defaults when it has never been
  * edited. Null means the read failed. Rows naming a type or field since
- * removed are dropped here, so every caller sees a list it can draw.
+ * removed are dropped here, so every caller sees a list it can draw. The
+ * types may still be on their way: they are awaited only to parse.
  */
 export async function readTrendConfig(
 	db: Db,
-	knownTypes: ReadonlySet<string>
+	knownTypes: ReadonlySet<string> | Promise<ReadonlySet<string>>
 ): Promise<TrendConfigRow[] | null> {
 	const stored = await readHouseholdJson(db, 'trend_settings', 'rows');
 	if (stored === undefined) return null;
-	return stored === null ? DEFAULT_TRENDS : parseTrendRows(stored, knownTypes);
+	return stored === null ? DEFAULT_TRENDS : parseTrendRows(stored, await knownTypes);
 }
 
 /** Stores the whole list. */

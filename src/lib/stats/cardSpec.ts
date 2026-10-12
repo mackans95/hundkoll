@@ -211,16 +211,11 @@ export type TileData = {
 	windows: TypeWindowRow[];
 	/** The type's 30-day detail rows, one per field ever logged. */
 	metrics: DetailWindowRow[];
-	/** The type's events of the last 30 days, oldest first; empty when no tile reads them. */
+	/** The type's events of the last 30 days, oldest first. */
 	events: DetailRow[];
 	/** Days tracked, which per week and per month wait for. */
 	tracked: number;
 };
-
-/** Whether a tile reads the type's own events, so the loader knows to fetch them. */
-export function tileReadsEvents(tile: TileSpec): boolean {
-	return tile.kind === 'longest' || tile.kind === 'latest';
-}
 
 const DASH = locale.units.missing;
 

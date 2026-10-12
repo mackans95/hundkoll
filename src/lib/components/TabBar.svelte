@@ -13,7 +13,8 @@
 		tabs,
 		current,
 		href,
-		label
+		label,
+		onpick
 	}: {
 		tabs: Tab<T>[];
 		current: T;
@@ -21,6 +22,8 @@
 		href: (value: T) => string;
 		/** Accessible name for the group, e.g. "Periodval". */
 		label: string;
+		/** Switches in place instead of following the link; the link stays for no JS. */
+		onpick?: (value: T) => void;
 	} = $props();
 </script>
 
@@ -34,6 +37,13 @@
 		<a
 			href={href(tab.value)}
 			data-sveltekit-noscroll
+			data-sveltekit-preload-data={onpick ? 'off' : undefined}
+			onclick={onpick
+				? (event) => {
+						event.preventDefault();
+						onpick(tab.value);
+					}
+				: undefined}
 			aria-current={current === tab.value ? 'true' : undefined}
 			class="flex-1 rounded-md py-1.5 text-center text-sm font-medium {current === tab.value
 				? 'bg-surface-raised text-ink shadow-sm'

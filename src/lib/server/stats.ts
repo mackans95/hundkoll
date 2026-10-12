@@ -30,12 +30,11 @@ import type {
 	TypeWindowRow,
 	ViewRow
 } from '$lib/types/domain';
-import { barNeedsEvents } from '$lib/stats/bars';
 import { cardView, type CardView } from '$lib/stats/cardView';
 import { fieldHistory } from './events';
 import { listTypeSettings } from './typeSettings';
 import { typeSettings } from '$lib/typeSettings';
-import { tileReadsEvents, tileValues } from '$lib/stats/cardSpec';
+import { tileValues } from '$lib/stats/cardSpec';
 import { readTrendConfig } from './trendSettings';
 import { readCardConfig } from './statsSettings';
 import { defaultCards, type CardRow } from '$lib/stats/cardConfig';
@@ -48,8 +47,9 @@ export type Stats = {
 	summary: StatSummary | null;
 	/** The cards in Settings → Tabeller's order, each shown or not (plan 28). */
 	cards: CardRow[];
-	/** Each charted type's card, drawn from its configuration (plan 29). */
-	views: Record<string, CardView>;
+	/** Each charted type's card per period, drawn from its configuration (plan
+	 * 29). Only a card with tabs differs between periods (plan 31). */
+	views: Record<Period, Record<string, CardView>>;
 	/** Whether any read failed. Empty charts and unreadable ones look the same
 	 * otherwise, and the second must not be cached as the first. */
 	failed: boolean;
@@ -194,65 +194,39 @@ export function toPeriod(raw: string | null): Period {
 	return raw !== null && Object.hasOwn(PERIODS, raw) ? (raw as Period) : 'day';
 }
 
-/** Everything the stats screen shows, for one period. */
+/** Everything the stats screen shows, for every period the tabs can pick. */
 export async function loadStats(db: Db, period: Period): Promise<Stats> {
 	// How far back to read per bin size, each covering a dozen-ish buckets.
 	const BIN_WINDOW_DAYS: Record<Period, number> = { day: 30, week: 84, month: 365 };
 	const DAILY_WINDOW_DAYS = 30;
+	const PERIODS: Period[] = ['day', 'week', 'month'];
 
 	const today = time.stockholmNowForInput().slice(0, 10);
 	// Counted in Stockholm days, the same days the charts zero-fill — a UTC
 	// cutoff would disagree with them for the hours around midnight.
 	const daysAgo = (days: number) => time.addDays(today, -days);
-
-	// Read first: each card's configuration decides what the reads below fetch.
-	// A failed read draws the defaults, which is no reason to call the page failed.
-	const settings = await listTypeSettings(db);
 	const charted = Object.keys(CHARTED_TYPES);
-	const config = Object.fromEntries(
-		charted.map((type) => [type, typeSettings(type, settings?.get(type))])
-	);
-	const chartOf = (type: string) => config[type].chart!;
-	const periodOf = (type: string): Period => (chartOf(type).picker ? period : 'day');
-	// Bars and an average timeline read the bucket views; an every-event
-	// timeline reads the field's whole history instead.
-	const bucketed = charted.filter((type) => {
-		const chart = chartOf(type);
-		return chart.kind === 'bars' || !chart.every;
-	});
-	const daily = bucketed.filter((type) => periodOf(type) === 'day');
-	const tabbed = bucketed.filter((type) => periodOf(type) !== 'day');
-	const timelines = charted.filter((type) => {
-		const chart = chartOf(type);
-		return chart.kind === 'timeline' && chart.every;
-	});
-	// The type's own events, for a tooltip or a tile no view can answer.
-	const eventTypes = charted.filter((type) => {
-		const chart = chartOf(type);
-		return (
-			config[type].tiles.some(tileReadsEvents) ||
-			(chart.kind === 'bars' && barNeedsEvents(type, chart, periodOf(type)))
-		);
-	});
 
-	// A bucket and detail read per period on screen: by day for most, at the
-	// tabs' period for a chart that has them.
-	async function bucketReads(types: string[], at: Period) {
-		if (types.length === 0) {
-			return { buckets: [] as TypeBucketRow[], details: [] as DetailBucketRow[], error: false };
-		}
+	// A failed read draws the defaults, which is no reason to call the page failed.
+	const configRead = listTypeSettings(db).then((settings) =>
+		Object.fromEntries(charted.map((type) => [type, typeSettings(type, settings?.get(type))]))
+	);
+
+	// Per period, every charted type: the reads no longer wait on which cards
+	// use which period, and each is a few dozen rows.
+	async function bucketReads(at: Period) {
 		const [bucketsRes, detailsRes] = await Promise.all([
 			db
 				.from('stats_type_buckets')
 				.select(TYPE_BUCKET_COLUMNS)
-				.in('type_id', types)
+				.in('type_id', charted)
 				.eq('period', at)
 				.gte('bucket', daysAgo(BIN_WINDOW_DAYS[at]))
 				.order('bucket'),
 			db
 				.from('stats_detail_buckets')
 				.select(DETAIL_BUCKET_COLUMNS)
-				.in('type_id', types)
+				.in('type_id', charted)
 				.eq('period', at)
 				.gte('bucket', daysAgo(BIN_WINDOW_DAYS[at]))
 		]);
@@ -263,10 +237,22 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 		};
 	}
 
-	const [dailyRows, tabbedRows, windowsRes, windowDetailRes, eventsRes, types, histories, cards] =
+	const [config, histories, periodRows, windowsRes, windowDetailRes, eventsRes, types, cards] =
 		await Promise.all([
-			bucketReads(daily, 'day'),
-			bucketReads(tabbed, period),
+			configRead,
+			// The one read that waits on the configuration: an every-event
+			// timeline's whole history, for whichever field it plots.
+			configRead.then((byType) =>
+				Promise.all(
+					charted.map((type) => {
+						const chart = byType[type].chart!;
+						return chart.kind === 'timeline' && chart.every
+							? fieldHistory(db, type, chart.field)
+							: [];
+					})
+				)
+			),
+			Promise.all(PERIODS.map(bucketReads)),
 			// Every card's tiles come out of these two, by type and field.
 			db.from('stats_type_windows').select(TYPE_WINDOW_COLUMNS).in('type_id', charted),
 			db
@@ -274,35 +260,30 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 				.select(DETAIL_WINDOW_COLUMNS)
 				.in('type_id', charted)
 				.eq('window_days', 30),
-			eventTypes.length > 0
-				? db
-						.from('events')
-						.select('type_id, occurred_at, details')
-						.in('type_id', eventTypes)
-						.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS))
-						.order('occurred_at')
-				: { data: [], error: null },
+			// For a tooltip or a tile no view can answer; every type's, since
+			// which ones need them is configuration.
+			db
+				.from('events')
+				.select('type_id, occurred_at, details')
+				.in('type_id', charted)
+				.gte('occurred_at', daysAgo(DAILY_WINDOW_DAYS))
+				.order('occurred_at'),
 			listEventTypes(db),
-			Promise.all(
-				timelines.map((type) => {
-					const chart = chartOf(type);
-					return chart.kind === 'timeline' ? fieldHistory(db, type, chart.field) : [];
-				})
-			),
 			readCardConfig(db)
 		]);
 
 	const failed = Boolean(
-		dailyRows.error ||
-		tabbedRows.error ||
+		periodRows.some((rows) => rows.error) ||
 		windowsRes.error ||
 		windowDetailRes.error ||
 		eventsRes.error ||
 		types === null
 	);
 
-	const typeBuckets = [...dailyRows.buckets, ...tabbedRows.buckets];
-	const detailBuckets = [...dailyRows.details, ...tabbedRows.details];
+	const rowsAt = Object.fromEntries(PERIODS.map((at, i) => [at, periodRows[i]])) as Record<
+		Period,
+		(typeof periodRows)[number]
+	>;
 	const windows = present((windowsRes.data ?? []).map(toTypeWindow));
 	const windowDetails = present((windowDetailRes.data ?? []).map(toDetailWindow));
 	const summary = rows.statSummary(windows, windowDetails);
@@ -315,35 +296,47 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 				details: (row.details ?? {}) as EventDetails
 			}));
 
+	const viewOf = (type: string, at: Period): CardView => {
+		const chart = config[type].chart!;
+		const catalogue = types?.find((candidate) => candidate.id === type);
+		const typeEvents = eventsOf(type);
+		// A chart without tabs is always by day, whatever period it is built for.
+		const reads = rowsAt[chart.picker ? at : 'day'];
+		return cardView({
+			typeId: type,
+			type: { label: catalogue?.label ?? type, icon: catalogue?.icon ?? null },
+			chart,
+			color: chartColor(config[type].chartColor ?? 'slate'),
+			tiles: tileValues(type, config[type].tiles, {
+				windows: windows.filter((row) => row.type_id === type),
+				metrics: windowDetails.filter((row) => row.type_id === type),
+				events: typeEvents,
+				tracked
+			}),
+			period: at,
+			today,
+			tracked,
+			buckets: reads.buckets.filter((row) => row.type_id === type),
+			details: reads.details.filter((row) => row.type_id === type),
+			events: typeEvents,
+			history: histories[charted.indexOf(type)]
+		});
+	};
+
+	// Built once per type, and again per period only for a card with tabs:
+	// the same object under each period otherwise, which serializes once.
+	const byDay = Object.fromEntries(charted.map((type) => [type, viewOf(type, 'day')]));
 	const views = Object.fromEntries(
-		charted.map((type) => {
-			const chart = chartOf(type);
-			const catalogue = types?.find((candidate) => candidate.id === type);
-			const typeEvents = eventsOf(type);
-			return [
-				type,
-				cardView({
-					typeId: type,
-					type: { label: catalogue?.label ?? type, icon: catalogue?.icon ?? null },
-					chart,
-					color: chartColor(config[type].chartColor ?? 'slate'),
-					tiles: tileValues(type, config[type].tiles, {
-						windows: windows.filter((row) => row.type_id === type),
-						metrics: windowDetails.filter((row) => row.type_id === type),
-						events: typeEvents,
-						tracked
-					}),
-					period,
-					today,
-					tracked,
-					buckets: typeBuckets.filter((row) => row.type_id === type),
-					details: detailBuckets.filter((row) => row.type_id === type),
-					events: typeEvents,
-					history: histories[timelines.indexOf(type)] ?? []
-				})
-			];
-		})
-	);
+		PERIODS.map((at) => [
+			at,
+			Object.fromEntries(
+				charted.map((type) => [
+					type,
+					config[type].chart!.picker && at !== 'day' ? viewOf(type, at) : byDay[type]
+				])
+			)
+		])
+	) as Record<Period, Record<string, CardView>>;
 
 	return {
 		period,
@@ -372,18 +365,17 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const today = time.stockholmNowForInput().slice(0, 10);
 	const { prev: prevBucket, latest: latestBucket } = trendBucketKeys(today, period);
 
-	const types = await listEventTypes(db);
-	const config = await readTrendConfig(db, new Set((types ?? []).map((type) => type.id)));
-	const rows = config ?? [];
-	const typeIds = [...new Set(rows.map((row) => row.type))];
-	const fields = [
-		...new Set(rows.flatMap((row) => [...(row.field ? [row.field] : []), ...(row.children ?? [])]))
-	];
-
 	const prevSpan = bucketSpan(period, prevBucket);
 	const latestSpan = bucketSpan(period, latestBucket);
 
-	const [typeRes, detailRes, awayRes] = await Promise.all([
+	// One wave: the config waits for the catalogue only to parse, not to read,
+	// and the reads below take every type and field rather than the config's.
+	const typesRead = listEventTypes(db);
+	const known = typesRead.then((types) => new Set((types ?? []).map((type) => type.id)));
+
+	const [types, config, typeRes, detailRes, awayRes] = await Promise.all([
+		typesRead,
+		readTrendConfig(db, known),
 		// No type filter: a bucket the view produced exists if *anything* was
 		// logged in it, so a week of only car rides still compares.
 		db
@@ -391,16 +383,12 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 			.select(TYPE_BUCKET_COLUMNS)
 			.eq('period', period)
 			.in('bucket', [prevBucket, latestBucket]),
-		// Skipped when no row names a field: there is nothing to filter on.
-		fields.length > 0
-			? db
-					.from('stats_detail_buckets')
-					.select(DETAIL_BUCKET_COLUMNS)
-					.in('type_id', typeIds)
-					.in('field', fields)
-					.eq('period', period)
-					.in('bucket', [prevBucket, latestBucket])
-			: { data: [], error: null },
+		// Every field of both buckets, a few dozen rows; narrowed to the config's below.
+		db
+			.from('stats_detail_buckets')
+			.select(DETAIL_BUCKET_COLUMNS)
+			.eq('period', period)
+			.in('bucket', [prevBucket, latestBucket]),
 		// Absences overlapping either period: started before the end, and not
 		// ended before the start.
 		db
@@ -422,7 +410,14 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 		1 - awayIn(span) / ((span.to.getTime() - span.from.getTime()) / 60_000);
 
 	const typeBuckets = present((typeRes.data ?? []).map(toTypeBucket));
-	const detailBuckets = present((detailRes.data ?? []).map(toDetailBucket));
+	const rows = config ?? [];
+	const typeIds = new Set(rows.map((row) => row.type));
+	const fields = new Set(
+		rows.flatMap((row) => [...(row.field ? [row.field] : []), ...(row.children ?? [])])
+	);
+	const detailBuckets = present((detailRes.data ?? []).map(toDetailBucket)).filter(
+		(row) => typeIds.has(row.type_id) && fields.has(row.field)
+	);
 	const at = (bucket: string, span: { from: Date; to: Date }): TrendPeriod | null =>
 		typeBuckets.some((row) => row.bucket === bucket)
 			? {
