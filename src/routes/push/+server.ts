@@ -13,13 +13,13 @@ async function readToken(request: Request): Promise<string> {
 	return token;
 }
 
-export const POST: RequestHandler = async ({ request, locals: { supabase, user } }) => {
-	if (!user) error(401);
+export const POST: RequestHandler = async ({ request, locals: { supabase, userId } }) => {
+	if (!userId) error(401);
 	const token = await readToken(request);
 
 	// Insert, or on a token already stored just mark it seen: the grant allows
 	// updating seen_at and nothing else, so an upsert would be refused.
-	const insert = await supabase.from('push_devices').insert({ token, user_id: user.id });
+	const insert = await supabase.from('push_devices').insert({ token, user_id: userId });
 	if (insert.error?.code === '23505') {
 		const seen = await supabase
 			.from('push_devices')
@@ -36,8 +36,8 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, user }
 	return json({ ok: true });
 };
 
-export const DELETE: RequestHandler = async ({ request, locals: { supabase, user } }) => {
-	if (!user) error(401);
+export const DELETE: RequestHandler = async ({ request, locals: { supabase, userId } }) => {
+	if (!userId) error(401);
 	const token = await readToken(request);
 	const { error: failed } = await supabase.from('push_devices').delete().eq('token', token);
 	if (failed) {
