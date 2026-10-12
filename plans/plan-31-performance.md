@@ -7,7 +7,8 @@
 
 > **Status: 📝 Drafting** — branch `feature/performance`. Measurements below are from
 > production data (read-only EXPLAIN ANALYZE as the logged-in user, RLS included) and a
-> production build against the local stack. Item 5 has open questions to settle first.
+> production build against the local stack. Item 5's questions were settled with Marcus
+> the same day (Decided, below).
 
 ## What a period switch costs today
 
@@ -79,78 +80,109 @@ an expired token from the cookie, as it does today.
   both buckets; the detail read can drop its field filter, since it's 21 rows unfiltered.
 - Logga, Status and Historik already read in one wave.
 
-### 5. Version-checked page cache (to discuss)
+### 5. Every page shown from the phone first, checked against a version
 
-Pages that are expensive and change only on writes are kept on the phone, and shown
-straight away when nothing has been logged since.
+Every page (Logga, Status, Statistik, Trender, Historik) is kept on the phone, across
+launches, and shown straight away. A small network check then says whether anything was
+written since; only then is the page read again, in the background.
 
-- **The stale marker lives in the database.** A per-household `data_version`, bumped by a
-  trigger on every write to `events`, `type_settings`, `stats_settings`, `trend_settings`
-  and `event_types`. That catches Ida's phone, lock-screen saves and anything else that
-  writes, which a flag set by this phone's own logging would miss.
-- **The check:** a tiny endpoint returns `{ version, day }`. After 3 it costs one in-region
-  query and no auth round trip.
-- **Shape:** the page keeps the last load per URL in memory with the version and the
-  Stockholm day it was read for, shows it on navigation, checks the version in the
-  background, and re-reads only if either changed.
+**The stale marker lives in the database.** A per-household `data_version`, bumped by a
+trigger on every write to `events`, `type_settings`, `stats_settings`, `trend_settings`
+and `event_types` (one household, so the catalogue bumps it too). That catches Ida's
+phone, lock-screen saves and anything else that writes, which a flag set by this phone's
+own logging would miss.
 
-## Question for item 1
+**The check** is a small endpoint, `{ version, day }`. After 3 it's one in-region query and
+no auth round trip. It always goes to the network: the service worker never answers it,
+so "nothing changed" is only ever said by the server. When it can't be reached, what's on
+screen stays and it's retried, as `catchUp` does today.
 
-**Does the back button step through periods?** Today it does, since every tab is a
-navigation. **Recommendation: no** (`replaceState`): back leaves Statistik. Stepping
-backwards through Vecka, Dag, Månad is rarely what back is reached for.
+**What counts as changed, per page:**
 
-## Questions for item 5, with my recommendation
+| Page               | Re-read when                  | Why                                                                                                  |
+| ------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Logga, Status      | the version moved             | Times are absolute (`due_at`, `occurred_at`); "x min ago" and overdue come from the phone's clock    |
+| Historik           | the version moved             | A month's events, nothing relative to today                                                          |
+| Statistik, Trender | the version moved, or the day | SQL computes them for today: 30-day windows, buckets up to today, days tracked, the last two periods |
 
-### a. Which pages?
+A day change never makes anyone wait: Tuesday's Statistik shows at once on Wednesday and
+is replaced a moment later. Status's "average" intervals lean on a 30-day mean that
+drifts a fraction a day, and the away time while a Hundvakt is open is counted to `now()`;
+neither is worth a re-read.
 
-**Statistik, Trender and Historik.** All three change only on writes or with the date,
-and past months in Historik are almost static. **Not Logga and Status**: they're cheap (one
-wave, every query under 8 ms), and they show live state (due times, a running Hundvakt,
-the live cards) where an old copy is worse than a quick read.
+**Where the copy lives: the service worker's cache.** It already keeps the last good copy
+of every page and its `__data.json`, per build, but only uses it offline. It becomes
+cache-first for page and data requests, each copy stamped with the version and day it was
+read for (response headers). Design notes for the build:
 
-### b. Show the cached copy first, or check first?
+- **The worker has to know when a copy is stale.** The page tells it the version the
+  check returned; a copy stamped older, or a day-keyed copy from another day, goes to the
+  network. Before a launch's first check, the copy is served (show first).
+- **A write from this phone** makes the next read go to the network, so the page after a
+  log never shows the copy from before it.
+- **Logout clears the cache.** The login page stays uncached, as today.
+- **A deploy starts a new cache** (it's per build), so the first launch after one reads
+  from the network.
+- **Pages use the phone's clock once hydrated**, not the server's `now`: a copy rendered
+  yesterday must not count elapsed time from yesterday's render.
 
-**Show first.** Checking first still costs a round trip every navigation, which is most of
-what's left to save. Showing first means a page might change a moment after it appears,
-but only when someone else logged something since you last looked. Your own logs already
-re-read the page before you navigate.
+**`catchUp` asks the version instead of re-reading.** On a launch, or a return after
+30 s, it runs the check. If nothing moved, what's on screen is current and no page is
+read; if something did, it re-reads from the network. Its "did this reach the server?"
+guard moves to the check, which is what reaches the server now.
 
-### c. The clock
+### The hallway: a notification tap on weak wifi
 
-Some numbers move with no write: today's bucket, the 30-day windows, and the away time
-while a Hundvakt is open (counted up to `now()`). **Key on the Stockholm day, and accept
-the minutes of drift while she's away.** A day change re-reads, as does any write or
-`catchUp` after 30 s in the background.
+A tap on a cold app makes three requests before Status shows. The app opens on `/`, so
+the whole Logga page loads first. The tap is handled only once that page runs
+(`listenForTaps` → `goto('/status')`), a second load. And `catchUp` re-reads the page on
+launch, a third request on the same weak signal.
 
-### d. Memory only, or kept across launches?
+With item 5, Logga and Status both come from the phone, and the launch makes one small
+request, the version check. No native change. If taps still feel slow after that, the
+Android side could open the tapped URL instead of `/`, but that needs a new APK.
 
-**Memory only.** A launch already reads fresh (or from the service worker offline), and a
-cache that survives launches needs its own invalidation story for the version endpoint
-being unreachable.
+## Decided
 
-### e. How this sits with `catchUp`
-
-`catchUp` calls `invalidateAll()` after 30 s away. That should stay a real re-read, not be
-answered from this cache. Otherwise "is what's on screen current?" would get a yes from
-the cache itself.
+| Question                          | Answer                                                                |
+| --------------------------------- | --------------------------------------------------------------------- |
+| Back on Statistik                 | **Leaves Statistik** (`replaceState`); no stepping through periods.   |
+| Which pages get the cache         | **All of them**, Logga and Status included.                           |
+| Cached copy first, or check first | **Copy first.** Little changes between one open and the next.         |
+| The clock                         | **The day keys Statistik and Trender**; drift while away is accepted. |
+| Memory only, or across launches   | **Across launches.** The first open of the day is the slowest one.    |
+| `catchUp` when nothing changed    | **No re-read.** The version check, against the network, is enough.    |
 
 ## 6. Cold starts (measured)
 
-Probed from outside: one request after an idle gap, then one straight after.
+Probed from outside on 2026-10-12: one request to `/login` after an idle gap, then one
+straight after. `/login` reads no data, so this is the function alone.
 
 | Idle gap | First request | Warm request |
 | -------- | ------------- | ------------ |
-| 60 s     | 190 ms        | 93 ms        |
+| 1 min    | 190 ms        | 93 ms        |
+| 3 min    | 120 ms        | 92 ms        |
+| 5 min    | 160 ms        | 73 ms        |
+| 10 min   | **757 ms**    | 91 ms        |
+| 15 min   | **802 ms**    | 95 ms        |
 
-_(The probe is still running; filled in when it finishes.)_
+**After about 10 minutes idle, the function starts cold: ~700 ms extra**, on a good
+connection, before any auth or data. With two users, most opens are like that, and the
+first one of the day always is. Logs on Vercel's plan keep no durations, so this is
+measured from outside.
+
+Item 5 is the fix that matters: a cold start then delays only the background version
+check, not what's on screen. Keeping the function warm (a ping every few minutes) would
+also remove it, but it spends invocations to hide a cost item 5 already hides, so it's
+**not planned**.
 
 ## Order
 
 Two PRs, like 29:
 
 - **31a:** items 1–4. Independent of each other, each small, no new UI. One migration (2).
-- **31b:** item 5, once the questions above are settled.
+- **31b:** item 5: a migration (the version and its triggers), the endpoint, the worker,
+  `catchUp`.
 
 ## Steps (31a)
 
