@@ -4,7 +4,7 @@
 // and claiming nothing, which is how the rules are checked against real data.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { reminderDue, reminderMessage, type ReminderRow } from '../_shared/reminders.ts';
+import { liveNow, reminderDue, reminderMessage, type ReminderRow } from '../_shared/reminders.ts';
 import { send } from '../_shared/fcm.ts';
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 	const now =
 		dry && url.searchParams.get('now') ? new Date(url.searchParams.get('now')!) : new Date();
 
-	const [status, absences, dogs, hidden] = await Promise.all([
+	const [status, absences, dogs, hidden, live] = await Promise.all([
 		db.from('dog_care_status').select('*'),
 		db
 			.from('events')
@@ -35,12 +35,14 @@ Deno.serve(async (req) => {
 			.lte('occurred_at', now.toISOString()),
 		db.from('dogs').select('id, household_id'),
 		// Types hidden from Status in Settings (plan 26) remind nobody either.
-		db.from('type_settings').select('household_id, type_id').eq('show_on_status', false)
+		db.from('type_settings').select('household_id, type_id').eq('show_on_status', false),
+		// Live walks under way (plan 30): nobody is reminded of the walk they are on.
+		db.from('live_sessions').select('dog_id, type_id, created_at')
 	]);
-	if (status.error || absences.error || dogs.error || hidden.error) {
+	if (status.error || absences.error || dogs.error || hidden.error || live.error) {
 		console.error(
 			'remind read failed:',
-			status.error ?? absences.error ?? dogs.error ?? hidden.error
+			status.error ?? absences.error ?? dogs.error ?? hidden.error ?? live.error
 		);
 		return Response.json({ error: 'read failed' }, { status: 500 });
 	}
@@ -48,12 +50,14 @@ Deno.serve(async (req) => {
 	const away = new Set(absences.data.map((e) => e.dog_id));
 	const household = new Map(dogs.data.map((d) => [d.id, d.household_id]));
 	const off = new Set(hidden.data.map((s) => `${s.household_id}:${s.type_id}`));
+	const marked = new Map(live.data.map((l) => [`${l.dog_id}:${l.type_id}`, l.created_at]));
 	const due: Due[] = [];
 	for (const row of status.data) {
 		// The absence type is the banner on Status, not a card of its own.
 		if (!row.dog_id || !row.type_id || row.category === 'absence') continue;
 		if (off.has(`${household.get(row.dog_id)}:${row.type_id}`)) continue;
-		const kind = reminderDue(row as ReminderRow, away.has(row.dog_id), now);
+		const walking = liveNow(row, marked.get(`${row.dog_id}:${row.type_id}`) ?? null, now);
+		const kind = reminderDue(row as ReminderRow, away.has(row.dog_id) || walking, now);
 		if (kind) {
 			due.push({
 				dog_id: row.dog_id,

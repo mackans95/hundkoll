@@ -5,8 +5,8 @@
 // dialog log and is indistinguishable from one.
 
 import { invalidateAll } from '$app/navigation';
-import { fieldsFor } from '$lib/events/fields';
-import { isNativeApp, lockScreenState, takeLockScreenOutbox } from '$lib/native';
+import { LIVE_TYPES, fieldsFor } from '$lib/events/fields';
+import { clearReminder, isNativeApp, lockScreenState, takeLockScreenOutbox } from '$lib/native';
 import type { EventType } from '$lib/types/domain';
 import {
 	buildSessionFields,
@@ -117,6 +117,24 @@ function persist(): void {
 	}
 }
 
+/**
+ * Tells the server a walk is under way, or over, so neither phone is reminded
+ * to take her out meanwhile (plan 30). Best effort: offline, the reminder may come.
+ */
+function markLive(session: LiveSession, method: 'POST' | 'DELETE'): void {
+	if (LIVE_TYPES[session.typeId] !== 'counting') {
+		return;
+	}
+	if (method === 'POST') {
+		void clearReminder(session.typeId);
+	}
+	void fetch('/live', {
+		method,
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ sessionId: session.id, typeId: session.typeId })
+	}).catch(() => {});
+}
+
 function update(patch: Partial<LiveSession>): void {
 	if (!activeSession.current) {
 		return;
@@ -148,6 +166,7 @@ export function startSession(typeId: string): void {
 		plannedMin: null
 	};
 	persist();
+	markLive(activeSession.current, 'POST');
 }
 
 /** A tap on a counter mid-walk; written through to storage. */
@@ -185,6 +204,9 @@ export function stopSession(): void {
 
 /** Throws the session away unsaved. */
 export function discardSession(): void {
+	if (activeSession.current) {
+		markLive(activeSession.current, 'DELETE');
+	}
 	activeSession.current = null;
 	persist();
 }

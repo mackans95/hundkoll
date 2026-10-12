@@ -766,18 +766,23 @@ Reminders for Status, pushed to the phones that switched them on (plan 19):
 | Recurring with an interval | "om en vecka" at 09:00 a week before, "idag" at 09:00 on the day |
 
 Paused like the cards: nothing daily while Hundvakt is open or once the card says "väntar
-på ny dag". A newer reminder for a type replaces the older one in the tray, a tap opens
+på ny dag". No Promenad reminder to either phone while a live walk is running (plan 30):
+starting one stores a marker in `live_sessions` through `/live`, and starting it also clears
+that phone's walk reminder from the tray. A newer reminder for a type replaces the older one in the tray, a tap opens
 Status, and logging a type on a phone clears that phone's reminder for it.
 
 ```
 pg_cron, every minute → public.remind_tick() → POST the `remind` Edge Function
-  → reads dog_care_status + open absences → reminderDue() per row
+  → reads dog_care_status + open absences + live_sessions → reminderDue() per row
   → claims (dog, type, kind, due_at) in reminders_sent → FCM → every phone in push_devices
 ```
 
 - **`supabase/functions/_shared/reminders.ts`** holds the rules, plain TypeScript tested by
   `tests/reminders.test.ts`. It cannot import `$lib`, so it repeats `awaitingNewDay` and the
   amber windows from `$lib/status/schedule.ts`; parity tests keep them equal.
+- **A live walk's marker counts only until a walk is saved after it, or for 4 h**
+  (`liveNow`). Saving moves `last_at` past it, so native Spara on the lock screen needs no
+  call of its own, and a discard that never reached the server cannot quiet the walk for long.
 - **The claim is the idempotency.** It goes in before the send, so overlapping runs cannot
   double-send, and logging moves `due_at`, which makes the next reminder a new key.
   **Nothing is claimed while no phone in the household has the switch on**, so a reminder
