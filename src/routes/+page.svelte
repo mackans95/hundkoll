@@ -13,6 +13,7 @@
 	import { isAbsence } from '$lib/events/absence';
 	import { LIVE_TYPES } from '$lib/events/fields';
 	import * as locale from '$lib/locale';
+	import { liveNow } from '$lib/liveNow.svelte';
 	import { mirrorSession } from '$lib/native';
 	import {
 		activeSession,
@@ -29,6 +30,9 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// The phone's clock once hydrated: this page may be a copy from hours ago.
+	const clock = liveNow(() => data.now);
 
 	onMount(() => {
 		// A walk or an Ensamtid may still be running from before the app was killed.
@@ -213,7 +217,7 @@
 		<div id="away">
 			<AwayCard
 				event={data.away}
-				now={data.now}
+				now={clock.now}
 				message={form?.message ?? null}
 			/>
 		</div>

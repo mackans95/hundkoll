@@ -23,6 +23,7 @@ import type {
 	DetailMetric,
 	DetailWindowRow,
 	EventDetails,
+	EventType,
 	Period,
 	SimpleDay,
 	StatSummary,
@@ -36,6 +37,7 @@ import { listTypeSettings } from './typeSettings';
 import { typeSettings } from '$lib/typeSettings';
 import { tileValues } from '$lib/stats/cardSpec';
 import { readTrendConfig } from './trendSettings';
+import type { TrendConfigRow } from '$lib/stats/trendConfig';
 import { readCardConfig } from './statsSettings';
 import { defaultCards, type CardRow } from '$lib/stats/cardConfig';
 import { listEventTypes } from './care';
@@ -348,8 +350,8 @@ export async function loadStats(db: Db, period: Period): Promise<Stats> {
 	};
 }
 
-export type Trends = {
-	period: Period;
+/** One period's comparison: its last two complete buckets. */
+export type TrendView = {
 	rows: TrendRow[];
 	/** Each compared period she spent part of away, for the line under the caption. */
 	away: { bucket: string; minutes: number; label: string }[];
@@ -357,25 +359,22 @@ export type Trends = {
 	complete: boolean;
 	prevBucket: string;
 	latestBucket: string;
+};
+
+export type Trends = {
+	period: Period;
+	/** Every period the tabs can pick, so a tab only swaps which is drawn (plan 31). */
+	views: Record<Period, TrendView>;
 	failed: boolean;
 };
 
-/** The last two complete buckets of one period, one row per configured trend. */
-export async function loadTrends(db: Db, period: Period): Promise<Trends> {
-	const today = time.stockholmNowForInput().slice(0, 10);
+/** One period's reads: both buckets of each view, and the absences overlapping them. */
+async function trendReads(db: Db, period: Period, today: string) {
 	const { prev: prevBucket, latest: latestBucket } = trendBucketKeys(today, period);
-
 	const prevSpan = bucketSpan(period, prevBucket);
 	const latestSpan = bucketSpan(period, latestBucket);
 
-	// One wave: the config waits for the catalogue only to parse, not to read,
-	// and the reads below take every type and field rather than the config's.
-	const typesRead = listEventTypes(db);
-	const known = typesRead.then((types) => new Set((types ?? []).map((type) => type.id)));
-
-	const [types, config, typeRes, detailRes, awayRes] = await Promise.all([
-		typesRead,
-		readTrendConfig(db, known),
+	const [typeRes, detailRes, awayRes] = await Promise.all([
 		// No type filter: a bucket the view produced exists if *anything* was
 		// logged in it, so a week of only car rides still compares.
 		db
@@ -383,7 +382,7 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 			.select(TYPE_BUCKET_COLUMNS)
 			.eq('period', period)
 			.in('bucket', [prevBucket, latestBucket]),
-		// Every field of both buckets, a few dozen rows; narrowed to the config's below.
+		// Every field of both buckets, a few dozen rows; narrowed to the config's later.
 		db
 			.from('stats_detail_buckets')
 			.select(DETAIL_BUCKET_COLUMNS)
@@ -399,8 +398,28 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 			.or(`ended_at.is.null,ended_at.gt.${prevSpan.from.toISOString()}`)
 	]);
 
+	return {
+		period,
+		prevBucket,
+		latestBucket,
+		prevSpan,
+		latestSpan,
+		typeRes,
+		detailRes,
+		awayRes,
+		error: Boolean(typeRes.error || detailRes.error || awayRes.error)
+	};
+}
+
+/** One period's rows from its reads and the configured trends. */
+function trendView(
+	reads: Awaited<ReturnType<typeof trendReads>>,
+	rows: TrendConfigRow[],
+	types: EventType[]
+): TrendView {
+	const { period, prevBucket, latestBucket, prevSpan, latestSpan } = reads;
 	const now = new Date();
-	const spans: AwaySpan[] = (awayRes.data ?? []).map((event) => ({
+	const spans: AwaySpan[] = (reads.awayRes.data ?? []).map((event) => ({
 		from: new Date(event.occurred_at),
 		to: event.ended_at ? new Date(event.ended_at) : null,
 		label: event.type.label
@@ -409,13 +428,12 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const homeShare = (span: { from: Date; to: Date }) =>
 		1 - awayIn(span) / ((span.to.getTime() - span.from.getTime()) / 60_000);
 
-	const typeBuckets = present((typeRes.data ?? []).map(toTypeBucket));
-	const rows = config ?? [];
+	const typeBuckets = present((reads.typeRes.data ?? []).map(toTypeBucket));
 	const typeIds = new Set(rows.map((row) => row.type));
 	const fields = new Set(
 		rows.flatMap((row) => [...(row.field ? [row.field] : []), ...(row.children ?? [])])
 	);
-	const detailBuckets = present((detailRes.data ?? []).map(toDetailBucket)).filter(
+	const detailBuckets = present((reads.detailRes.data ?? []).map(toDetailBucket)).filter(
 		(row) => typeIds.has(row.type_id) && fields.has(row.field)
 	);
 	const at = (bucket: string, span: { from: Date; to: Date }): TrendPeriod | null =>
@@ -430,8 +448,7 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 	const latest = at(latestBucket, latestSpan);
 
 	return {
-		period,
-		rows: buildTrendRows(rows, types ?? [], prev, latest),
+		rows: buildTrendRows(rows, types, prev, latest),
 		away: [
 			{ bucket: prevBucket, span: prevSpan },
 			{ bucket: latestBucket, span: latestSpan }
@@ -444,9 +461,32 @@ export async function loadTrends(db: Db, period: Period): Promise<Trends> {
 			.filter((entry) => entry.minutes > 0),
 		complete: prev !== null && latest !== null,
 		prevBucket,
-		latestBucket,
-		failed: Boolean(
-			types === null || config === null || typeRes.error || detailRes.error || awayRes.error
-		)
+		latestBucket
+	};
+}
+
+/** Each period's last two complete buckets, one row per configured trend. */
+export async function loadTrends(db: Db, period: Period): Promise<Trends> {
+	const PERIODS: Period[] = ['day', 'week', 'month'];
+	const today = time.stockholmNowForInput().slice(0, 10);
+
+	// One wave: the config waits for the catalogue only to parse, not to read,
+	// and the reads take every type and field rather than the config's.
+	const typesRead = listEventTypes(db);
+	const known = typesRead.then((types) => new Set((types ?? []).map((type) => type.id)));
+
+	const [types, config, reads] = await Promise.all([
+		typesRead,
+		readTrendConfig(db, known),
+		Promise.all(PERIODS.map((at) => trendReads(db, at, today)))
+	]);
+
+	const rows = config ?? [];
+	return {
+		period,
+		views: Object.fromEntries(
+			reads.map((one) => [one.period, trendView(one, rows, types ?? [])])
+		) as Record<Period, TrendView>,
+		failed: Boolean(types === null || config === null || reads.some((one) => one.error))
 	};
 }

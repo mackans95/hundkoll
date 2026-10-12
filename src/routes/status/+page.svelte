@@ -3,9 +3,13 @@
 	import StatusCard from '$lib/components/status/StatusCard.svelte';
 	import * as format from '$lib/format';
 	import * as locale from '$lib/locale';
+	import { liveNow } from '$lib/liveNow.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// The phone's clock once hydrated: this page may be a copy from hours ago.
+	const clock = liveNow(() => data.now);
 
 	// The absence type's own label, so the banner and badges follow a rename.
 	const awayLabel = $derived(data.away ? (data.away.type?.label ?? data.away.type_id) : null);
@@ -36,7 +40,7 @@
 		{#each data.daily as row (row.type_id)}
 			<StatusCard
 				{row}
-				now={data.now}
+				now={clock.now}
 				pausedBy={awayLabel}
 			/>
 		{/each}
@@ -54,7 +58,7 @@
 		{#each data.timed as row (row.type_id)}
 			<StatusCard
 				{row}
-				now={data.now}
+				now={clock.now}
 			/>
 		{/each}
 	</section>
@@ -69,7 +73,7 @@
 					<span class="font-medium">{row.icon} {row.label}</span>
 					<span class="shrink-0 text-sm text-ink-muted">
 						{row.last_at
-							? format.swedishRelative(new Date(row.last_at), data.now)
+							? format.swedishRelative(new Date(row.last_at), clock.now)
 							: locale.status.never}
 					</span>
 				</li>

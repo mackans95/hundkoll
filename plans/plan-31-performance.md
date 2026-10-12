@@ -5,7 +5,7 @@
 > and later: "something that marks the cache as stale every time we log something new …
 > if nothing has been logged and the cache is up to date, we just [read] from there."
 
-> **Status: 🔨 31a built, awaiting merge; 31b next** — branch `feature/performance`.
+> **Status: ✅ 31a merged (#65); 31b built, awaiting merge** — branch `feature/page-cache`.
 > Measurements are from production data (read-only EXPLAIN ANALYZE as the logged-in user,
 > RLS included) and a production build against the local stack. Item 5's questions were
 > settled with Marcus the same day (Decided, below). 31a verified on the local stack, against
@@ -120,7 +120,7 @@ screen stays and it's retried, as `catchUp` does today.
 | Page               | Re-read when                  | Why                                                                                                  |
 | ------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Logga, Status      | the version moved             | Times are absolute (`due_at`, `occurred_at`); "x min ago" and overdue come from the phone's clock    |
-| Historik           | the version moved             | A month's events, nothing relative to today                                                          |
+| Historik           | the version moved, or the day | The calendar marks today from the server's date (found while building)                               |
 | Statistik, Trender | the version moved, or the day | SQL computes them for today: 30-day windows, buckets up to today, days tracked, the last two periods |
 
 A day change never makes anyone wait: Tuesday's Statistik shows at once on Wednesday and
@@ -159,6 +159,59 @@ launch, a third request on the same weak signal.
 With item 5, Logga and Status both come from the phone, and the launch makes one small
 request, the version check. No native change. If taps still feel slow after that, the
 Android side could open the tapped URL instead of `/`, but that needs a new APK.
+
+## What building 31b found
+
+Verified on the local stack in headless Chrome, with the gateway's access log counting what
+reached the database: moving between pages within 30 s reads nothing; after 30 s a
+navigation makes one version check and no re-read; a walk inserted behind the app's back
+(the other phone) is caught by the next check and shows on Status; our own log shows on
+Status straight away; offline, navigation shows copies; a relaunch shows its copy in
+~20 ms and catches up; a quiet relaunch makes one check; logout drops every copy. Turning
+off the worker's write rule makes the own-log check fail, so it is a real guard. Without
+the version table (the minutes between merge and `db push`), pages load and a resume
+re-reads, as before.
+
+- **A copy's render stamp no longer proves the server was asked.** `catchUp` took any new
+  `renderedAt` as a fresh read, so every navigation to a copy reset its 30 s and the check
+  never ran. `sendPending` now says whether it re-read, and only then does the stamp count.
+- **Opening the app needed its own rule.** A launch loads the document, and in-app reads
+  never renew that copy, so after any log the launch waited for the network: the slow first
+  open again. A launch now shows its copy whatever its version (copy first, as decided);
+  once `catchUp` has re-read, the worker renews the document copy for the next launch,
+  after the re-read rather than alongside it.
+- **Chrome's auto preload.** When the worker is asleep (~30 s idle), Chrome sends the
+  launch's navigation to the network while waking it, and throws the answer away: one
+  wasted render in the background. It doesn't delay what's shown. Off with
+  `--disable-features=ServiceWorkerAutoPreload`, the quiet relaunch makes one check only.
+  Whether the Android WebView does the same is unmeasured.
+- **Sheets stay network-only.** `?detail=`, `?event=` and `?add` carry a server-made event
+  id and time in their form, which a copy would reuse.
+- **Quiet writes:** `/live` (the walk marker) and `/push` change nothing a page shows, so
+  they don't make the copies wait.
+- **Status ticks now.** Its times came from the server's `now` and never moved; Logga and
+  Status follow the phone's clock from hydration on (`liveNow`).
+
+## What the phone changed
+
+Tested on the phone against the local preview (2026-10-12), then put back on production.
+Our own logs showed on Status and Statistik at once, as did a log inserted from the Mac
+as the other phone.
+
+- **The check runs on every page switch**, not at most once per 30 s. Marcus's call: a
+  hidden timer made another phone's log wait for no good reason, and the check is one
+  tiny read. Coming back to the app keeps its 30 s rule; the next tap checks anyway.
+- **A weak signal hangs rather than fails.** With the server unreachable, a page without
+  a copy never opened and a hung version check held up every catch-up after it.
+  Headless Chrome's offline mode fails at once, which is why the earlier runs missed it.
+  Pages now get 3 s on the network when there is a copy, 8 s without (a late answer is
+  still kept), and the check gives up after 5 s.
+- **Only the launch renews the document copy.** Renewing after every caught-up
+  navigation cost a second full render each time.
+- **Trender switches period in place, like Statistik**, so its tabs work offline and
+  without a request; drawn identically to master in all three periods.
+- **A deploy starts with an empty cache**, and the new worker deletes the old one when it
+  takes over, so the first launch or two after a merge read from the network.
 
 ## Decided
 

@@ -33,6 +33,29 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			data_versions: {
+				Row: {
+					household_id: string;
+					version: number;
+				};
+				Insert: {
+					household_id: string;
+					version?: number;
+				};
+				Update: {
+					household_id?: string;
+					version?: number;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'data_versions_household_id_fkey';
+						columns: ['household_id'];
+						isOneToOne: true;
+						referencedRelation: 'households';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			dogs: {
 				Row: {
 					birth_date: string | null;
@@ -678,6 +701,7 @@ export type Database = {
 			};
 		};
 		Functions: {
+			bump_data_version: { Args: { hid: string }; Returns: undefined };
 			detail_happened: { Args: { value: Json }; Returns: boolean };
 			is_household_member: { Args: { hid: string }; Returns: boolean };
 			remind_tick: { Args: never; Returns: undefined };
