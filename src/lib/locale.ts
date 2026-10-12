@@ -189,7 +189,7 @@ export const status = {
 	/** In the compact list, where the card's fuller wording would not fit. */
 	never: 'aldrig',
 	overdue: (duration: string) => `${duration} försenat` as const,
-	due: (relative: string) => `dags ${relative}` as const,
+	due: (duration: string) => `dags om ${duration}` as const,
 	everyNthDay: (days: number) => `var ${days}:e dag` as const,
 	lastAndInterval: (relative: string, interval: string) => `${relative} · ${interval}` as const
 } as const;
@@ -356,6 +356,7 @@ export const units = {
 	// codegen:units — npm run new-event inserts unfamiliar units here
 	minutes: (value: string) => `${value} min` as const,
 	hours: (value: string) => `${value} tim` as const,
+	days: (value: string) => `${value} d` as const,
 	kilograms: (value: string) => `${value} kg` as const,
 	grams: (value: string) => `${value} g` as const,
 	percent: (value: number) => `${value} %` as const,

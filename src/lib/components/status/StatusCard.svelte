@@ -53,12 +53,12 @@
 		const remaining = due.getTime() - now.getTime();
 		if (remaining < 0) {
 			return {
-				text: locale.status.overdue(format.swedishDuration(remaining)),
+				text: locale.status.overdue(format.countdownText(remaining)),
 				classes: 'bg-danger-badge text-danger-ink'
 			};
 		}
 		return {
-			text: locale.status.due(format.swedishRelative(due, now)),
+			text: locale.status.due(format.countdownText(remaining)),
 			classes:
 				remaining <= amberWindowMs(row)
 					? 'bg-warn-badge text-warn-ink'
@@ -70,11 +70,10 @@
 	const detail = $derived.by(() => {
 		const last = row.last_at ? format.swedishRelative(new Date(row.last_at), now) : null;
 		const interval = format.intervalText(row);
-
-		if (last && interval) {
-			return locale.status.lastAndInterval(last, interval);
-		}
-		return interval ?? last ?? '';
+		const text =
+			last && interval ? locale.status.lastAndInterval(last, interval) : (interval ?? last ?? '');
+		// The column is narrow, so the line wraps; never between a number and its unit.
+		return text.replace(/(\d) (?=(tim|min|d|minuter|timmar|dagar|veckor)\b)/g, '$1\u00a0');
 	});
 </script>
 

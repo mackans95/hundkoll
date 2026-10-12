@@ -170,7 +170,7 @@ describe('the tooltip keeps its details whatever the split or style', () => {
 				{ label: '💩', value: '15', big: true }
 			],
 			[
-				{ label: 'Tid mellan', value: '~2,3 tim' },
+				{ label: 'Tid mellan', value: '~2 tim 20 min' },
 				{ label: 'Längd', value: '~12 min' }
 			]
 		]);
@@ -187,7 +187,7 @@ describe('the tooltip keeps its details whatever the split or style', () => {
 		expect(rows).toContainEqual([{ label: 'Kiss:', value: '40' }]);
 		expect(rows).toContainEqual([{ label: 'Bajs:', value: '15' }]);
 		expect(rows.at(-1)).toEqual([
-			{ label: 'Tid mellan', value: '~2,3 tim' },
+			{ label: 'Tid mellan', value: '~2 tim 20 min' },
 			{ label: 'Längd', value: '~12 min' }
 		]);
 	});
