@@ -3,12 +3,10 @@
 
 	let {
 		title,
-		open = true,
 		aside,
 		children
 	}: {
 		title: string;
-		open?: boolean;
 		/** Rendered in the header, left of the chevron — a headline value. */
 		aside?: Snippet;
 		children: Snippet;
@@ -16,9 +14,10 @@
 </script>
 
 <!-- <details> rather than a toggle: folding survives without JavaScript, and
-     the whole header bar is the hit target. -->
+     the whole header bar is the hit target. Static open, not a prop: a prop-driven
+     one is re-applied on every update and unfolds what the user folded. -->
 <details
-	{open}
+	open
 	class="group overflow-hidden rounded-2xl border border-edge bg-surface-raised"
 >
 	<summary
