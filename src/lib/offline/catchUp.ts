@@ -35,19 +35,37 @@ let queueLoaded: Promise<void> | null = null;
  */
 let inFlight: Promise<void> | null = null;
 
+/** Whether the page on screen is the document this context opened on. */
+let opening = true;
+
 export function catchUp(): Promise<void> {
-	inFlight ??= run().finally(() => {
+	return start(false);
+}
+
+/**
+ * After a navigation, which checks every time: the page may be a copy, and the
+ * check is one tiny read, so another phone's log shows on the next tap.
+ */
+export function catchUpOnArrival(): Promise<void> {
+	return start(true);
+}
+
+function start(arrived: boolean): Promise<void> {
+	inFlight ??= run(arrived).finally(() => {
 		inFlight = null;
 	});
 	return inFlight;
 }
 
-async function run(): Promise<void> {
+async function run(arrived: boolean): Promise<void> {
 	// A hidden page is not back yet, and a backgrounded tab has no business
 	// spending a request. It gets another call when it is shown.
 	if (document.visibilityState !== 'visible') {
 		return;
 	}
+
+	const opened = opening;
+	opening = false;
 
 	// Seeded rather than observed: the stamp the page hydrated with says when the
 	// server rendered it, not when *we* read it — and on a launch we may never
@@ -76,7 +94,10 @@ async function run(): Promise<void> {
 
 		// Signed out, the check can only fail, and its retries would hold up the
 		// catch-up that follows the login.
-		if (!(page.data as { signedIn?: boolean }).signedIn || !isStale(readAt, Date.now())) {
+		if (
+			!(page.data as { signedIn?: boolean }).signedIn ||
+			(!arrived && !isStale(readAt, Date.now()))
+		) {
 			return;
 		}
 
@@ -113,8 +134,11 @@ async function run(): Promise<void> {
 
 			await invalidateAll();
 			if (observe()) {
-				// The page may have opened on an old copy; the next launch shouldn't.
-				navigator.serviceWorker?.controller?.postMessage({ type: 'refresh', url: location.href });
+				// Opened on an old copy of the document: renew it for the next launch.
+				// In-app reads never touch it, and only a launch shows it.
+				if (opened) {
+					navigator.serviceWorker?.controller?.postMessage({ type: 'refresh', url: location.href });
+				}
 				return;
 			}
 		}
@@ -166,7 +190,12 @@ function pageRenderedAt(): number | null {
  * 'unreached' when the check never got there. */
 async function askVersion(): Promise<Stamp | 'unknown' | 'unreached'> {
 	try {
-		const response = await fetch('/version', { cache: 'no-store' });
+		// A weak signal hangs rather than fails; a check stuck in flight would
+		// hold up every catch-up after it.
+		const response = await fetch('/version', {
+			cache: 'no-store',
+			signal: AbortSignal.timeout(5_000)
+		});
 		return response.ok ? ((await response.json()) as Stamp) : 'unknown';
 	} catch {
 		return 'unreached';
