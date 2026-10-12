@@ -5,10 +5,28 @@
 > and later: "something that marks the cache as stale every time we log something new …
 > if nothing has been logged and the cache is up to date, we just [read] from there."
 
-> **Status: 📝 Drafting** — branch `feature/performance`. Measurements below are from
-> production data (read-only EXPLAIN ANALYZE as the logged-in user, RLS included) and a
-> production build against the local stack. Item 5's questions were settled with Marcus
-> the same day (Decided, below).
+> **Status: 🔨 31a built, awaiting merge; 31b next** — branch `feature/performance`.
+> Measurements are from production data (read-only EXPLAIN ANALYZE as the logged-in user,
+> RLS included) and a production build against the local stack. Item 5's questions were
+> settled with Marcus the same day (Decided, below). 31a verified on the local stack, against
+> a build of master on the same data:
+>
+> - **Statistik draws exactly as master** in all three periods, reached by URL or switched
+>   in place: every card's text and every chart mark (290, 261 and 251). Trender's data is
+>   byte-identical. The migration's views return the same 315 rows as the old ones
+>   (buckets, windows, care status), compared in one transaction so `now()` held still.
+> - **A switch makes no request and takes ~15 ms** at 4× CPU throttle (~100 ms before,
+>   locally). History doesn't grow, a reload lands on the period, folds stay, and without
+>   JavaScript the tabs are still links. The payload grows 34 → 40 KB (+1.3 KB gzipped).
+> - **Every page's load got faster**, locally: Statistik 35 → 18 ms, Trender 38 → 7,
+>   Status 26 → 6, Logga 25 → 9. The bucket view alone: 22 → 1.3 ms locally, ~100 → 6 in
+>   production.
+> - **Auth:** no `/user` call per request (master makes one), no tokens in page data
+>   (master sends them), signed out and a forged cookie redirect to login, an expired
+>   session is refreshed, logout and login again work. The local stack signs ES256 too.
+> - **Found while building:** the tabs kept preloading on hover and touch
+>   (`preload-data="hover"` on `<body>`) after they stopped navigating, so in-place tabs
+>   turn preloading off. `/live` and `/push` read `locals.user`, so they take `userId` now.
 
 ## What a period switch costs today
 
