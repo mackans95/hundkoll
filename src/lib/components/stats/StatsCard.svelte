@@ -15,12 +15,14 @@
 		view,
 		period,
 		tabs,
-		tabHref
+		tabHref,
+		onpick
 	}: {
 		view: CardView;
 		period: Period;
 		tabs: Tab<Period>[];
 		tabHref: (value: Period) => string;
+		onpick?: (value: Period) => void;
 	} = $props();
 
 	const chart = $derived(view.chart);
@@ -43,6 +45,7 @@
 			current={period}
 			href={tabHref}
 			label={locale.stats.periodPickerLabel}
+			{onpick}
 		/>
 	{/if}
 

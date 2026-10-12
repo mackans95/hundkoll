@@ -1,6 +1,8 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import { replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import type { Tab } from '$lib/components/TabBar.svelte';
 	import StatsCard from '$lib/components/stats/StatsCard.svelte';
 	import * as locale from '$lib/locale';
@@ -23,8 +25,19 @@
 	// where it is, so the path is deliberately whatever page this is.
 	const periodHref = (value: Period) => `?period=${value}`;
 
+	// Every period is already loaded, so a tab only swaps which is drawn. The
+	// URL follows for a reload; replaced, not pushed, so Back leaves the page.
+	const period = $derived(page.state.period ?? data.period);
+	function pick(value: Period) {
+		const next = new URL(page.url);
+		next.searchParams.set('period', value);
+		replaceState(next, { ...page.state, period: value });
+	}
+
 	// In Settings → Tabeller's order, each drawn from its type's configuration.
-	const shown = $derived(data.cards.filter((card) => card.shown && card.type in data.views));
+	const shown = $derived(
+		data.cards.filter((card) => card.shown && card.type in data.views[period])
+	);
 </script>
 
 <svelte:head><title>{locale.app.pageTitle(locale.stats.title)}</title></svelte:head>
@@ -48,10 +61,11 @@
 		>
 			{#each shown as card (card.type)}
 				<StatsCard
-					view={data.views[card.type]}
-					period={data.period}
+					view={data.views[period][card.type]}
+					{period}
 					{tabs}
 					tabHref={periodHref}
+					onpick={pick}
 				/>
 			{/each}
 		</div>
