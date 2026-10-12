@@ -1218,7 +1218,7 @@ exports[`the generic chart draws today’s cards exactly > Ensamtid: a row per o
           },
           {
             "label": "Längd",
-            "value": "~65 min",
+            "value": "~1 tim 5 min",
           },
         ],
         [
@@ -1238,7 +1238,7 @@ exports[`the generic chart draws today’s cards exactly > Ensamtid: a row per o
             "value": "1",
           },
           {
-            "value": "1,5 tim",
+            "value": "1 tim 30 min",
           },
         ],
         {
@@ -3971,7 +3971,7 @@ exports[`the generic chart draws today’s cards exactly > Promenader: emoji cou
         [
           {
             "label": "Tid mellan",
-            "value": "~2,3 tim",
+            "value": "~2 tim 20 min",
           },
           {
             "label": "Längd",

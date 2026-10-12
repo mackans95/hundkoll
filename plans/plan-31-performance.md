@@ -5,7 +5,7 @@
 > and later: "something that marks the cache as stale every time we log something new …
 > if nothing has been logged and the cache is up to date, we just [read] from there."
 
-> **Status: ✅ 31a merged (#65); 31b built, awaiting merge** — branch `feature/page-cache`.
+> **Status: ✅ Merged** — 31a (#65) and 31b (#66), both deployed with their migrations pushed.
 > Measurements are from production data (read-only EXPLAIN ANALYZE as the logged-in user,
 > RLS included) and a production build against the local stack. Item 5's questions were
 > settled with Marcus the same day (Decided, below). 31a verified on the local stack, against

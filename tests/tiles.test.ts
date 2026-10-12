@@ -131,7 +131,7 @@ describe('tileValues', () => {
 			})
 		);
 		expect(avg.value).toBe('~12 min');
-		expect(gap.value).toBe('~2,5 tim');
+		expect(gap.value).toBe('~2 tim 30 min');
 	});
 
 	it('takes a checkbox asked every time over the meals that answered', () => {

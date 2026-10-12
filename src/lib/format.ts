@@ -19,16 +19,24 @@ export function swedishNumber(value: number): string {
 }
 
 /**
- * Writes a duration in whichever unit keeps it short, switching to hours
- * once minutes stop being easy to read.
- * 36 → "36 min", 444 → "7,4 tim"
+ * Writes a duration the way a clock reads, never as a fraction of an hour:
+ * minutes, then hours and minutes, then days and hours once it passes one.
+ * 36 → "36 min", 78 → "1 tim 18 min", 180 → "3 tim", 1680 → "1 d 4 tim"
  */
 export function minutesText(minutes: number): string {
-	if (minutes < 90) {
-		return locale.units.minutes(String(Math.round(minutes)));
+	const total = Math.round(minutes);
+	if (total < 60) {
+		return locale.units.minutes(String(total));
 	}
 
-	return locale.units.hours(numberFormat.format(minutes / 60));
+	const days = Math.floor(total / 1440);
+	const hours = Math.floor((total % 1440) / 60);
+	const rest = total % 60;
+	const parts =
+		days > 0
+			? [locale.units.days(String(days)), hours > 0 ? locale.units.hours(String(hours)) : null]
+			: [locale.units.hours(String(hours)), rest > 0 ? locale.units.minutes(String(rest)) : null];
+	return parts.filter((part) => part !== null).join(' ');
 }
 
 /**
@@ -153,6 +161,21 @@ export function swedishRelative(target: Date, base = new Date()): string {
 	}
 
 	return locale.units.justNow;
+}
+
+/**
+ * How far off a moment is, or how far past it, for a countdown: to the minute
+ * under a day, in days and weeks beyond. Rounded toward the moment, so "1 min"
+ * holds until it is due and an overdue one starts at "1 min".
+ * 4_680_000 → "1 tim 18 min", 1_000 → "1 min", 259_200_000 → "3 dagar"
+ */
+export function countdownText(ms: number): string {
+	const abs = Math.abs(ms);
+	if (abs >= 86_400_000) {
+		return swedishDuration(ms);
+	}
+	const minutes = ms >= 0 ? Math.ceil(abs / 60_000) : Math.floor(abs / 60_000);
+	return minutesText(Math.max(1, minutes));
 }
 
 /**

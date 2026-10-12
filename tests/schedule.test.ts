@@ -137,7 +137,7 @@ describe('intervalFormat', () => {
 			last_at: '2026-08-27T08:00:00Z',
 			due_at: '2026-08-27T10:20:00Z'
 		});
-		expect(intervalText(walk)).toBe('snitt 2,3 tim');
+		expect(intervalText(walk)).toBe('snitt 2 tim 20 min');
 	});
 
 	// After a return the view counts due_at from due_from, not last_at; measured
@@ -149,7 +149,7 @@ describe('intervalFormat', () => {
 			due_from: '2026-08-27T16:00:00Z',
 			due_at: '2026-08-27T18:20:00Z'
 		});
-		expect(intervalText(walk)).toBe('snitt 2,3 tim');
+		expect(intervalText(walk)).toBe('snitt 2 tim 20 min');
 	});
 
 	it('is null when there is nothing to say', () => {
