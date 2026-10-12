@@ -165,6 +165,7 @@ straight after. `/login` reads no data, so this is the function alone.
 | 5 min    | 160 ms        | 73 ms        |
 | 10 min   | **757 ms**    | 91 ms        |
 | 15 min   | **802 ms**    | 95 ms        |
+| 25 min   | **815 ms**    | 90 ms        |
 
 **After about 10 minutes idle, the function starts cold: ~700 ms extra**, on a good
 connection, before any auth or data. With two users, most opens are like that, and the
