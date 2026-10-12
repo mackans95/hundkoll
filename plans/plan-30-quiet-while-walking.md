@@ -4,9 +4,9 @@
 > the dog on a walk within 30 minutes while I'm already out walking." A running live walk
 > counts as "out walking", even though nothing is saved until Spara.
 
-> **Status: 🔨 Built, to verify on the phone** — branch `feature/walk-reminder-quiet`.
-> Verified on the local stack: `?dry` drops "🚶 Promenad om 30 min" while a marker stands and
-> keeps "🍽️ Matning om 30 min"; a marker older than the last walk changes nothing. In
+> **Status: ✅ Built, awaiting merge** — branch `feature/walk-reminder-quiet`. The phone
+> check was skipped at Marcus's call. Verified on the local stack: `?dry` drops "🚶 Promenad
+> om 30 min" while a marker stands and keeps "🍽️ Matning om 30 min"; a marker older than the last walk changes nothing. In
 > headless Chrome, starting a walk writes the marker, and both Avbryt and Avsluta & spara
 > remove it. RLS lets the household in and refuses anyone else. Findings while building:
 >
