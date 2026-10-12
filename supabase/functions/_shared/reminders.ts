@@ -88,12 +88,35 @@ export function awaitingNewDay(row: ReminderRow, now: Date): boolean {
 	return wallClock(now).day > wallClock(new Date(from)).day;
 }
 
+/** Past this, a walk's marker is taken as left behind rather than a walk (plan 30). */
+export const LIVE_MARKER_MS = 4 * 3_600_000;
+
+/**
+ * Whether someone is out on a live walk of this type right now: a marker newer
+ * than the last saved one, since saving the walk moves last_at past it.
+ */
+export function liveNow(
+	row: Pick<ReminderRow, 'last_at'>,
+	markedAt: string | null,
+	now: Date
+): boolean {
+	if (!markedAt) {
+		return false;
+	}
+	const marked = new Date(markedAt).getTime();
+	return (
+		now.getTime() - marked < LIVE_MARKER_MS &&
+		(!row.last_at || marked > new Date(row.last_at).getTime())
+	);
+}
+
 /**
  * Which reminder, if any, the row is due right now. A window rather than an
  * instant, so a missed minute still delivers later; the caller's claim on
- * (type, kind, due_at) is what keeps a window from sending twice.
+ * (type, kind, due_at) is what keeps a window from sending twice. `paused`
+ * quiets daily rows: she is away, or out on the walk being reminded of.
  */
-export function reminderDue(row: ReminderRow, away: boolean, now: Date): ReminderKind | null {
+export function reminderDue(row: ReminderRow, paused: boolean, now: Date): ReminderKind | null {
 	if (!isScheduled(row) || !row.due_at) {
 		return null;
 	}
@@ -103,7 +126,7 @@ export function reminderDue(row: ReminderRow, away: boolean, now: Date): Reminde
 	const t = now.getTime();
 
 	if (isDaily(row)) {
-		if (away || awaitingNewDay(row, now) || hour >= QUIET_FROM || hour < QUIET_UNTIL) {
+		if (paused || awaitingNewDay(row, now) || hour >= QUIET_FROM || hour < QUIET_UNTIL) {
 			return null;
 		}
 		return t >= due.getTime() - DAILY_AMBER_MS && t < due.getTime() ? 'soon' : null;

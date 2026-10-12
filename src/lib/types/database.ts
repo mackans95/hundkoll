@@ -221,6 +221,70 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			live_sessions: {
+				Row: {
+					created_at: string;
+					dog_id: string;
+					session_id: string;
+					type_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					dog_id: string;
+					session_id: string;
+					type_id: string;
+				};
+				Update: {
+					created_at?: string;
+					dog_id?: string;
+					session_id?: string;
+					type_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'live_sessions_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'live_sessions_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'dogs';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'live_sessions_dog_id_fkey';
+						columns: ['dog_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['dog_id'];
+					},
+					{
+						foreignKeyName: 'live_sessions_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'dog_care_status';
+						referencedColumns: ['type_id'];
+					},
+					{
+						foreignKeyName: 'live_sessions_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'event_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'live_sessions_type_id_fkey';
+						columns: ['type_id'];
+						isOneToOne: false;
+						referencedRelation: 'stats_type_windows';
+						referencedColumns: ['type_id'];
+					}
+				];
+			};
 			push_devices: {
 				Row: {
 					created_at: string;

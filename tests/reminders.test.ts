@@ -8,7 +8,9 @@ import type { StatusRow } from '$lib/types/domain';
 import {
 	DAILY_AMBER_MS,
 	RECURRING_AMBER_MS,
+	LIVE_MARKER_MS,
 	awaitingNewDay,
+	liveNow,
 	reminderDue,
 	reminderMessage,
 	type ReminderRow
@@ -160,6 +162,37 @@ describe('reminderDue, recurring', () => {
 		expect(reminderDue(late, false, at('2026-10-18T07:00:00Z'))).toBe('week');
 		expect(reminderDue(late, false, at('2026-10-25T07:59:00Z'))).toBeNull(); // 08:59 CET
 		expect(reminderDue(late, false, at('2026-10-25T08:00:00Z'))).toBe('due');
+	});
+});
+
+// A live walk quiets the walk's "om 30 min" on both phones (plan 30).
+describe('liveNow', () => {
+	const soon = at('2026-09-15T14:40:00Z');
+
+	it('is true for a walk started since the last one was saved', () => {
+		expect(liveNow(walk(), '2026-09-15T14:30:00Z', soon)).toBe(true);
+	});
+
+	it('is false without a marker', () => {
+		expect(liveNow(walk(), null, soon)).toBe(false);
+	});
+
+	// Saving the walk moves last_at past the marker, wherever native Spara ran.
+	it('is false once a walk was saved after the marker', () => {
+		expect(liveNow(walk({ last_at: '2026-09-15T14:35:00Z' }), '2026-09-15T14:30:00Z', soon)).toBe(
+			false
+		);
+	});
+
+	it('is false for a marker left behind past the limit', () => {
+		const marked = new Date(soon.getTime() - LIVE_MARKER_MS).toISOString();
+		expect(liveNow(walk({ last_at: null }), marked, soon)).toBe(false);
+	});
+
+	it('quiets the reminder through reminderDue', () => {
+		const walking = liveNow(walk(), '2026-09-15T14:30:00Z', soon);
+		expect(reminderDue(walk(), walking, soon)).toBeNull();
+		expect(reminderDue(walk(), false, soon)).toBe('soon');
 	});
 });
 
