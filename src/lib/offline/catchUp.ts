@@ -1,7 +1,8 @@
 // Coming back to the app, in one place.
 //
-// There are four ways in — a launch, the browser restoring the page, the app
-// being brought to the front, and the connection returning — and they all raise
+// There are five ways in — a launch, the browser restoring the page, the app
+// being brought to the front, the connection returning, and a navigation that
+// may have been answered from the phone's copy — and they all raise
 // the same three questions: is the queue read off disk, is anything still
 // waiting to be sent, and is what is on screen actually current? The handlers
 // only say "we are back"; this decides what that implies.
@@ -13,6 +14,7 @@
 import { invalidateAll } from '$app/navigation';
 import { page } from '$app/state';
 import { RETRY_DELAYS_MS, hasLanded, isStale } from './freshness';
+import { isCurrent, type Stamp } from './pageCache';
 import { syncWithLockScreen } from './activeSession.svelte';
 import { loadQueue, sendPending } from './queue.svelte';
 
@@ -64,18 +66,25 @@ async function run(): Promise<void> {
 		// Before sending: a walk saved on the lock screen without signal joins the queue here.
 		await syncWithLockScreen();
 
-		await sendPending();
 		// sendPending re-reads the page itself when something landed; noticing
 		// that here leaves the check below a no-op rather than a second request.
-		observe();
+		// Only then: a page shown from the phone's copy has a render stamp of its
+		// own, which says nothing about the server having been asked.
+		if (await sendPending()) {
+			observe();
+		}
 
-		if (!isStale(readAt, Date.now())) {
+		// Signed out, the check can only fail, and its retries would hold up the
+		// catch-up that follows the login.
+		if (!(page.data as { signedIn?: boolean }).signedIn || !isStale(readAt, Date.now())) {
 			return;
 		}
 
-		// The first attempt immediately, then backing off. A re-read the service
-		// worker answered from its cache changes nothing and looks exactly like a
-		// successful one, so the only way to know is to check and try again.
+		// The first attempt immediately, then backing off. The version check
+		// asks whether anything was written since the page on screen was read
+		// (plan 31b); only then is it re-read. A re-read the service worker
+		// answered from its cache looks exactly like a successful one, so the
+		// only way to know is to check the render stamp and try again.
 		for (const delay of [0, ...RETRY_DELAYS_MS]) {
 			if (delay > 0) {
 				await sleep(delay);
@@ -86,14 +95,32 @@ async function run(): Promise<void> {
 				}
 			}
 
+			const server = await askVersion();
+			if (server === 'unreached') {
+				continue;
+			}
+			// Unanswered — the version's migration not pushed yet, say — the page
+			// is simply re-read, as before there was a version to ask.
+			if (server !== 'unknown') {
+				// Before the re-read, so the worker already treats the copies as stale.
+				await tellWorker(server);
+				const shown = (page.data as { stamp?: Stamp | null }).stamp ?? null;
+				if (shown && isCurrent(shown, server, page.url.pathname)) {
+					readAt = Date.now();
+					return;
+				}
+			}
+
 			await invalidateAll();
 			if (observe()) {
+				// The page may have opened on an old copy; the next launch shouldn't.
+				navigator.serviceWorker?.controller?.postMessage({ type: 'refresh', url: location.href });
 				return;
 			}
 		}
 
-		// Every attempt came back with the same render stamp: the requests never
-		// reached the server. What is on screen stays, and the next way back in
+		// Every attempt failed to reach the server, or came back with the same
+		// render stamp. What is on screen stays, and the next way back in
 		// starts over.
 		console.warn('catching up: the re-read never reached the server');
 	} catch (error) {
@@ -133,6 +160,33 @@ function observe(): boolean {
 function pageRenderedAt(): number | null {
 	const renderedAt = (page.data as { renderedAt?: number }).renderedAt;
 	return typeof renderedAt === 'number' ? renderedAt : null;
+}
+
+/** What the server is at now, 'unknown' when it answered without saying, or
+ * 'unreached' when the check never got there. */
+async function askVersion(): Promise<Stamp | 'unknown' | 'unreached'> {
+	try {
+		const response = await fetch('/version', { cache: 'no-store' });
+		return response.ok ? ((await response.json()) as Stamp) : 'unknown';
+	} catch {
+		return 'unreached';
+	}
+}
+
+/** Hands the check to the service worker, and waits until it has it. */
+async function tellWorker(stamp: Stamp): Promise<void> {
+	const worker = navigator.serviceWorker?.controller;
+	if (!worker) {
+		return;
+	}
+	const channel = new MessageChannel();
+	const heard = new Promise<void>((resolve) => {
+		channel.port1.onmessage = () => resolve();
+		// A worker that never answers must not hold the page's catch-up.
+		setTimeout(resolve, 1_000);
+	});
+	worker.postMessage({ type: 'version', stamp }, [channel.port2]);
+	await heard;
 }
 
 function sleep(ms: number): Promise<void> {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './layout.css';
+	import { afterNavigate } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
@@ -33,6 +34,12 @@
 			if (pushWanted()) void refreshPush();
 			void onLockScreenChange(() => void syncWithLockScreen());
 		}
+	});
+
+	// A page may now come from the phone's copy (plan 31b), so arriving is a way
+	// back in too. The launch's own arrival is onMount's.
+	afterNavigate(({ type }) => {
+		if (type !== 'enter') void catchUp();
 	});
 
 	// Where a tap is heading; null unless a navigation is in flight.

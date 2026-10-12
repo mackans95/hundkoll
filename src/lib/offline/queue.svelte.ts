@@ -158,15 +158,17 @@ function pruneLanded(): void {
  * Sends anything waiting and refreshes the page data if something landed —
  * refresh before pruning, so a row never disappears between send and
  * read-back. The one place that decides when the queue gets sent, so the
- * layout, the log form and the `online` event all agree.
+ * layout, the log form and the `online` event all agree. Returns whether it
+ * re-read the page.
  */
-export async function sendPending(): Promise<void> {
+export async function sendPending(): Promise<boolean> {
 	if ((await flushQueue()) === 0) {
-		return;
+		return false;
 	}
 
 	await invalidateAll();
 	pruneLanded();
+	return true;
 }
 
 /** Clears a rejected row once the user has read why it failed. */

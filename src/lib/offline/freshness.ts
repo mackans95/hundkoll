@@ -15,9 +15,8 @@
 //     stamps its own read times now, so drift cannot hide anything.
 //   - A context that has read nothing yet is stale, full stop. A launch cannot
 //     tell a page the server rendered a moment ago from one the worker cached
-//     last night, so it does not try to: it re-reads. That costs one data
-//     request per launch, which the old threshold already paid for any page
-//     older than thirty seconds.
+//     last night, so it does not try to: it asks the server's data version,
+//     and re-reads only if that moved (plan 31b).
 
 /** How old page data may be before a resume re-reads it. */
 export const STALE_AFTER_MS = 30_000;
