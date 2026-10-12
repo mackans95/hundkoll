@@ -4,6 +4,18 @@
 /// <reference lib="webworker" />
 import * as locale from '$lib/locale';
 import { INCOMPLETE_HEADER } from '$lib/offline/incomplete';
+import {
+	UNKNOWN,
+	afterCheck,
+	afterResponse,
+	afterWrite,
+	cachedPage,
+	mayServe,
+	readStamp,
+	writesData,
+	type Known,
+	type Stamp
+} from '$lib/offline/pageCache';
 import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -59,23 +71,109 @@ sw.addEventListener('fetch', (event) => {
 	if (DEV) return;
 
 	const { request } = event;
-	// Logging POSTs have to reach the server; queueing them is the offline
-	// queue's job, not the worker's.
-	if (request.method !== 'GET') return;
-
 	const url = new URL(request.url);
 	// Leave Supabase and any other origin alone.
 	if (url.origin !== sw.location.origin) return;
-	// Never answer an auth page from cache.
-	if (url.pathname === '/login') return;
+
+	// Writes go to the server untouched; the worker only notes them. Logout
+	// also drops every copy, so the next sign-in never sees the last one's.
+	if (request.method !== 'GET') {
+		if (url.pathname === '/logout') event.waitUntil(forget());
+		else if (writesData(request.method, url)) event.waitUntil(update(afterWrite));
+		return;
+	}
+
+	// Never answer an auth page from cache, nor the version check: "nothing
+	// changed" must only ever come from the server.
+	if (url.pathname === '/login' || url.pathname === '/version') return;
 
 	event.respondWith(respond(event));
 });
 
+// The page passes on what the version check said, and waits for the reply,
+// so the re-read it starts next already sees the copies as stale.
+sw.addEventListener('message', (event) => {
+	const data = event.data as { type?: string; stamp?: Stamp; url?: string } | null;
+	if (data?.type === 'version' && typeof data.stamp?.version === 'number') {
+		const stamp = data.stamp;
+		event.waitUntil(update(() => afterCheck(stamp)).then(() => event.ports[0]?.postMessage(true)));
+	}
+	// The page caught up after opening on an old copy: renew the copy the next
+	// launch opens on, which in-app reads never touch.
+	if (data?.type === 'refresh' && typeof data.url === 'string') {
+		event.waitUntil(refreshDocument(data.url));
+	}
+});
+
+async function refreshDocument(href: string): Promise<void> {
+	const url = new URL(href);
+	if (url.origin !== sw.location.origin || !cachedPage(url)) return;
+	try {
+		const response = await fetch(url, { headers: { accept: 'text/html' } });
+		if (worthKeeping(response)) {
+			await (await caches.open(CACHE)).put(url, response);
+		}
+	} catch {
+		// Offline again; the next catch-up asks once more.
+	}
+}
+
 /**
- * Answers a request: precached assets straight from the cache, everything
- * else from the network with the last good copy kept as a fallback. That
- * fallback is what lets the app open at all without signal.
+ * A redirected response belongs to a different URL — caching it under this
+ * one would, for an expired session, pin the login page in place of the app.
+ * A page with a failed read in it is marked by the server: serving that copy
+ * on the next launch would make one bad moment look permanent.
+ */
+function worthKeeping(response: Response): boolean {
+	return (
+		response.status === 200 && !response.redirected && !response.headers.has(INCOMPLETE_HEADER)
+	);
+}
+
+// What the worker believes the server is at, kept in this build's cache so it
+// outlives the worker being stopped. A deploy starts over, like the copies.
+const KNOWN_KEY = '/__known';
+let known: Promise<Known> | null = null;
+let writes: Promise<void> = Promise.resolve();
+
+function readKnown(): Promise<Known> {
+	known ??= caches
+		.open(CACHE)
+		.then((cache) => cache.match(KNOWN_KEY))
+		.then((stored) => (stored ? (stored.json() as Promise<Known>) : UNKNOWN))
+		.catch(() => UNKNOWN);
+	return known;
+}
+
+/** One change at a time: two responses landing together must not lose one. */
+function update(change: (known: Known) => Known): Promise<void> {
+	writes = writes.then(async () => {
+		const next = change(await readKnown());
+		known = Promise.resolve(next);
+		const cache = await caches.open(CACHE);
+		await cache.put(KNOWN_KEY, new Response(JSON.stringify(next)));
+	});
+	return writes;
+}
+
+/** Drops every page copy and what was known; the bundles stay. */
+async function forget(): Promise<void> {
+	await update(() => UNKNOWN);
+	const cache = await caches.open(CACHE);
+	const keys = await cache.keys();
+	await Promise.all(
+		keys
+			.filter((key) => !PRECACHE_PATHS.has(new URL(key.url).pathname))
+			.filter((key) => new URL(key.url).pathname !== KNOWN_KEY)
+			.map((key) => cache.delete(key))
+	);
+}
+
+/**
+ * Answers a request: precached assets straight from the cache, the app's pages
+ * from their copy while it is current (plan 31b), everything else from the
+ * network with the last good copy kept as a fallback. That fallback is what
+ * lets the app open at all without signal.
  */
 async function respond(event: FetchEvent): Promise<Response> {
 	const { request } = event;
@@ -88,22 +186,28 @@ async function respond(event: FetchEvent): Promise<Response> {
 		if (cached) return cached;
 	}
 
-	// Pages and their data: prefer fresh, but keep the last good copy —
-	// that copy is what lets the app open at all without signal.
+	// Opening the app shows its last copy of the page, whatever its age: the
+	// page checks the version straight after and re-reads if anything moved.
+	// Inside the app, only a copy at the version the server is known to be at
+	// is served; a stale one waits for the network.
+	if (cachedPage(url)) {
+		const copy = await cache.match(request, { ignoreVary: true });
+		const stamp = copy ? readStamp(copy.headers) : null;
+		const opening = request.mode === 'navigate' && stamp !== null;
+		if (copy && (opening || mayServe(stamp, await readKnown(), url.pathname))) {
+			return copy;
+		}
+	}
+
+	// Everything else, and stale copies: prefer fresh, but keep the last good
+	// copy — that copy is what lets the app open at all without signal.
 	try {
 		const response = await fetch(request);
-		// A redirected response belongs to a different URL — caching it under
-		// this one would, for an expired session, pin the login page in place
-		// of the app. A page with a failed read in it is marked by the server:
-		// serving that copy on the next launch would make one bad moment look
-		// permanent.
-		if (
-			response.status === 200 &&
-			!response.redirected &&
-			!response.headers.has(INCOMPLETE_HEADER)
-		) {
+		if (worthKeeping(response)) {
 			event.waitUntil(cache.put(request, response.clone()));
 		}
+		const stamp = readStamp(response.headers);
+		if (stamp) event.waitUntil(update((current) => afterResponse(current, stamp)));
 		return response;
 	} catch {
 		// ignoreVary: SvelteKit varies its responses on headers that differ
